@@ -1,322 +1,322 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '../../hooks/redux';
-import { getAllTeams, getAllUsers } from '../../store/teamSlice';
-import ProtectedRoute from '../../components/ProtectedRoute';
+import React, { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import AdminHeader from '../../components/admin/AdminHeader';
+import AdminNavigation from '../../components/admin/AdminNavigation';
+import OverviewTab from '../../components/tabs/OverviewTab';
+import QuizzesTab from '../../components/tabs/QuizzesTab';
+import TreasureHuntsTab from '../../components/tabs/TreasureHuntsTab';
+import PollsTab from '../../components/tabs/PollsTab';
+import TeamsTab from '../../components/tabs/TeamsTab';
+import ApprovalsTab from '../../components/tabs/ApprovalsTab';
 import { 
-  Users, 
-  MapPin, 
-  Trophy, 
-  UserCheck, 
-  TrendingUp, 
-  ArrowRight,
-  Calendar,
-  Award,
-  Target,
-  Activity
-} from 'lucide-react';
-import Cookies from 'js-cookie';
+  Stats, 
+  Team, 
+  Quiz, 
+  TreasureHunt, 
 
-export default function AdminPage() {
-  const { user } = useAppSelector((state) => state.auth);
-  const { teams, users, treasureHunts, isLoading } = useAppSelector((state) => state.team);
-  const dispatch = useAppDispatch();
+  PendingApproval, 
+  RecentActivity, 
+  TabView 
+} from '../../types/admin';
 
-  useEffect(() => {
-    dispatch(getAllTeams());
-    dispatch(getAllUsers());
-  }, [dispatch]);
+// Mock data - In real app, this would come from API calls
+const mockStats: Stats = {
+  totalTeams: 8,
+  totalUsers: 45,
+  activeQuizzes: 3,
+  activeTreasureHunts: 2,
+  activePolls: 4,
+  pendingApprovals: 7,
+  completedActivities: 23,
+  totalPoints: 15420
+};
 
-  const stats = [
-    {
-      title: 'Total Teams',
-      value: teams.length,
-      icon: Users,
-      color: 'bg-blue-500',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-600'
-    },
-    {
-      title: 'Total Users',
-      value: users.length,
-      icon: UserCheck,
-      color: 'bg-green-500',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-600'
-    },
-    {
-      title: 'Active Hunts',
-      value: treasureHunts.filter(hunt => hunt.status === 'ACTIVE').length,
-      icon: MapPin,
-      color: 'bg-purple-500',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-600'
-    },
-    {
-      title: 'Completed Hunts',
-      value: treasureHunts.filter(hunt => hunt.status === 'COMPLETED').length,
-      icon: Trophy,
-      color: 'bg-yellow-500',
-      bgColor: 'bg-yellow-50',
-      textColor: 'text-yellow-600'
+const mockTeams: Team[] = [
+  { id: 1, name: 'Team Alpha', members: 6, points: 2450, rank: 1, department: 'Engineering' },
+  { id: 2, name: 'Team Beta', members: 5, points: 2100, rank: 2, department: 'Design' },
+  { id: 3, name: 'Team Gamma', members: 7, points: 1980, rank: 3, department: 'Marketing' },
+  { id: 4, name: 'Team Delta', members: 4, points: 1750, rank: 4, department: 'Sales' },
+  { id: 5, name: 'Team Omega', members: 6, points: 1650, rank: 5, department: 'HR' },
+];
+
+const mockQuizzes: Quiz[] = [
+  {
+    id: 1,
+    title: 'JavaScript Fundamentals',
+    description: 'Test your knowledge of JavaScript basics',
+    teams: ['Team Alpha', 'Team Beta', 'Team Gamma'],
+    questions: 15,
+    timeLimit: '30 min',
+    status: 'active',
+    createdAt: '2024-01-15',
+    responses: 12,
+    avgScore: 78
+  },
+  {
+    id: 2,
+    title: 'React Advanced Concepts',
+    description: 'Advanced React patterns and hooks',
+    teams: ['Team Alpha', 'Team Delta'],
+    questions: 20,
+    timeLimit: '45 min',
+    status: 'draft',
+    createdAt: '2024-01-14',
+    responses: 0,
+    avgScore: 0
+  },
+  {
+    id: 3,
+    title: 'Company Knowledge Quiz',
+    description: 'Test your knowledge about our company',
+    teams: ['All Teams'],
+    questions: 10,
+    timeLimit: '20 min',
+    status: 'completed',
+    createdAt: '2024-01-10',
+    responses: 35,
+    avgScore: 85
+  }
+];
+
+const mockTreasureHunts: TreasureHunt[] = [
+  {
+    id: 1,
+    title: 'Office Explorer Challenge',
+    description: 'Find all the hidden clues around the office',
+    teams: ['Team Alpha', 'Team Beta'],
+    totalClues: 8,
+    status: 'active',
+    startDate: '2024-01-15',
+    endDate: '2024-01-20',
+    progress: {
+      'Team Alpha': 6,
+      'Team Beta': 4
     }
-  ];
+  },
+  {
+    id: 2,
+    title: 'City Adventure Hunt',
+    description: 'Explore the city and complete challenges',
+    teams: ['Team Gamma', 'Team Delta', 'Team Omega'],
+    totalClues: 12,
+    status: 'planning',
+    startDate: '2024-01-25',
+    endDate: '2024-01-30',
+    progress: {}
+  }
+];
 
-  const quickActions = [
-    {
-      title: 'Team Management',
-      description: 'Create teams and manage members',
-      icon: Users,
-      href: '/admin/teams',
-      color: 'bg-gradient-to-r from-blue-500 to-blue-600'
-    },
-    {
-      title: 'Treasure Hunts',
-      description: 'Create and manage treasure hunts',
-      icon: MapPin,
-      href: '/admin/treasure-hunts',
-      color: 'bg-gradient-to-r from-purple-500 to-purple-600'
-    },
-    {
-      title: 'User Analytics',
-      description: 'View user activity and statistics',
-      icon: TrendingUp,
-      href: '/admin/analytics',
-      color: 'bg-gradient-to-r from-green-500 to-green-600'
-    },
-    {
-      title: 'System Settings',
-      description: 'Configure system preferences',
-      icon: Activity,
-      href: '/admin/settings',
-      color: 'bg-gradient-to-r from-gray-500 to-gray-600'
+// Remove the old mockPolls array since we're now using real API data
+
+const mockPendingApprovals: PendingApproval[] = [
+  {
+    id: 1,
+    type: 'treasure-clue',
+    team: 'Team Alpha',
+    user: 'John Doe',
+    title: 'Kitchen Area Clue',
+    description: 'Found the hidden clue near the coffee machine',
+    image: '/api/placeholder/200/150',
+    submittedAt: '5 min ago',
+    clueNumber: 3
+  },
+  {
+    id: 2,
+    type: 'treasure-clue',
+    team: 'Team Beta',
+    user: 'Sarah Smith',
+    title: 'Reception Desk Clue',
+    description: 'Located the clue behind the reception desk',
+    image: '/api/placeholder/200/150',
+    submittedAt: '12 min ago',
+    clueNumber: 2
+  },
+  {
+    id: 3,
+    type: 'quiz-dispute',
+    team: 'Team Gamma',
+    user: 'Mike Johnson',
+    title: 'Question #5 Answer Dispute',
+    description: 'Requesting review of JavaScript question answer',
+    submittedAt: '1 hour ago'
+  }
+];
+
+const mockRecentActivities: RecentActivity[] = [
+  { id: 1, type: 'quiz', action: 'Quiz "JavaScript Fundamentals" completed by Team Alpha', time: '2 min ago', status: 'completed' },
+  { id: 2, type: 'treasure', action: 'New clue submitted by Team Beta', time: '5 min ago', status: 'pending' },
+  { id: 3, type: 'poll', action: 'Voting ended for "Best Team Logo"', time: '10 min ago', status: 'completed' },
+  { id: 4, type: 'team', action: 'New team "Team Zeta" created', time: '15 min ago', status: 'active' },
+  { id: 5, type: 'quiz', action: 'Quiz started by Team Delta', time: '20 min ago', status: 'in-progress' }
+];
+
+export default function AdminDashboard() {
+  const [activeView, setActiveView] = useState<TabView>('overview');
+  const { user, logout: handleLogout } = useAuth();
+
+  // Handler functions for API calls - These will be implemented when connecting to backend
+  const handleQuickAction = (type: string) => {
+    console.log(`Quick action: ${type}`);
+    // TODO: Navigate to create modal or form
+  };
+
+  const handleCreateQuiz = () => {
+    console.log('Create quiz');
+    // TODO: API call to create quiz
+  };
+
+  const handleViewQuiz = (quizId: number) => {
+    console.log(`View quiz: ${quizId}`);
+    // TODO: Navigate to quiz details
+  };
+
+  const handleEditQuiz = (quizId: number) => {
+    console.log(`Edit quiz: ${quizId}`);
+    // TODO: Navigate to quiz edit form
+  };
+
+  const handleCreateHunt = () => {
+    console.log('Create treasure hunt');
+    // TODO: API call to create treasure hunt
+  };
+
+  const handleViewClues = (huntId: number) => {
+    console.log(`View clues: ${huntId}`);
+    // TODO: Navigate to clues management
+  };
+
+  const handleDeclareWinner = (huntId: number) => {
+    console.log(`Declare winner: ${huntId}`);
+    // TODO: API call to declare winner
+  };
+
+  const handleCreatePoll = () => {
+    console.log('Create poll - handled by PollsTab component');
+    // This is now handled within the PollsTab component
+  };
+
+  const handleViewResults = (pollId: string) => {
+    console.log(`View results: ${pollId}`);
+    // TODO: Navigate to poll results page or open modal
+  };
+
+  const handleNotifyWinner = (pollId: string) => {
+    console.log(`Notify users about poll results: ${pollId}`);
+    // TODO: API call to notify users about poll results
+  };
+
+  const handleCreateTeam = () => {
+    console.log('Create team');
+    // TODO: API call to create team
+  };
+
+  const handleImportUsers = () => {
+    console.log('Import users');
+    // TODO: Handle user import
+  };
+
+  const handleManageMembers = (teamId: number) => {
+    console.log(`Manage members: ${teamId}`);
+    // TODO: Navigate to team member management
+  };
+
+  const handleViewStats = (teamId: number) => {
+    console.log(`View stats: ${teamId}`);
+    // TODO: Navigate to team statistics
+  };
+
+  const handleApprove = (approvalId: number) => {
+    console.log(`Approve: ${approvalId}`);
+    // TODO: API call to approve
+  };
+
+  const handleReject = (approvalId: number) => {
+    console.log(`Reject: ${approvalId}`);
+    // TODO: API call to reject
+  };
+
+  const handleAddFeedback = (approvalId: number) => {
+    console.log(`Add feedback: ${approvalId}`);
+    // TODO: Open feedback modal
+  };
+
+  const renderActiveTab = () => {
+    switch (activeView) {
+      case 'overview':
+        return (
+          <OverviewTab
+            stats={mockStats}
+            teams={mockTeams}
+            recentActivities={mockRecentActivities}
+            onQuickAction={handleQuickAction}
+          />
+        );
+      case 'quizzes':
+        return (
+          <QuizzesTab
+            quizzes={mockQuizzes}
+            onCreateQuiz={handleCreateQuiz}
+            onViewQuiz={handleViewQuiz}
+            onEditQuiz={handleEditQuiz}
+          />
+        );
+      case 'treasure-hunts':
+        return (
+          <TreasureHuntsTab
+            treasureHunts={mockTreasureHunts}
+            onCreateHunt={handleCreateHunt}
+            onViewClues={handleViewClues}
+            onDeclareWinner={handleDeclareWinner}
+          />
+        );
+      case 'polls':
+        return (
+          <PollsTab
+            onViewResults={handleViewResults}
+            onNotifyWinner={handleNotifyWinner}
+          />
+        );
+      case 'teams':
+        return (
+          <TeamsTab
+            teams={mockTeams}
+            onCreateTeam={handleCreateTeam}
+            onImportUsers={handleImportUsers}
+            onManageMembers={handleManageMembers}
+            onViewStats={handleViewStats}
+          />
+        );
+      case 'approvals':
+        return (
+          <ApprovalsTab
+            pendingApprovals={mockPendingApprovals}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onAddFeedback={handleAddFeedback}
+          />
+        );
+      default:
+        return null;
     }
-  ];
-
-  const recentActivity = [
-    { action: 'New team created', details: 'Team Alpha was created', time: '2 hours ago', icon: Users },
-    { action: 'Treasure hunt completed', details: 'Team Beta completed Downtown Quest', time: '4 hours ago', icon: Trophy },
-    { action: 'New user registered', details: 'John Doe joined the platform', time: '6 hours ago', icon: UserCheck },
-    { action: 'Clue approved', details: 'Clue #3 approved for Team Gamma', time: '8 hours ago', icon: Target }
-  ];
+  };
 
   return (
-    <ProtectedRoute requiredRole="ADMIN">
-      <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Award className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                  <p className="text-sm text-gray-600">Welcome back, {user?.name}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Link 
-                  href="/dashboard"
-                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
-                >
-                  Back to Dashboard
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">
-                      {isLoading ? '...' : stat.value}
-                    </p>
-                  </div>
-                  <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                    <stat.icon className={`h-6 w-6 ${stat.textColor}`} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Quick Actions */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {quickActions.map((action, index) => (
-                    <Link
-                      key={index}
-                      href={action.href}
-                      className="group relative overflow-hidden rounded-xl p-6 text-white hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-                      style={{ background: action.color }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold mb-2">{action.title}</h3>
-                          <p className="text-sm opacity-90">{action.description}</p>
-                        </div>
-                        <div className="ml-4">
-                          <action.icon className="h-8 w-8 opacity-80" />
-                        </div>
-                      </div>
-                      <ArrowRight className="absolute bottom-4 right-4 h-5 w-5 opacity-70 group-hover:translate-x-1 transition-transform duration-200" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              {/* Team Overview */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mt-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Teams Overview</h2>
-                  <Link 
-                    href="/admin/teams"
-                    className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center space-x-1"
-                  >
-                    <span>View All</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-                
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                  </div>
-                ) : teams.length > 0 ? (
-                  <div className="space-y-4">
-                    {teams.slice(0, 5).map((team) => (
-                      <div key={team.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <Users className="h-5 w-5 text-indigo-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-gray-900">{team.name}</h3>
-                            <p className="text-sm text-gray-600">{team.members.length} members</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-sm font-medium text-gray-900">Active</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600">No teams created yet</p>
-                    <Link 
-                      href="/admin/teams"
-                      className="text-indigo-600 hover:text-indigo-700 font-medium mt-2 inline-block"
-                    >
-                      Create your first team
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Recent Activity</h2>
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start space-x-3">
-                      <div className="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <activity.icon className="h-4 w-4 text-gray-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                        <p className="text-sm text-gray-600">{activity.details}</p>
-                        <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <Link 
-                  href="/admin/activity"
-                  className="block text-center text-indigo-600 hover:text-indigo-700 font-medium mt-4 pt-4 border-t border-gray-200"
-                >
-                  View All Activity
-                </Link>
-              </div>
-
-              {/* System Status */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mt-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">System Status</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Server Status</span>
-                    <span className="flex items-center space-x-2">
-                      <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-600">Online</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Database</span>
-                    <span className="flex items-center space-x-2">
-                      <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-600">Connected</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">API Status</span>
-                    <span className="flex items-center space-x-2">
-                      <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium text-green-600">Operational</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Welcome Message for New Admins */}
-          {teams.length === 0 && (
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-8 mt-8 border border-indigo-200">
-              <div className="text-center">
-                <Trophy className="h-16 w-16 text-indigo-600 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Admin Dashboard!</h3>
-                <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                  Get started by creating your first team and setting up treasure hunts. 
-                  Use the quick actions above to begin managing your teams and activities.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/admin/teams"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
-                  >
-                    <Users className="h-5 w-5" />
-                    <span>Create Your First Team</span>
-                  </Link>
-                  <Link
-                    href="/admin/treasure-hunts"
-                    className="border border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
-                  >
-                    <MapPin className="h-5 w-5" />
-                    <span>Set Up Treasure Hunts</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader 
+        pendingApprovals={mockStats.pendingApprovals}
+        onLogout={handleLogout}
+        userName={user?.name || user?.email || 'Admin'}
+      />
+      <AdminNavigation
+        activeView={activeView}
+        onViewChange={setActiveView}
+        pendingApprovals={mockStats.pendingApprovals}
+      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderActiveTab()}
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }

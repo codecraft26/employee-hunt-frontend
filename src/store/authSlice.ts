@@ -7,7 +7,21 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'USER' | 'ADMIN';
+  role: 'user' | 'admin';
+  employeeCode?: string;
+  gender?: string;
+  profileImage?: string;
+  department?: string;
+  hobbies?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  team?: {
+    id: string;
+    name: string;
+  } | null;
+  points?: number;
+  rank?: number;
+  activeChallenges?: number;
 }
 
 export interface AuthState {

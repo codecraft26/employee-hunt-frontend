@@ -6,7 +6,7 @@ import { useAppSelector } from '../hooks/redux';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'USER' | 'ADMIN';
+  requiredRole?: 'user' | 'admin';
   fallbackPath?: string;
 }
 
