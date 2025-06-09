@@ -3,7 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, BarChart3, Send, Clock, Users, Eye, Edit, Trash2, Calendar, RefreshCw } from 'lucide-react';
 import { Vote, VoteStatus, VoteType } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
-import CreatePollModal from '../models/CreatePollModal';
+import CreatePollModal from '../modals/CreatePollModal';
+import EditPollModal from '../modals/EditPollModal';
 import PollsFilter from '../polls/PollsFilter';
 
 interface PollsTabProps {
@@ -18,10 +19,13 @@ const PollsTab: React.FC<PollsTabProps> = ({
   const { getVotes, deleteVote, publishResults, loading, error } = useVotes();
   const [polls, setPolls] = useState<Vote[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPoll, setEditingPoll] = useState<Vote | null>(null);
   const [deletingPollId, setDeletingPollId] = useState<string | null>(null);
   const [activeStatusFilter, setActiveStatusFilter] = useState<VoteStatus | 'ALL'>('ALL');
   const [activeTypeFilter, setActiveTypeFilter] = useState<VoteType | 'ALL'>('ALL');
   const [refreshing, setRefreshing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPolls();
@@ -46,14 +50,34 @@ const PollsTab: React.FC<PollsTabProps> = ({
 
   const handleCreateSuccess = () => {
     fetchPolls();
+    setSuccessMessage('Poll created successfully!');
+    setTimeout(() => setSuccessMessage(null), 5000);
+  };
+
+  const handleEditPoll = (poll: Vote) => {
+    setEditingPoll(poll);
+    setShowEditModal(true);
+  };
+
+  const handleEditSuccess = () => {
+    fetchPolls();
+    setSuccessMessage('Poll updated successfully!');
+    setTimeout(() => setSuccessMessage(null), 5000);
   };
 
   const handleDeletePoll = async (pollId: string) => {
-    if (window.confirm('Are you sure you want to delete this poll? This action cannot be undone.')) {
+    const pollToDelete = polls.find(p => p.id === pollId);
+    const confirmMessage = `Are you sure you want to delete "${pollToDelete?.title}"?\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
       setDeletingPollId(pollId);
       try {
         await deleteVote(pollId);
         setPolls(polls.filter(poll => poll.id !== pollId));
+        setSuccessMessage(`Poll "${pollToDelete?.title}" has been deleted successfully.`);
+        
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccessMessage(null), 5000);
       } catch (err) {
         console.error('Failed to delete poll:', err);
       } finally {
@@ -65,6 +89,9 @@ const PollsTab: React.FC<PollsTabProps> = ({
   const handlePublishResults = async (pollId: string) => {
     try {
       await publishResults(pollId);
+      const poll = polls.find(p => p.id === pollId);
+      setSuccessMessage(`Results published for "${poll?.title}"`);
+      setTimeout(() => setSuccessMessage(null), 5000);
       fetchPolls();
     } catch (err) {
       console.error('Failed to publish results:', err);
@@ -169,6 +196,12 @@ const PollsTab: React.FC<PollsTabProps> = ({
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-700">{successMessage}</p>
           </div>
         )}
 
@@ -321,18 +354,13 @@ const PollsTab: React.FC<PollsTabProps> = ({
                     </button>
                     
                     <button 
+                      onClick={() => handleEditPoll(poll)}
                       className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-1"
                     >
                       <Edit className="h-4 w-4" />
                       <span>Edit</span>
                     </button>
 
-                    <button 
-                      className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-1"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>Preview</span>
-                    </button>
                   </div>
 
                   <div className="flex space-x-2">
@@ -377,6 +405,16 @@ const PollsTab: React.FC<PollsTabProps> = ({
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSuccess={handleCreateSuccess}
+      />
+
+      <EditPollModal 
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingPoll(null);
+        }}
+        onSuccess={handleEditSuccess}
+        poll={editingPoll}
       />
     </>
   );

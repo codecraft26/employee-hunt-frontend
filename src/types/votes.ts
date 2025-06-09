@@ -40,6 +40,9 @@ export interface Vote {
   options: VoteOption[];
   createdAt?: string;
   updatedAt?: string;
+  // User-specific fields
+  userHasVoted?: boolean;
+  userSelectedOptions?: string[];
 }
 
 export interface CreateVoteRequest {
@@ -50,6 +53,20 @@ export interface CreateVoteRequest {
   resultDisplayTime?: string;
   type: VoteType;
   options: {
+    name: string;
+    imageUrl?: string;
+  }[];
+}
+
+export interface UpdateVoteRequest {
+  title?: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  resultDisplayTime?: string;
+  type?: VoteType;
+  options?: {
+    id?: string; // Include id to update existing option
     name: string;
     imageUrl?: string;
   }[];
@@ -84,7 +101,7 @@ export interface VotesListResponse {
 
 export interface CastVoteRequest {
   voteId: string;
-  optionIds: string[]; // Array to support both single and multiple choice
+  optionIds: string[]; // Array of option IDs
 }
 
 export interface CastVoteResponse {

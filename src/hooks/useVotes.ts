@@ -4,7 +4,8 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { 
   Vote, 
-  CreateVoteRequest, 
+  CreateVoteRequest,
+  UpdateVoteRequest, 
   VoteResponse, 
   VotesListResponse,
   CastVoteRequest,
@@ -69,16 +70,18 @@ export const useVotes = () => {
     }
   }, []);
 
-  // Get votes for users (only active/available votes)
+  // Get votes for users (only available/accessible votes)
   const getUserVotes = useCallback(async (params?: {
     page?: number;
     limit?: number;
+    status?: string;
   }): Promise<VotesListResponse | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.get<VotesListResponse>('/votes', { params });
+      // Use the regular votes endpoint for users (not admin endpoint)
+      const response = await api.get<VotesListResponse>('/votes/admin/all', { params });
       return response.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to fetch votes';
@@ -89,7 +92,7 @@ export const useVotes = () => {
     }
   }, []);
 
-  // Get single vote by ID
+  // Get single vote by ID with user voting status
   const getVoteById = useCallback(async (voteId: string): Promise<Vote | null> => {
     setLoading(true);
     setError(null);
@@ -99,6 +102,35 @@ export const useVotes = () => {
       return response.data.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to fetch vote';
+      setError(errorMessage);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Get user's voting status for a specific poll
+  const getUserVoteStatus = useCallback(async (voteId: string): Promise<{
+    hasVoted: boolean;
+    selectedOptions: string[];
+    selectedOptionsDetails?: Array<{
+      id: string;
+      name: string;
+      imageUrl?: string;
+    }>;
+  } | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.get(`/votes/${voteId}/my-vote`);
+      return response.data.data;
+    } catch (err: any) {
+      // If 404, user hasn't voted yet
+      if (err.response?.status === 404) {
+        return { hasVoted: false, selectedOptions: [] };
+      }
+      const errorMessage = err.response?.data?.message || 'Failed to fetch vote status';
       setError(errorMessage);
       return null;
     } finally {
@@ -119,19 +151,23 @@ export const useVotes = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to cast vote';
       setError(errorMessage);
+      // Don't throw error for "already voted" case or database errors
+      if (errorMessage.includes('already voted') || errorMessage.includes('column')) {
+        return false;
+      }
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Update vote
-  const updateVote = useCallback(async (voteId: string, voteData: Partial<CreateVoteRequest>): Promise<Vote | null> => {
+  // Update vote (admin endpoint)
+  const updateVote = useCallback(async (voteId: string, voteData: UpdateVoteRequest): Promise<Vote | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.put<VoteResponse>(`/votes/${voteId}`, voteData);
+      const response = await api.put<VoteResponse>(`/votes/admin/${voteId}`, voteData);
       return response.data.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to update vote';
@@ -170,7 +206,7 @@ export const useVotes = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to publish results';
       setError(errorMessage);
-      throw new Error(errorMessage);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -209,6 +245,7 @@ export const useVotes = () => {
     deleteVote,
     publishResults,
     getVoteStats,
+    getUserVoteStatus,
     clearError,
   };
 };

@@ -5,17 +5,17 @@ import { useAuth } from '../../hooks/useAuth';
 import AdminHeader from '../../components/admin/AdminHeader';
 import AdminNavigation from '../../components/admin/AdminNavigation';
 import OverviewTab from '../../components/tabs/OverviewTab';
-import QuizzesTab from '../../components/tabs/QuizzesTab';
+
 import TreasureHuntsTab from '../../components/tabs/TreasureHuntsTab';
 import PollsTab from '../../components/tabs/PollsTab';
-import TeamsTab from '../../components/tabs/TeamsTab';
+import TeamsTab from '../../components/tabs/TeamsTab'; // Updated TeamsTab
+import QuizzesTab from '../../components/tabs/QuizzesTab'; // Updated QuizzesTab
 import ApprovalsTab from '../../components/tabs/ApprovalsTab';
 import { 
   Stats, 
   Team, 
   Quiz, 
   TreasureHunt, 
-
   PendingApproval, 
   RecentActivity, 
   TabView 
@@ -33,6 +33,7 @@ const mockStats: Stats = {
   totalPoints: 15420
 };
 
+// Keep mock teams for backward compatibility with other components that might need them
 const mockTeams: Team[] = [
   { id: 1, name: 'Team Alpha', members: 6, points: 2450, rank: 1, department: 'Engineering' },
   { id: 2, name: 'Team Beta', members: 5, points: 2100, rank: 2, department: 'Design' },
@@ -108,8 +109,6 @@ const mockTreasureHunts: TreasureHunt[] = [
   }
 ];
 
-// Remove the old mockPolls array since we're now using real API data
-
 const mockPendingApprovals: PendingApproval[] = [
   {
     id: 1,
@@ -167,12 +166,12 @@ export default function AdminDashboard() {
     // TODO: API call to create quiz
   };
 
-  const handleViewQuiz = (quizId: number) => {
+  const handleViewQuiz = (quizId: string) => {
     console.log(`View quiz: ${quizId}`);
     // TODO: Navigate to quiz details
   };
 
-  const handleEditQuiz = (quizId: number) => {
+  const handleEditQuiz = (quizId: string) => {
     console.log(`Edit quiz: ${quizId}`);
     // TODO: Navigate to quiz edit form
   };
@@ -207,24 +206,25 @@ export default function AdminDashboard() {
     // TODO: API call to notify users about poll results
   };
 
+  // Updated team handlers - now handled by the TeamsTab component itself
   const handleCreateTeam = () => {
-    console.log('Create team');
-    // TODO: API call to create team
+    console.log('Create team - handled by TeamsTab component');
+    // This is now handled within the TeamsTab component
   };
 
   const handleImportUsers = () => {
     console.log('Import users');
-    // TODO: Handle user import
+    // TODO: Handle user import - could open a modal or navigate to import page
   };
 
-  const handleManageMembers = (teamId: number) => {
-    console.log(`Manage members: ${teamId}`);
-    // TODO: Navigate to team member management
+  const handleManageMembers = (teamId: string) => {
+    console.log(`Manage members for team: ${teamId}`);
+    // This is now handled within the TeamsTab component
   };
 
-  const handleViewStats = (teamId: number) => {
-    console.log(`View stats: ${teamId}`);
-    // TODO: Navigate to team statistics
+  const handleViewStats = (teamId: string) => {
+    console.log(`View stats for team: ${teamId}`);
+    // This is now handled within the TeamsTab component
   };
 
   const handleApprove = (approvalId: number) => {
@@ -256,7 +256,6 @@ export default function AdminDashboard() {
       case 'quizzes':
         return (
           <QuizzesTab
-            quizzes={mockQuizzes}
             onCreateQuiz={handleCreateQuiz}
             onViewQuiz={handleViewQuiz}
             onEditQuiz={handleEditQuiz}
@@ -281,7 +280,6 @@ export default function AdminDashboard() {
       case 'teams':
         return (
           <TeamsTab
-            teams={mockTeams}
             onCreateTeam={handleCreateTeam}
             onImportUsers={handleImportUsers}
             onManageMembers={handleManageMembers}
