@@ -58,6 +58,24 @@ export interface Quiz {
   createdBy?: QuizUser;
 }
 
+export interface UpdateQuizRequest {
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  resultDisplayTime: string;
+  questionDistributionType: 'SEQUENTIAL' | 'RANDOM';
+  questionsPerParticipant: number;
+}
+
+export interface UpdateQuestionRequest {
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  points: number;
+  timeLimit: number;
+}
+
 export interface CreateQuizRequest {
   title: string;
   description: string;
@@ -205,13 +223,15 @@ export const useQuizzes = () => {
     }
   }, []);
 
-  // Update quiz (if API supports it)
-  const updateQuiz = useCallback(async (quizId: string, quizData: Partial<CreateQuizRequest>): Promise<Quiz | null> => {
+  // Update quiz (using the correct endpoint)
+  const updateQuiz = useCallback(async (quizId: string, quizData: UpdateQuizRequest): Promise<Quiz | null> => {
     setLoading(true);
     setError(null);
     
     try {
+      console.log('Updating quiz:', quizId, quizData); // Debug log
       const response = await api.put<QuizResponse>(`/quizzes/${quizId}`, quizData);
+      console.log('Quiz update response:', response.data); // Debug log
       
       if (response.data.success) {
         // Refresh quizzes list after update
@@ -221,7 +241,35 @@ export const useQuizzes = () => {
         throw new Error('Failed to update quiz');
       }
     } catch (err: any) {
+      console.error('Quiz update error:', err); // Debug log
       const errorMessage = err.response?.data?.message || 'Failed to update quiz';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Update a specific question in a quiz
+  const updateQuestion = useCallback(async (quizId: string, questionId: string, questionData: UpdateQuestionRequest): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Updating question:', quizId, questionId, questionData); // Debug log
+      const response = await api.put(`/quizzes/${quizId}/questions/${questionId}`, questionData);
+      console.log('Question update response:', response.data); // Debug log
+      
+      if (response.status === 200 || response.status === 201) {
+        // Refresh quizzes list after question update
+        await fetchQuizzes();
+        return true;
+      } else {
+        throw new Error('Failed to update question');
+      }
+    } catch (err: any) {
+      console.error('Question update error:', err); // Debug log
+      const errorMessage = err.response?.data?.message || 'Failed to update question';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -338,6 +386,7 @@ export const useQuizzes = () => {
     getQuizById,
     declareWinner,
     updateQuiz,
+    updateQuestion,
     deleteQuiz,
     publishResults,
     getQuizStats,

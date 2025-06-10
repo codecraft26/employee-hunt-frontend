@@ -5,6 +5,27 @@
   --foreground: #171717;
 }
 
+/* Force black text for form inputs */
+input, textarea, select {
+  color: #171717 !important;     /* Force black text */
+  background: #fff !important;   /* White background */
+  border: 1px solid #d1d5db;     /* Light gray border */
+}
+
+/* Focus states for better UX */
+input:focus, textarea:focus, select:focus {
+  color: #171717 !important;     /* Keep black text on focus */
+  background: #fff !important;   /* Keep white background on focus */
+  border-color: #6366f1 !important; /* Indigo border on focus */
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Placeholder text */
+input::placeholder, textarea::placeholder {
+  color: #9ca3af !important;     /* Gray placeholder text */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,15 +33,71 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Remove dark mode styles for inputs if you want consistent black text */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Keep inputs with black text even in dark mode */
+  input,
+  textarea,
+  select {
+    color: #171717 !important;     /* Force black text even in dark mode */
+    background: #fff !important;   /* Keep white background */
+    border-color: #d1d5db !important; /* Light border */
   }
+  
+  /* Or if you want proper dark mode for inputs, use this instead: */
+  /*
+  input,
+  textarea,
+  select {
+    color: #ffffff !important;     
+    background: #1f2937 !important;   
+    border-color: #374151 !important; 
+  }
+  */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Additional overrides for specific form elements that might be affected */
+.form-input,
+.form-textarea,
+.form-select {
+  color: #171717 !important;
+  background: #fff !important;
+}
+
+/* Override any Tailwind classes that might conflict */
+.text-white input,
+.bg-gray-900 input,
+.dark input {
+  color: #171717 !important;
+  background: #fff !important;
 }

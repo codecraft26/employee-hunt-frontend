@@ -15,9 +15,10 @@ import {
   CheckCircle,
   Play,
   X,
-  Trash2
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
-import { useQuizzes, Quiz, CreateQuizRequest } from '../../hooks/useQuizzes';
+import { useQuizzes, Quiz, CreateQuizRequest, UpdateQuizRequest, UpdateQuestionRequest } from '../../hooks/useQuizzes';
 
 interface QuizzesTabProps {
   onCreateQuiz?: () => void;
@@ -39,6 +40,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     getQuizById,
     declareWinner,
     updateQuiz,
+    updateQuestion,
     deleteQuiz,
     publishResults,
     getQuizStats,
@@ -48,9 +50,14 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
   } = useQuizzes();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
+  const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [createQuizData, setCreateQuizData] = useState<CreateQuizRequest>({
     title: '',
     description: '',
@@ -60,6 +67,22 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     questionDistributionType: 'SEQUENTIAL',
     questionsPerParticipant: 1,
     questions: []
+  });
+  const [editQuizData, setEditQuizData] = useState<UpdateQuizRequest>({
+    title: '',
+    description: '',
+    startTime: '',
+    endTime: '',
+    resultDisplayTime: '',
+    questionDistributionType: 'SEQUENTIAL',
+    questionsPerParticipant: 1
+  });
+  const [editQuestionData, setEditQuestionData] = useState<UpdateQuestionRequest>({
+    question: '',
+    options: ['', '', '', ''],
+    correctAnswer: 0,
+    points: 10,
+    timeLimit: 30
   });
   const [currentQuestion, setCurrentQuestion] = useState({
     question: '',
@@ -73,6 +96,22 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
   useEffect(() => {
     fetchQuizzes();
   }, [fetchQuizzes]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setShowDropdown(null);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showDropdown]);
 
   const handleCreateQuiz = () => {
     setShowCreateModal(true);
@@ -170,11 +209,126 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
   const handleViewQuiz = (quiz: Quiz) => {
     setSelectedQuiz(quiz);
     setShowDetailsModal(true);
+    setShowDropdown(null);
     externalOnViewQuiz?.(quiz.id);
   };
 
   const handleEditQuiz = (quizId: string) => {
+    const quiz = quizzes.find(q => q.id === quizId);
+    if (quiz) {
+      setSelectedQuiz(quiz);
+      setEditQuizData({
+        title: quiz.title,
+        description: quiz.description,
+        startTime: quiz.startTime.slice(0, 16), // Convert to datetime-local format
+        endTime: quiz.endTime.slice(0, 16),
+        resultDisplayTime: quiz.resultDisplayTime.slice(0, 16),
+        questionDistributionType: quiz.questionDistributionType,
+        questionsPerParticipant: quiz.questionsPerParticipant
+      });
+      setShowEditModal(true);
+    }
+    setShowDropdown(null);
     externalOnEditQuiz?.(quizId);
+  };
+
+  const handleDeleteQuiz = (quiz: Quiz) => {
+    setQuizToDelete(quiz);
+    setShowDeleteModal(true);
+    setShowDropdown(null);
+  };
+
+  const confirmDeleteQuiz = async () => {
+    if (!quizToDelete) return;
+
+    setIsSubmitting(true);
+    try {
+      await deleteQuiz(quizToDelete.id);
+      setShowDeleteModal(false);
+      setQuizToDelete(null);
+      alert('Quiz deleted successfully!');
+    } catch (err: any) {
+      console.error('Failed to delete quiz:', err);
+      alert(`Failed to delete quiz: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateQuiz = async () => {
+    if (!selectedQuiz || !editQuizData.title.trim() || !editQuizData.description.trim()) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    // Convert datetime-local to ISO string format
+    const quizPayload = {
+      ...editQuizData,
+      startTime: new Date(editQuizData.startTime).toISOString(),
+      endTime: new Date(editQuizData.endTime).toISOString(),
+      resultDisplayTime: new Date(editQuizData.resultDisplayTime).toISOString(),
+    };
+
+    setIsSubmitting(true);
+    try {
+      await updateQuiz(selectedQuiz.id, quizPayload);
+      setShowEditModal(false);
+      setSelectedQuiz(null);
+      alert('Quiz updated successfully!');
+    } catch (err: any) {
+      console.error('Failed to update quiz:', err);
+      alert(`Failed to update quiz: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditQuestion = (question: any) => {
+    setEditingQuestionId(question.id);
+    setEditQuestionData({
+      question: question.question,
+      options: [...question.options],
+      correctAnswer: question.correctAnswer,
+      points: question.points,
+      timeLimit: question.timeLimit
+    });
+  };
+
+  const handleUpdateQuestion = async () => {
+    if (!selectedQuiz || !editingQuestionId) return;
+
+    if (!editQuestionData.question.trim() || editQuestionData.options.some(opt => !opt.trim())) {
+      alert('Please fill in the question and all options.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await updateQuestion(selectedQuiz.id, editingQuestionId, editQuestionData);
+      setEditingQuestionId(null);
+      alert('Question updated successfully!');
+      // Refresh the selected quiz data
+      const updatedQuiz = quizzes.find(q => q.id === selectedQuiz.id);
+      if (updatedQuiz) {
+        setSelectedQuiz(updatedQuiz);
+      }
+    } catch (err: any) {
+      console.error('Failed to update question:', err);
+      alert(`Failed to update question: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancelEditQuestion = () => {
+    setEditingQuestionId(null);
+    setEditQuestionData({
+      question: '',
+      options: ['', '', '', ''],
+      correctAnswer: 0,
+      points: 10,
+      timeLimit: 30
+    });
   };
 
   const handleDeclareWinner = async (quizId: string) => {
@@ -227,6 +381,17 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     }
   };
 
+  const toggleDropdown = (quizId: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setShowDropdown(prevState => prevState === quizId ? null : quizId);
+  };
+
+  const canDeleteQuiz = (quiz: Quiz) => {
+    // Allow deletion for DRAFT and UPCOMING quizzes
+    return quiz.status === 'DRAFT' || quiz.status === 'UPCOMING';
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -264,6 +429,186 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
             >
               Try again
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && quizToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Quiz</h3>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Are you sure you want to delete this quiz?</p>
+                  <p className="text-sm text-gray-500">This action cannot be undone.</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="font-medium text-gray-900">{quizToDelete.title}</p>
+                <p className="text-sm text-gray-600">{quizToDelete.description}</p>
+                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                  <span>{quizToDelete.totalQuestions} questions</span>
+                  <span>•</span>
+                  <span>{quizToDelete.totalParticipants} participants</span>
+                  <span>•</span>
+                  <span className={`px-2 py-1 rounded-full ${getQuizStatusColor(quizToDelete.status)}`}>
+                    {quizToDelete.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteQuiz}
+                disabled={isSubmitting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                <span>{isSubmitting ? 'Deleting...' : 'Delete Quiz'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Quiz Modal */}
+      {showEditModal && selectedQuiz && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Edit Quiz</h3>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Title *</label>
+                  <input
+                    type="text"
+                    value={editQuizData.title}
+                    onChange={(e) => setEditQuizData(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter quiz title"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Questions Per Participant *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editQuizData.questionsPerParticipant}
+                    onChange={(e) => setEditQuizData(prev => ({ ...prev, questionsPerParticipant: parseInt(e.target.value) || 1 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+                <textarea
+                  value={editQuizData.description}
+                  onChange={(e) => setEditQuizData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Enter quiz description"
+                  rows={3}
+                />
+              </div>
+
+              {/* Schedule */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
+                  <input
+                    type="datetime-local"
+                    value={editQuizData.startTime}
+                    onChange={(e) => setEditQuizData(prev => ({ ...prev, startTime: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time *</label>
+                  <input
+                    type="datetime-local"
+                    value={editQuizData.endTime}
+                    onChange={(e) => setEditQuizData(prev => ({ ...prev, endTime: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Results Display Time</label>
+                  <input
+                    type="datetime-local"
+                    value={editQuizData.resultDisplayTime}
+                    onChange={(e) => setEditQuizData(prev => ({ ...prev, resultDisplayTime: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Question Distribution</label>
+                <select
+                  value={editQuizData.questionDistributionType}
+                  onChange={(e) => setEditQuizData(prev => ({ ...prev, questionDistributionType: e.target.value as 'SEQUENTIAL' | 'RANDOM' }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="SEQUENTIAL">Sequential</option>
+                  <option value="RANDOM">Random</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
+              <div className="text-sm text-gray-500">
+                * Required fields
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateQuiz}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                  <span>{isSubmitting ? 'Updating...' : 'Update Quiz'}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -561,6 +906,55 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                       )}
                     </div>
                   </div>
+                  <div className="relative dropdown-container">
+                    <button
+                      onClick={(e) => toggleDropdown(quiz.id, e)}
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                    {showDropdown === quiz.id && (
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border z-20">
+                        <div className="py-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewQuiz(quiz);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span>View Details</span>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditQuiz(quiz.id);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span>Edit Quiz</span>
+                          </button>
+                          {canDeleteQuiz(quiz) && (
+                            <>
+                              <hr className="my-1" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteQuiz(quiz);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                <span>Delete Quiz</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -617,7 +1011,10 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                   <div className="flex items-center space-x-2">
                     {quiz.status === 'COMPLETED' && !quiz.winningTeam && (
                       <button 
-                        onClick={() => handleDeclareWinner(quiz.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeclareWinner(quiz.id);
+                        }}
                         disabled={isSubmitting}
                         className="text-yellow-600 hover:text-yellow-700 font-medium text-sm flex items-center space-x-1 disabled:opacity-50"
                       >
@@ -627,7 +1024,10 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                     )}
                     {quiz.status === 'COMPLETED' && !quiz.isResultPublished && (
                       <button 
-                        onClick={() => handlePublishResults(quiz.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePublishResults(quiz.id);
+                        }}
                         disabled={isSubmitting}
                         className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1 disabled:opacity-50"
                       >
@@ -636,12 +1036,28 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                       </button>
                     )}
                     <button 
-                      onClick={() => handleEditQuiz(quiz.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditQuiz(quiz.id);
+                      }}
                       className="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center space-x-1"
                     >
                       <Edit className="h-4 w-4" />
                       <span>Edit</span>
                     </button>
+                    {canDeleteQuiz(quiz) && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteQuiz(quiz);
+                        }}
+                        className="text-red-600 hover:text-red-700 font-medium text-sm flex items-center space-x-1"
+                        title="Delete Quiz"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -765,31 +1181,125 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                 <div className="space-y-4 max-h-60 overflow-y-auto">
                   {selectedQuiz.questions.map((question, index) => (
                     <div key={question.id || index} className="p-4 border border-gray-200 rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <h5 className="font-medium text-gray-900">Q{index + 1}. {question.question}</h5>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <span>{question.points} pts</span>
-                          <span>•</span>
-                          <span>{question.timeLimit}s</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {question.options.map((option, optionIndex) => (
-                          <div 
-                            key={optionIndex}
-                            className={`p-2 text-sm rounded ${
-                              optionIndex === question.correctAnswer 
-                                ? 'bg-green-100 text-green-800 font-medium' 
-                                : 'bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            {String.fromCharCode(65 + optionIndex)}. {option}
-                            {optionIndex === question.correctAnswer && (
-                              <span className="ml-2 text-green-600">✓</span>
-                            )}
+                      {editingQuestionId === question.id ? (
+                        /* Edit Question Form */
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Question</label>
+                            <input
+                              type="text"
+                              value={editQuestionData.question}
+                              onChange={(e) => setEditQuestionData(prev => ({ ...prev, question: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
                           </div>
-                        ))}
-                      </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Options</label>
+                            <div className="space-y-2">
+                              {editQuestionData.options.map((option, optionIndex) => (
+                                <div key={optionIndex} className="flex items-center space-x-2">
+                                  <input
+                                    type="radio"
+                                    name={`editCorrectAnswer-${question.id}`}
+                                    checked={editQuestionData.correctAnswer === optionIndex}
+                                    onChange={() => setEditQuestionData(prev => ({ ...prev, correctAnswer: optionIndex }))}
+                                    className="text-indigo-600"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => {
+                                      const newOptions = [...editQuestionData.options];
+                                      newOptions[optionIndex] = e.target.value;
+                                      setEditQuestionData(prev => ({ ...prev, options: newOptions }));
+                                    }}
+                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={editQuestionData.points}
+                                onChange={(e) => setEditQuestionData(prev => ({ ...prev, points: parseInt(e.target.value) || 10 }))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Time Limit (seconds)</label>
+                              <input
+                                type="number"
+                                min="10"
+                                value={editQuestionData.timeLimit}
+                                onChange={(e) => setEditQuestionData(prev => ({ ...prev, timeLimit: parseInt(e.target.value) || 30 }))}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={handleCancelEditQuestion}
+                              className="px-3 py-1 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleUpdateQuestion}
+                              disabled={isSubmitting}
+                              className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              {isSubmitting ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Display Question */
+                        <div>
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-medium text-gray-900">Q{index + 1}. {question.question}</h5>
+                            <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <span>{question.points} pts</span>
+                                <span>•</span>
+                                <span>{question.timeLimit}s</span>
+                              </div>
+                              <button
+                                onClick={() => handleEditQuestion(question)}
+                                className="text-indigo-600 hover:text-indigo-700 p-1"
+                                title="Edit question"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {question.options.map((option, optionIndex) => (
+                              <div 
+                                key={optionIndex}
+                                className={`p-2 text-sm rounded ${
+                                  optionIndex === question.correctAnswer 
+                                    ? 'bg-green-100 text-green-800 font-medium' 
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                {String.fromCharCode(65 + optionIndex)}. {option}
+                                {optionIndex === question.correctAnswer && (
+                                  <span className="ml-2 text-green-600">✓</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
