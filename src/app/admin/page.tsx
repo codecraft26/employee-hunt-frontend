@@ -2,15 +2,16 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import AdminHeader from '../../components/admin/AdminHeader';
 import AdminNavigation from '../../components/admin/AdminNavigation';
 import OverviewTab from '../../components/tabs/OverviewTab';
-
 import TreasureHuntsTab from '../../components/tabs/TreasureHuntsTab';
 import PollsTab from '../../components/tabs/PollsTab';
-import TeamsTab from '../../components/tabs/TeamsTab'; // Updated TeamsTab
-import QuizzesTab from '../../components/tabs/QuizzesTab'; // Updated QuizzesTab
+import TeamsTab from '../../components/tabs/TeamsTab';
+import QuizzesTab from '../../components/tabs/QuizzesTab';
 import ApprovalsTab from '../../components/tabs/ApprovalsTab';
+import WinnerSelectionModal from '../../components/modals/WinnerSelectionModal';
 import { 
   Stats, 
   Team, 
@@ -81,34 +82,6 @@ const mockQuizzes: Quiz[] = [
   }
 ];
 
-const mockTreasureHunts: TreasureHunt[] = [
-  {
-    id: 1,
-    title: 'Office Explorer Challenge',
-    description: 'Find all the hidden clues around the office',
-    teams: ['Team Alpha', 'Team Beta'],
-    totalClues: 8,
-    status: 'active',
-    startDate: '2024-01-15',
-    endDate: '2024-01-20',
-    progress: {
-      'Team Alpha': 6,
-      'Team Beta': 4
-    }
-  },
-  {
-    id: 2,
-    title: 'City Adventure Hunt',
-    description: 'Explore the city and complete challenges',
-    teams: ['Team Gamma', 'Team Delta', 'Team Omega'],
-    totalClues: 12,
-    status: 'planning',
-    startDate: '2024-01-25',
-    endDate: '2024-01-30',
-    progress: {}
-  }
-];
-
 const mockPendingApprovals: PendingApproval[] = [
   {
     id: 1,
@@ -153,14 +126,44 @@ const mockRecentActivities: RecentActivity[] = [
 
 export default function AdminDashboard() {
   const [activeView, setActiveView] = useState<TabView>('overview');
+  const [winnerSelectionModal, setWinnerSelectionModal] = useState<{
+    isOpen: boolean;
+    huntId: string | null;
+  }>({
+    isOpen: false,
+    huntId: null
+  });
+
   const { user, logout: handleLogout } = useAuth();
+  const { resetCurrentTreasureHunt } = useTreasureHunts();
 
   // Handler functions for API calls - These will be implemented when connecting to backend
   const handleQuickAction = (type: string) => {
     console.log(`Quick action: ${type}`);
-    // TODO: Navigate to create modal or form
+    
+    // Navigate to appropriate tab based on quick action
+    switch (type) {
+      case 'create-quiz':
+        setActiveView('quizzes');
+        break;
+      case 'create-hunt':
+        setActiveView('treasure-hunts');
+        break;
+      case 'create-poll':
+        setActiveView('polls');
+        break;
+      case 'create-team':
+        setActiveView('teams');
+        break;
+      case 'view-approvals':
+        setActiveView('approvals');
+        break;
+      default:
+        console.log(`Unhandled quick action: ${type}`);
+    }
   };
 
+  // Quiz handlers
   const handleCreateQuiz = () => {
     console.log('Create quiz');
     // TODO: API call to create quiz
@@ -176,21 +179,35 @@ export default function AdminDashboard() {
     // TODO: Navigate to quiz edit form
   };
 
-  const handleCreateHunt = () => {
-    console.log('Create treasure hunt');
-    // TODO: API call to create treasure hunt
-  };
-
-  const handleViewClues = (huntId: number) => {
+  // Treasure hunt handlers - Updated to use the new treasure hunt system
+  const handleViewClues = (huntId: string) => {
     console.log(`View clues: ${huntId}`);
-    // TODO: Navigate to clues management
+    // TODO: Navigate to clues management page
+    // Example: router.push(`/admin/treasure-hunts/${huntId}/clues`);
   };
 
-  const handleDeclareWinner = (huntId: number) => {
+  const handleDeclareWinner = (huntId: string) => {
     console.log(`Declare winner: ${huntId}`);
-    // TODO: API call to declare winner
+    setWinnerSelectionModal({
+      isOpen: true,
+      huntId: huntId
+    });
   };
 
+  const handleWinnerSelectionClose = () => {
+    setWinnerSelectionModal({
+      isOpen: false,
+      huntId: null
+    });
+    resetCurrentTreasureHunt();
+  };
+
+  const handleWinnerSelectionSuccess = () => {
+    console.log('Winner declared successfully');
+    // Optionally show a success message or refresh data
+  };
+
+  // Poll handlers
   const handleCreatePoll = () => {
     console.log('Create poll - handled by PollsTab component');
     // This is now handled within the PollsTab component
@@ -206,7 +223,7 @@ export default function AdminDashboard() {
     // TODO: API call to notify users about poll results
   };
 
-  // Updated team handlers - now handled by the TeamsTab component itself
+  // Team handlers - now handled by the TeamsTab component itself
   const handleCreateTeam = () => {
     console.log('Create team - handled by TeamsTab component');
     // This is now handled within the TeamsTab component
@@ -227,6 +244,7 @@ export default function AdminDashboard() {
     // This is now handled within the TeamsTab component
   };
 
+  // Approval handlers
   const handleApprove = (approvalId: number) => {
     console.log(`Approve: ${approvalId}`);
     // TODO: API call to approve
@@ -264,8 +282,6 @@ export default function AdminDashboard() {
       case 'treasure-hunts':
         return (
           <TreasureHuntsTab
-            treasureHunts={mockTreasureHunts}
-            onCreateHunt={handleCreateHunt}
             onViewClues={handleViewClues}
             onDeclareWinner={handleDeclareWinner}
           />
@@ -296,12 +312,17 @@ export default function AdminDashboard() {
           />
         );
       default:
-        return null;
+        return (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Tab Not Found</h3>
+            <p className="text-gray-500">The requested tab does not exist.</p>
+          </div>
+        );
     }
   };
 
   return (
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <AdminHeader 
         pendingApprovals={mockStats.pendingApprovals}
         onLogout={handleLogout}
@@ -312,9 +333,17 @@ export default function AdminDashboard() {
         onViewChange={setActiveView}
         pendingApprovals={mockStats.pendingApprovals}
       />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderActiveTab()}
       </div>
+
+      {/* Winner Selection Modal */}
+      <WinnerSelectionModal
+        isOpen={winnerSelectionModal.isOpen}
+        huntId={winnerSelectionModal.huntId}
+        onClose={handleWinnerSelectionClose}
+        onSuccess={handleWinnerSelectionSuccess}
+      />
     </div>
   );
 }

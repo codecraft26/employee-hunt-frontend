@@ -1,36 +1,94 @@
 // components/tabs/TreasureHuntsTab.tsx
-import React from 'react';
-import { Plus, Eye, Trophy } from 'lucide-react';
-import { TreasureHunt } from '../../types/admin';
+import React, { useState, useEffect } from 'react';
+import { Plus, Eye, Trophy, Calendar, Users, Clock, AlertCircle } from 'lucide-react';
+import { useTreasureHunts } from '../../hooks/useTreasureHunts';
+import CreateTreasureHuntModal from '../modals/CreateTreasureHuntModal';
 
 interface TreasureHuntsTabProps {
-  treasureHunts: TreasureHunt[];
-  onCreateHunt: () => void;
-  onViewClues: (huntId: number) => void;
-  onDeclareWinner: (huntId: number) => void;
+  onViewClues: (huntId: string) => void;
+  onDeclareWinner: (huntId: string) => void;
 }
 
 const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({ 
-  treasureHunts, 
-  onCreateHunt, 
   onViewClues, 
   onDeclareWinner 
 }) => {
+  const { 
+    treasureHunts, 
+    loading, 
+    error, 
+    fetchTreasureHunts,
+    getHuntStats,
+    clearError 
+  } = useTreasureHunts();
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Fetch treasure hunts on component mount
+  useEffect(() => {
+    fetchTreasureHunts();
+  }, [fetchTreasureHunts]);
+
+  // Clear success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'planning': return 'bg-orange-100 text-orange-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'ACTIVE': return 'bg-green-100 text-green-800';
+      case 'UPCOMING': return 'bg-orange-100 text-orange-800';
+      case 'COMPLETED': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleCreateSuccess = (treasureHunt: any) => {
+    setSuccessMessage(`Treasure hunt "${treasureHunt.title}" created successfully!`);
+    fetchTreasureHunts(); // Refresh the list
+  };
+
+  const handleDeclareWinner = (huntId: string) => {
+    const hunt = treasureHunts.find(h => h.id === huntId);
+    if (hunt && hunt.status === 'ACTIVE') {
+      onDeclareWinner(huntId);
+    }
+  };
+
+  if (loading && treasureHunts.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+          <p className="text-gray-500 mt-4">Loading treasure hunts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Treasure Hunt Management</h2>
         <button 
-          onClick={onCreateHunt}
+          onClick={() => setIsCreateModalOpen(true)}
           className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
         >
           <Plus className="h-4 w-4" />
@@ -38,85 +96,195 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {treasureHunts.map((hunt) => (
-          <div key={hunt.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{hunt.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{hunt.description}</p>
-                  <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(hunt.status)}`}>
-                    {hunt.status}
-                  </span>
-                </div>
-              </div>
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-3">
+          <div className="flex-shrink-0">
+            <Trophy className="h-5 w-5 text-green-500" />
+          </div>
+          <div>
+            <p className="text-green-800 font-medium">Success!</p>
+            <p className="text-green-700 text-sm">{successMessage}</p>
+          </div>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="ml-auto flex-shrink-0 text-green-400 hover:text-green-600"
+          >
+            <span className="sr-only">Close</span>
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-600">Total Clues</p>
-                    <p className="font-medium">{hunt.totalClues}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Teams</p>
-                    <p className="font-medium">{hunt.teams.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Start Date</p>
-                    <p className="font-medium">{hunt.startDate}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">End Date</p>
-                    <p className="font-medium">{hunt.endDate}</p>
-                  </div>
-                </div>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+          <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-red-800">Error</h3>
+            <p className="text-sm text-red-700 mt-1">{error}</p>
+          </div>
+          <button
+            onClick={clearError}
+            className="flex-shrink-0 text-red-400 hover:text-red-600"
+          >
+            <span className="sr-only">Close</span>
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
 
-                {Object.keys(hunt.progress).length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Team Progress</p>
-                    <div className="space-y-2">
-                      {Object.entries(hunt.progress).map(([team, progress]) => (
-                        <div key={team} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{team}</span>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-green-500 h-2 rounded-full"
-                                style={{ width: `${(progress / hunt.totalClues) * 100}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-medium">{progress}/{hunt.totalClues}</span>
-                          </div>
-                        </div>
-                      ))}
+      {/* Treasure Hunts Grid */}
+      {treasureHunts.length === 0 ? (
+        <div className="text-center py-12">
+          <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No treasure hunts yet</h3>
+          <p className="text-gray-500 mb-6">Create your first treasure hunt to get started!</p>
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Create Your First Hunt
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {treasureHunts.map((hunt) => {
+            const stats = getHuntStats(hunt.id);
+            const safeAssignedTeams = hunt.assignedTeams || [];
+            
+            return (
+              <div key={hunt.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{hunt.title}</h3>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{hunt.description}</p>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(hunt.status)}`}>
+                          {hunt.status}
+                        </span>
+                        {hunt.winningTeam && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                            <Trophy className="h-3 w-3 mr-1" />
+                            Winner: {hunt.winningTeam.name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
 
-            <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between">
-              <button 
-                onClick={() => onViewClues(hunt.id)}
-                className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
-              >
-                <Eye className="h-4 w-4" />
-                <span>View Clues</span>
-              </button>
-              {hunt.status === 'active' && (
-                <button 
-                  onClick={() => onDeclareWinner(hunt.id)}
-                  className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
-                >
-                  <Trophy className="h-4 w-4" />
-                  <span>Declare Winner</span>
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600 flex items-center">
+                          <Trophy className="h-4 w-4 mr-1" />
+                          Total Clues
+                        </p>
+                        <p className="font-medium">{stats?.totalClues || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 flex items-center">
+                          <Users className="h-4 w-4 mr-1" />
+                          Teams
+                        </p>
+                        <p className="font-medium">{stats?.totalTeams || safeAssignedTeams.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Start Date
+                        </p>
+                        <p className="font-medium text-xs">{formatDate(hunt.startTime)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          End Date
+                        </p>
+                        <p className="font-medium text-xs">{formatDate(hunt.endTime)}</p>
+                      </div>
+                    </div>
+
+                    {/* Progress Overview */}
+                    {stats && stats.totalClues > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Progress Overview</p>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="bg-green-50 p-2 rounded">
+                            <p className="text-green-600 font-medium">{stats.completedClues}</p>
+                            <p className="text-green-600">Completed</p>
+                          </div>
+                          <div className="bg-yellow-50 p-2 rounded">
+                            <p className="text-yellow-600 font-medium">{stats.pendingClues}</p>
+                            <p className="text-yellow-600">Pending</p>
+                          </div>
+                          <div className="bg-red-50 p-2 rounded">
+                            <p className="text-red-600 font-medium">{stats.rejectedClues}</p>
+                            <p className="text-red-600">Rejected</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Team List */}
+                    {safeAssignedTeams.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700 mb-2">Assigned Teams</p>
+                        <div className="flex flex-wrap gap-1">
+                          {safeAssignedTeams.slice(0, 3).map((team) => (
+                            <span 
+                              key={team.id}
+                              className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full"
+                            >
+                              {team.name}
+                            </span>
+                          ))}
+                          {safeAssignedTeams.length > 3 && (
+                            <span className="inline-flex px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
+                              +{safeAssignedTeams.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between">
+                  <button 
+                    onClick={() => onViewClues(hunt.id)}
+                    className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span>View Clues</span>
+                  </button>
+                  {hunt.status === 'ACTIVE' && !hunt.winningTeam && (
+                    <button 
+                      onClick={() => handleDeclareWinner(hunt.id)}
+                      className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
+                    >
+                      <Trophy className="h-4 w-4" />
+                      <span>Declare Winner</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Create Treasure Hunt Modal */}
+      <CreateTreasureHuntModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };
