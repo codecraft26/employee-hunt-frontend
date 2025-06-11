@@ -16,7 +16,11 @@ import {
   ImageIcon,
   Send,
   RefreshCw,
-  Flag
+  Flag,
+  Lock,
+  Unlock,
+  Eye,
+  Calendar
 } from 'lucide-react';
 
 export default function UserTreasureHuntTab() {
@@ -39,6 +43,9 @@ export default function UserTreasureHuntTab() {
     getHuntStats,
     canSubmit,
     getCurrentStageStatus,
+    getStageSubmission,
+    isStageUnlocked,
+    getAllStagesWithStatus,
     getTimeRemaining,
   } = useTreasureHunt();
 
@@ -46,6 +53,13 @@ export default function UserTreasureHuntTab() {
 
   const [submissionUrl, setSubmissionUrl] = useState('');
   const [initialized, setInitialized] = useState(false);
+  const [selectedSubmissionModal, setSelectedSubmissionModal] = useState<{
+    isOpen: boolean;
+    submission: any;
+  }>({
+    isOpen: false,
+    submission: null
+  });
 
   // Initialize component and fetch team data
   useEffect(() => {
@@ -174,10 +188,15 @@ export default function UserTreasureHuntTab() {
   // Get status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'IN_PROGRESS': return 'bg-green-100 text-green-800';
-      case 'UPCOMING': return 'bg-blue-100 text-blue-800';
-      case 'COMPLETED': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'IN_PROGRESS': 
+      case 'ACTIVE': 
+        return 'bg-green-100 text-green-800';
+      case 'UPCOMING': 
+        return 'bg-blue-100 text-blue-800';
+      case 'COMPLETED': 
+        return 'bg-gray-100 text-gray-800';
+      default: 
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -210,9 +229,20 @@ export default function UserTreasureHuntTab() {
     }
   };
 
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   const huntStats = getHuntStats();
   const currentStageStatus = getCurrentStageStatus();
   const submissionAllowed = canSubmit();
+  const allStages = getAllStagesWithStatus();
 
   // Show loading state while initializing
   if (!initialized || (loading && assignedHunts.length === 0)) {
@@ -308,7 +338,14 @@ export default function UserTreasureHuntTab() {
                 <div className="flex items-center gap-4 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {hunt.status === 'IN_PROGRESS' ? getTimeRemaining(hunt.endTime) : new Date(hunt.startTime).toLocaleDateString()}
+                    {hunt.status === 'IN_PROGRESS' || hunt.status === 'ACTIVE' 
+                      ? getTimeRemaining(hunt.endTime) 
+                      : formatDate(hunt.startTime)
+                    }
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {formatDate(hunt.startTime)}
                   </span>
                 </div>
               </div>
@@ -329,8 +366,9 @@ export default function UserTreasureHuntTab() {
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedHunt.status)}`}>
                 {selectedHunt.status}
               </span>
-              {selectedHunt.status === 'IN_PROGRESS' && (
-                <span className="text-sm text-gray-500">
+              {(selectedHunt.status === 'IN_PROGRESS' || selectedHunt.status === 'ACTIVE') && (
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
                   {getTimeRemaining(selectedHunt.endTime)}
                 </span>
               )}
@@ -406,9 +444,30 @@ export default function UserTreasureHuntTab() {
                                 Submitted: <a href={currentStageStatus.imageUrl} target="_blank" rel="noopener noreferrer" className="underline">View Image</a>
                               </div>
                             )}
+                            {currentStageStatus.adminFeedback && (
+                              <div className="bg-white rounded-md p-3 border border-yellow-200 mt-2">
+                                <p className="text-sm font-medium text-yellow-800 mb-1">Admin Feedback:</p>
+                                <p className="text-sm text-yellow-700">{currentStageStatus.adminFeedback}</p>
+                              </div>
+                            )}
                           </div>
-                        ) : submissionAllowed ? (
-                          /* Submission Form */
+                        ) : currentStageStatus?.status === 'REJECTED' ? (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-2 text-red-800 mb-2">
+                              <XCircle className="h-5 w-5" />
+                              <span className="font-medium">Submission Rejected</span>
+                            </div>
+                            {currentStageStatus.adminFeedback && (
+                              <div className="bg-white rounded-md p-3 border border-red-200 mt-2">
+                                <p className="text-sm font-medium text-red-800 mb-1">Admin Feedback:</p>
+                                <p className="text-sm text-red-700">{currentStageStatus.adminFeedback}</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+
+                        {/* Submission Form */}
+                        {submissionAllowed && (
                           <div className="space-y-4">
                             <div>
                               <label className="block text-sm font-medium text-indigo-900 mb-2">
@@ -449,7 +508,9 @@ export default function UserTreasureHuntTab() {
                               </div>
                             </div>
                           </div>
-                        ) : (
+                        )}
+
+                        {!submissionAllowed && !currentStageStatus && (
                           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                             <p className="text-gray-600 text-sm">
                               Please wait for your previous submission to be reviewed before submitting again.
@@ -481,51 +542,130 @@ export default function UserTreasureHuntTab() {
                 </div>
               )}
 
+              {/* All Stages Overview */}
+              {allStages.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Trophy className="h-5 w-5" />
+                    All Stages Overview
+                  </h4>
+                  <div className="space-y-3">
+                    {allStages.map((stage) => {
+                      const submission = stage.submission;
+                      
+                      return (
+                        <div
+                          key={stage.stageNumber}
+                          className={`border rounded-lg p-4 transition-all ${
+                            stage.isCurrent
+                              ? 'border-indigo-300 bg-indigo-50'
+                              : stage.isUnlocked
+                              ? 'border-gray-300 bg-white'
+                              : 'border-gray-200 bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`rounded-full h-8 w-8 flex items-center justify-center text-sm font-bold ${
+                                stage.isCurrent
+                                  ? 'bg-indigo-600 text-white'
+                                  : stage.isUnlocked
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-gray-200 text-gray-500'
+                              }`}>
+                                {stage.isUnlocked ? (
+                                  submission?.status === 'APPROVED' ? (
+                                    <CheckCircle className="h-4 w-4" />
+                                  ) : (
+                                    stage.stageNumber
+                                  )
+                                ) : (
+                                  <Lock className="h-4 w-4" />
+                                )}
+                              </div>
+                              <div>
+                                <h5 className="font-medium text-gray-900">
+                                  Stage {stage.stageNumber}
+                                  {stage.isCurrent && <span className="text-indigo-600 ml-2">(Current)</span>}
+                                </h5>
+                                {stage.description && (
+                                  <p className="text-sm text-gray-600">{stage.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              {submission && getSubmissionStatusBadge(submission.status)}
+                              {submission && (
+                                <button
+                                  onClick={() => setSelectedSubmissionModal({ 
+                                    isOpen: true, 
+                                    submission 
+                                  })}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              )}
+                              {!stage.isUnlocked && (
+                                <Lock className="h-4 w-4 text-gray-400" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Submission History */}
               {progress.submissions.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                     <Clock className="h-5 w-5" />
-                    Submission History
+                    Recent Submissions
                   </h4>
                   <div className="space-y-3">
-                    {progress.submissions.map((submission, index) => (
-                      <div key={submission.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-gray-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold">
-                              {index + 1}
+                    {progress.submissions
+                      .slice()
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .slice(0, 5)
+                      .map((submission) => (
+                        <div key={submission.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gray-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold">
+                                {submission.clue.stageNumber}
+                              </div>
+                              <span className="font-medium text-gray-700">
+                                Stage {submission.clue.stageNumber}
+                              </span>
+                              {getSubmissionStatusBadge(submission.status)}
                             </div>
-                            <span className="font-medium text-gray-700">Stage {index + 1}</span>
-                            {getSubmissionStatusBadge(submission.status)}
+                            <div className="text-right">
+                              <span className="text-xs text-gray-500">
+                                {formatDate(submission.createdAt)}
+                              </span>
+                              <button
+                                onClick={() => setSelectedSubmissionModal({ 
+                                  isOpen: true, 
+                                  submission 
+                                })}
+                                className="ml-2 text-gray-400 hover:text-gray-600"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            </div>
                           </div>
-                          {submission.submittedAt && (
-                            <span className="text-xs text-gray-500">
-                              {new Date(submission.submittedAt).toLocaleString()}
-                            </span>
+                          {submission.adminFeedback && (
+                            <div className="bg-white rounded-md p-3 border border-gray-200 mt-2">
+                              <p className="text-sm font-medium text-gray-700 mb-1">Admin Feedback:</p>
+                              <p className="text-sm text-gray-600">{submission.adminFeedback}</p>
+                            </div>
                           )}
                         </div>
-                        {submission.imageUrl && (
-                          <p className="text-sm text-gray-600 mb-2">
-                            <span className="font-medium">Submitted Image:</span>{' '}
-                            <a 
-                              href={submission.imageUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="text-indigo-600 hover:underline"
-                            >
-                              View submission
-                            </a>
-                          </p>
-                        )}
-                        {submission.adminFeedback && (
-                          <div className="bg-white rounded-md p-3 border border-gray-200 mt-2">
-                            <p className="text-sm font-medium text-gray-700 mb-1">Admin Feedback:</p>
-                            <p className="text-sm text-gray-600">{submission.adminFeedback}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               )}
@@ -580,6 +720,79 @@ export default function UserTreasureHuntTab() {
         </div>
       )}
 
+      {/* Submission Detail Modal */}
+      {selectedSubmissionModal.isOpen && selectedSubmissionModal.submission && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-2xl mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Submission Details - Stage {selectedSubmissionModal.submission.clue.stageNumber}
+                </h3>
+                <button
+                  onClick={() => setSelectedSubmissionModal({ isOpen: false, submission: null })}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Status:</p>
+                  {getSubmissionStatusBadge(selectedSubmissionModal.submission.status)}
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Clue Description:</p>
+                  <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+                    {selectedSubmissionModal.submission.clue.description}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Submitted Image:</p>
+                  <img
+                    src={selectedSubmissionModal.submission.imageUrl}
+                    alt="Submission"
+                    className="max-w-full h-64 object-contain border border-gray-200 rounded"
+                    onError={(e) => {
+                      e.currentTarget.src = '';
+                      e.currentTarget.className = 'hidden';
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">Submitted:</p>
+                  <p className="text-sm text-gray-600">
+                    {formatDate(selectedSubmissionModal.submission.createdAt)}
+                  </p>
+                </div>
+
+                {selectedSubmissionModal.submission.adminFeedback && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Admin Feedback:</p>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm text-gray-700">{selectedSubmissionModal.submission.adminFeedback}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setSelectedSubmissionModal({ isOpen: false, submission: null })}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Debug Info (remove in production) */}
       {process.env.NODE_ENV === 'development' && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs">
@@ -592,6 +805,8 @@ export default function UserTreasureHuntTab() {
             <div>Has Progress: {progress ? 'Yes' : 'No'}</div>
             <div>Current Stage: {progress?.currentStage?.id || 'None'}</div>
             <div>Pending Stages: {progress?.pendingStages || 0}</div>
+            <div>Total Stages: {progress?.totalStages || 0}</div>
+            <div>Completed Stages: {progress?.completedStages || 0}</div>
           </div>
         </div>
       )}

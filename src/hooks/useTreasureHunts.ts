@@ -518,24 +518,43 @@ export const useTreasureHunts = () => {
     setError(null);
     
     try {
-      const response = await api.post(`/treasure-hunts/${huntId}/clues/${clueId}/submit`, {
-        ...submitData,
-        teamId
+      console.log('Submitting stage:', {
+        huntId,
+        clueId,
+        teamId,
+        submitData,
+        endpoint: `/treasure-hunts/${huntId}/stages/${clueId}/submit`
       });
+
+      const response = await api.post(`/treasure-hunts/${huntId}/stages/${clueId}/submit`, submitData);
       
-      if (response.status === 200 || response.status === 201) {
+      if (response.data.success) {
+        // Refresh the treasure hunt data to show updated status
+        if (currentTreasureHunt?.id === huntId) {
+          await fetchTreasureHuntById(huntId);
+        }
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
+        }
         return true;
       } else {
-        throw new Error('Failed to submit clue');
+        throw new Error(response.data.message || 'Failed to submit stage');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to submit clue';
+      console.error('Stage submission error:', {
+        error: err,
+        response: err.response?.data,
+        huntId,
+        clueId,
+        teamId
+      });
+      const errorMessage = err.response?.data?.message || 'Failed to submit stage';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
 
   // Approve clue
   const approveClue = useCallback(async (huntId: string, clueId: string, approvalData: ApproveRejectClueRequest = {}): Promise<boolean> => {

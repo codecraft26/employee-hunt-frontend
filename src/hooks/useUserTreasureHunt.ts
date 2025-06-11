@@ -1,16 +1,16 @@
-// hooks/useTreasureHunt.ts
+// hooks/useUserTreasureHunt.ts
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// Types matching your backend
+// Types matching your backend API response
 export interface TreasureHunt {
   id: string;
   title: string;
   description: string;
-  status: 'UPCOMING' | 'IN_PROGRESS' | 'COMPLETED';
+  status: 'UPCOMING' | 'IN_PROGRESS' | 'ACTIVE' | 'COMPLETED';
   startTime: string;
   endTime: string;
   isResultPublished: boolean;
@@ -26,27 +26,18 @@ export interface TreasureHunt {
     id: string;
     name: string;
   } | null;
-  clues: TreasureHuntClue[];
+  clues?: TreasureHuntClue[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface TreasureHuntClue {
   id: string;
-  clueNumber: number;
   stageNumber: number;
   description: string;
   imageUrl?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
   adminFeedback?: string;
-  submittedBy?: {
-    id: string;
-    name: string;
-  };
-  approvedBy?: {
-    id: string;
-    name: string;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -54,7 +45,6 @@ export interface TreasureHuntClue {
 export interface CurrentStage {
   id: string;
   stageNumber: number;
-  clueNumber: number;
   description: string;
 }
 
@@ -63,9 +53,12 @@ export interface Submission {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   imageUrl: string;
   adminFeedback?: string;
-  submittedAt?: string;
-  stageNumber?: number;
-  clueNumber?: number;
+  createdAt: string;
+  clue: {
+    id: string;
+    stageNumber: number;
+    description: string;
+  };
 }
 
 export interface TeamProgress {
@@ -209,7 +202,9 @@ export const useTreasureHunt = () => {
         
         // Auto-select first active hunt
         if (hunts.length > 0) {
-          const activeHunt = hunts.find(hunt => hunt.status === 'IN_PROGRESS') || hunts[0];
+          const activeHunt = hunts.find(hunt => 
+            hunt.status === 'IN_PROGRESS' || hunt.status === 'ACTIVE'
+          ) || hunts[0];
           console.log('🎮 Auto-selecting hunt:', activeHunt.title);
           setSelectedHunt(activeHunt);
           // Automatically fetch progress for the selected hunt
@@ -303,7 +298,7 @@ export const useTreasureHunt = () => {
     return await fetchProgressInternal(targetHuntId);
   }, [selectedHunt?.id, fetchProgressInternal]);
 
-  // Submit stage solution - Using your backend route
+  // Submit clue solution for current stage
   const submitStage = useCallback(async (
     huntId: string,
     stageId: string,
@@ -325,8 +320,11 @@ export const useTreasureHunt = () => {
     setError(null);
     
     try {
-      // Using your backend route: POST /api/treasure-hunts/{treasureHuntId}/stages/{stageId}/submit
-      const payload = { imageUrl: imageUrl.trim() };
+      // Using the correct backend route: POST /api/treasure-hunts/{treasureHuntId}/stages/{stageId}/submit
+      const payload = { 
+        imageUrl: imageUrl.trim(),
+        ...(teamId && { teamId })
+      };
       
       const response = await api.post<ApiResponse<any>>(
         `/treasure-hunts/${huntId}/stages/${stageId}/submit`,
@@ -347,11 +345,13 @@ export const useTreasureHunt = () => {
       let errorMessage = 'Failed to submit stage';
       
       if (err.response?.status === 400) {
-        errorMessage = 'Invalid submission data. Please check your image URL format.';
+        errorMessage = err.response.data?.message || 'Invalid submission data. Please check your image URL format.';
       } else if (err.response?.status === 404) {
         errorMessage = 'Stage not found or submission endpoint not available.';
       } else if (err.response?.status === 401) {
         errorMessage = 'Authentication failed. Please log in again.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'You are not authorized to submit for this stage.';
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.message) {
@@ -428,7 +428,7 @@ export const useTreasureHunt = () => {
     // Check if there's already a pending submission for current stage
     const currentStageNumber = progress.currentStage.stageNumber;
     const currentStageSubmission = progress.submissions.find(
-      sub => sub.stageNumber === currentStageNumber && sub.status === 'PENDING'
+      sub => sub.clue.stageNumber === currentStageNumber && sub.status === 'PENDING'
     );
     
     return !currentStageSubmission;
@@ -440,11 +440,59 @@ export const useTreasureHunt = () => {
     
     const currentStageNumber = progress.currentStage.stageNumber;
     const submission = progress.submissions.find(
-      sub => sub.stageNumber === currentStageNumber
+      sub => sub.clue.stageNumber === currentStageNumber
     );
     
     return submission || null;
   }, [progress]);
+
+  // Get submission for a specific stage
+  const getStageSubmission = useCallback((stageNumber: number) => {
+    if (!progress?.submissions) return null;
+    
+    return progress.submissions.find(
+      sub => sub.clue.stageNumber === stageNumber
+    ) || null;
+  }, [progress]);
+
+  // Check if a stage is unlocked (can be submitted)
+  const isStageUnlocked = useCallback((stageNumber: number) => {
+    if (!progress) return false;
+    
+    // First stage is always unlocked
+    if (stageNumber === 1) return true;
+    
+    // Check if previous stage is completed
+    const previousStageSubmission = progress.submissions.find(
+      sub => sub.clue.stageNumber === stageNumber - 1
+    );
+    
+    return previousStageSubmission?.status === 'APPROVED';
+  }, [progress]);
+
+  // Get all stages with their status
+  const getAllStagesWithStatus = useCallback(() => {
+    if (!progress) return [];
+    
+    const stages = [];
+    for (let i = 1; i <= progress.totalStages; i++) {
+      const submission = getStageSubmission(i);
+      const isUnlocked = isStageUnlocked(i);
+      const isCurrent = progress.currentStage?.stageNumber === i;
+      
+      stages.push({
+        stageNumber: i,
+        submission,
+        isUnlocked,
+        isCurrent,
+        canSubmit: isUnlocked && !submission?.status || submission?.status === 'REJECTED',
+        description: isCurrent ? progress.currentStage?.description : `Stage ${i}`,
+        id: isCurrent ? progress.currentStage?.id : `stage-${i}`,
+      });
+    }
+    
+    return stages;
+  }, [progress, getStageSubmission, isStageUnlocked]);
 
   // Format time remaining
   const getTimeRemaining = useCallback((endTime: string) => {
@@ -504,6 +552,9 @@ export const useTreasureHunt = () => {
     getHuntStats,
     canSubmit,
     getCurrentStageStatus,
+    getStageSubmission,
+    isStageUnlocked,
+    getAllStagesWithStatus,
     getTimeRemaining,
   };
 };
