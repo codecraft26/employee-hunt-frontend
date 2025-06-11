@@ -1,3 +1,4 @@
+// pages/admin/AdminDashboard.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -11,6 +12,7 @@ import PollsTab from '../../components/tabs/PollsTab';
 import TeamsTab from '../../components/tabs/TeamsTab';
 import QuizzesTab from '../../components/tabs/QuizzesTab';
 import ApprovalsTab from '../../components/tabs/ApprovalsTab';
+import CluesManagementTab from '../../components/tabs/CluesManagementTab'; // NEW COMPONENT
 import WinnerSelectionModal from '../../components/modals/WinnerSelectionModal';
 import { 
   Stats, 
@@ -21,6 +23,9 @@ import {
   RecentActivity, 
   TabView 
 } from '../../types/admin';
+
+// Extended TabView type to include clue management
+type ExtendedTabView = TabView | 'clues-management';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -125,7 +130,8 @@ const mockRecentActivities: RecentActivity[] = [
 ];
 
 export default function AdminDashboard() {
-  const [activeView, setActiveView] = useState<TabView>('overview');
+  const [activeView, setActiveView] = useState<ExtendedTabView>('overview');
+  const [selectedTreasureHuntId, setSelectedTreasureHuntId] = useState<string | null>(null); // NEW STATE
   const [winnerSelectionModal, setWinnerSelectionModal] = useState<{
     isOpen: boolean;
     huntId: string | null;
@@ -135,7 +141,7 @@ export default function AdminDashboard() {
   });
 
   const { user, logout: handleLogout } = useAuth();
-  const { resetCurrentTreasureHunt } = useTreasureHunts();
+  const { resetCurrentTreasureHunt, fetchTreasureHuntWithClues } = useTreasureHunts();
 
   // Handler functions for API calls - These will be implemented when connecting to backend
   const handleQuickAction = (type: string) => {
@@ -180,10 +186,17 @@ export default function AdminDashboard() {
   };
 
   // Treasure hunt handlers - Updated to use the new treasure hunt system
-  const handleViewClues = (huntId: string) => {
+  const handleViewClues = async (huntId: string) => {
     console.log(`View clues: ${huntId}`);
-    // TODO: Navigate to clues management page
-    // Example: router.push(`/admin/treasure-hunts/${huntId}/clues`);
+    setSelectedTreasureHuntId(huntId);
+    setActiveView('clues-management');
+    
+    // Fetch the treasure hunt with clues data
+    try {
+      await fetchTreasureHuntWithClues(huntId);
+    } catch (error) {
+      console.error('Failed to fetch treasure hunt with clues:', error);
+    }
   };
 
   const handleDeclareWinner = (huntId: string) => {
@@ -205,6 +218,13 @@ export default function AdminDashboard() {
   const handleWinnerSelectionSuccess = () => {
     console.log('Winner declared successfully');
     // Optionally show a success message or refresh data
+  };
+
+  // Navigation back from clues management
+  const handleBackFromClues = () => {
+    setActiveView('treasure-hunts');
+    setSelectedTreasureHuntId(null);
+    resetCurrentTreasureHunt();
   };
 
   // Poll handlers
@@ -286,6 +306,13 @@ export default function AdminDashboard() {
             onDeclareWinner={handleDeclareWinner}
           />
         );
+      case 'clues-management':
+        return (
+          <CluesManagementTab
+            treasureHuntId={selectedTreasureHuntId}
+            onBack={handleBackFromClues}
+          />
+        );
       case 'polls':
         return (
           <PollsTab
@@ -328,11 +355,14 @@ export default function AdminDashboard() {
         onLogout={handleLogout}
         userName={user?.name || user?.email || 'Admin'}
       />
-      <AdminNavigation
-        activeView={activeView}
-        onViewChange={setActiveView}
-        pendingApprovals={mockStats.pendingApprovals}
-      />
+      {/* Only show navigation if not in clues management view */}
+      {activeView !== 'clues-management' && (
+        <AdminNavigation
+          activeView={activeView as TabView}
+          onViewChange={(view) => setActiveView(view as ExtendedTabView)}
+          pendingApprovals={mockStats.pendingApprovals}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderActiveTab()}
       </div>

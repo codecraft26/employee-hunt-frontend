@@ -1,8 +1,10 @@
 // components/tabs/TreasureHuntsTab.tsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Trophy, Calendar, Users, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Eye, Trophy, Calendar, Users, Clock, AlertCircle, Edit, Trash2, MoreVertical } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import CreateTreasureHuntModal from '../modals/CreateTreasureHuntModal';
+import EditTreasureHuntModal from '../modals/EditTreasureHuntModal';
+import DeleteTreasureHuntModal from '../modals/DeleteTreasureHuntModal';
 
 interface TreasureHuntsTabProps {
   onViewClues: (huntId: string) => void;
@@ -23,7 +25,22 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
   } = useTreasureHunts();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    treasureHunt: any | null;
+  }>({
+    isOpen: false,
+    treasureHunt: null
+  });
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    treasureHunt: any | null;
+  }>({
+    isOpen: false,
+    treasureHunt: null
+  });
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
   // Fetch treasure hunts on component mount
   useEffect(() => {
@@ -63,6 +80,40 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
   const handleCreateSuccess = (treasureHunt: any) => {
     setSuccessMessage(`Treasure hunt "${treasureHunt.title}" created successfully!`);
     fetchTreasureHunts(); // Refresh the list
+  };
+
+  const handleEditSuccess = (treasureHunt: any) => {
+    setSuccessMessage(`Treasure hunt "${treasureHunt.title}" updated successfully!`);
+    fetchTreasureHunts(); // Refresh the list
+  };
+
+  const handleDeleteSuccess = () => {
+    setSuccessMessage(`Treasure hunt deleted successfully!`);
+    fetchTreasureHunts(); // Refresh the list
+  };
+
+  const handleEdit = (hunt: any) => {
+    setEditModal({
+      isOpen: true,
+      treasureHunt: hunt
+    });
+    setDropdownOpen(null);
+  };
+
+  const handleDelete = (hunt: any) => {
+    setDeleteModal({
+      isOpen: true,
+      treasureHunt: hunt
+    });
+    setDropdownOpen(null);
+  };
+
+  const toggleDropdown = (huntId: string) => {
+    setDropdownOpen(dropdownOpen === huntId ? null : huntId);
+  };
+
+  const closeDropdown = () => {
+    setDropdownOpen(null);
   };
 
   const handleDeclareWinner = (huntId: string) => {
@@ -158,7 +209,7 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
             const safeAssignedTeams = hunt.assignedTeams || [];
             
             return (
-              <div key={hunt.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+              <div key={hunt.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden relative">
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -175,6 +226,55 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                           </span>
                         )}
                       </div>
+                    </div>
+                    
+                    {/* Dropdown Menu */}
+                    <div className="relative">
+                      <button
+                        onClick={() => toggleDropdown(hunt.id)}
+                        className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <MoreVertical className="h-5 w-5" />
+                      </button>
+                      
+                      {dropdownOpen === hunt.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={closeDropdown}
+                          ></div>
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                            <div className="py-1">
+                              <button
+                                onClick={() => handleEdit(hunt)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Hunt
+                              </button>
+                              <button
+                                onClick={() => onViewClues(hunt.id)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Manage Clues
+                              </button>
+                              <div className="border-t border-gray-200 my-1"></div>
+                              <button
+                                onClick={() => handleDelete(hunt)}
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                disabled={hunt.status === 'ACTIVE'}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {hunt.status === 'ACTIVE'
+                                  ? 'Cannot Delete (Active)' 
+                                  : 'Delete Hunt'
+                                }
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -284,6 +384,22 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
+      />
+
+      {/* Edit Treasure Hunt Modal */}
+      <EditTreasureHuntModal
+        isOpen={editModal.isOpen}
+        treasureHunt={editModal.treasureHunt}
+        onClose={() => setEditModal({ isOpen: false, treasureHunt: null })}
+        onSuccess={handleEditSuccess}
+      />
+
+      {/* Delete Treasure Hunt Modal */}
+      <DeleteTreasureHuntModal
+        isOpen={deleteModal.isOpen}
+        treasureHunt={deleteModal.treasureHunt}
+        onClose={() => setDeleteModal({ isOpen: false, treasureHunt: null })}
+        onSuccess={handleDeleteSuccess}
       />
     </div>
   );

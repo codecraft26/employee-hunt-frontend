@@ -3,13 +3,27 @@ import { useState, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+export interface ClueSubmission {
+  id: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  imageUrl: string;
+  team: {
+    id: string;
+    name: string;
+  };
+  submittedAt?: string;
+  adminFeedback?: string;
+}
+
 export interface TreasureHuntClue {
   id: string;
-  clueNumber: number;
+  clueNumber?: number; // For backward compatibility
+  stageNumber: number;
   description: string;
-  status: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
   imageUrl?: string;
+  status: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
   adminFeedback?: string;
+  submissions?: ClueSubmission[]; // For admin view
   submittedBy?: {
     id: string;
     name: string;
@@ -74,6 +88,10 @@ export interface TreasureHunt {
   updatedAt: string;
 }
 
+export interface TreasureHuntWithClues extends TreasureHunt {
+  clues: TreasureHuntClue[];
+}
+
 export interface CreateTreasureHuntRequest {
   title: string;
   description: string;
@@ -86,9 +104,28 @@ export interface CreateTreasureHuntRequest {
   }>;
 }
 
+export interface UpdateTreasureHuntRequest {
+  title?: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  status?: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+  teamIds?: string[];
+}
+
 export interface AddClueRequest {
-  clueNumber: number;
+  clueNumber?: number; // For backward compatibility
+  stageNumber: number;
   description: string;
+  imageUrl?: string;
+}
+
+export interface UpdateClueRequest {
+  stageNumber?: number;
+  description?: string;
+  imageUrl?: string;
+  status?: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  adminFeedback?: string;
 }
 
 export interface SubmitClueRequest {
@@ -113,9 +150,21 @@ export interface TreasureHuntResponse {
   data: TreasureHunt;
 }
 
+export interface TreasureHuntWithCluesResponse {
+  success: boolean;
+  message?: string;
+  data: TreasureHuntWithClues;
+}
+
 export interface TreasureHuntsResponse {
   success: boolean;
   data: TreasureHunt[];
+}
+
+export interface ClueResponse {
+  success: boolean;
+  message?: string;
+  data: TreasureHuntClue;
 }
 
 export interface TeamProgressResponse {
@@ -123,7 +172,7 @@ export interface TeamProgressResponse {
   data: TeamProgress;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 // Create axios instance with interceptors
 const api = axios.create({
@@ -144,6 +193,7 @@ export const useTreasureHunts = () => {
   const [error, setError] = useState<string | null>(null);
   const [treasureHunts, setTreasureHunts] = useState<TreasureHunt[]>([]);
   const [currentTreasureHunt, setCurrentTreasureHunt] = useState<TreasureHunt | null>(null);
+  const [currentTreasureHuntWithClues, setCurrentTreasureHuntWithClues] = useState<TreasureHuntWithClues | null>(null);
 
   // Create a new treasure hunt
   const createTreasureHunt = useCallback(async (huntData: CreateTreasureHuntRequest): Promise<TreasureHunt | null> => {
@@ -154,7 +204,6 @@ export const useTreasureHunts = () => {
       const response = await api.post<TreasureHuntResponse>('/treasure-hunts', huntData);
       
       if (response.data.success) {
-        // Refresh treasure hunts list after creation
         await fetchTreasureHunts();
         return response.data.data;
       } else {
@@ -217,6 +266,30 @@ export const useTreasureHunts = () => {
     }
   }, []);
 
+  // Fetch treasure hunt with clues by ID (for admin clue management)
+  const fetchTreasureHuntWithClues = useCallback(async (huntId: string): Promise<TreasureHuntWithClues | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.get<TreasureHuntWithCluesResponse>(`/treasure-hunts/${huntId}`);
+      
+      if (response.data.success) {
+        setCurrentTreasureHuntWithClues(response.data.data);
+        return response.data.data;
+      } else {
+        throw new Error('Failed to fetch treasure hunt with clues');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch treasure hunt with clues';
+      setError(errorMessage);
+      console.error('Treasure hunt with clues fetch error:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Fetch assigned treasure hunts for current user's team
   const fetchMyAssignedTreasureHunts = useCallback(async (): Promise<TreasureHunt[] | null> => {
     setLoading(true);
@@ -240,22 +313,80 @@ export const useTreasureHunts = () => {
     }
   }, []);
 
+  // Update treasure hunt
+  const updateTreasureHunt = useCallback(async (huntId: string, updateData: UpdateTreasureHuntRequest): Promise<TreasureHunt | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.put<TreasureHuntResponse>(`/treasure-hunts/${huntId}`, updateData);
+      
+      if (response.data.success) {
+        await Promise.all([
+          fetchTreasureHunts(),
+          currentTreasureHunt?.id === huntId ? fetchTreasureHuntById(huntId) : Promise.resolve(),
+          currentTreasureHuntWithClues?.id === huntId ? fetchTreasureHuntWithClues(huntId) : Promise.resolve()
+        ]);
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to update treasure hunt');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to update treasure hunt';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchTreasureHunts, currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
+
+  // Delete treasure hunt
+  const deleteTreasureHunt = useCallback(async (huntId: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.delete(`/treasure-hunts/${huntId}`);
+      
+      if (response.status === 200 || response.status === 204) {
+        await fetchTreasureHunts();
+        if (currentTreasureHunt?.id === huntId) {
+          setCurrentTreasureHunt(null);
+        }
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          setCurrentTreasureHuntWithClues(null);
+        }
+        return true;
+      } else {
+        throw new Error('Failed to delete treasure hunt');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to delete treasure hunt';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchTreasureHunts, currentTreasureHunt, currentTreasureHuntWithClues]);
+
   // Add clue to treasure hunt
   const addClue = useCallback(async (huntId: string, clueData: AddClueRequest): Promise<TreasureHuntClue | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.post(`/treasure-hunts/${huntId}/clues`, clueData);
+      const response = await api.post<ClueResponse>(`/treasure-hunts/${huntId}/clues`, clueData);
       
-      if (response.status === 200 || response.status === 201) {
-        // Refresh current treasure hunt if it matches
+      if (response.data.success) {
         if (currentTreasureHunt?.id === huntId) {
           await fetchTreasureHuntById(huntId);
         }
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
+        }
         return response.data.data;
       } else {
-        throw new Error('Failed to add clue');
+        throw new Error(response.data.message || 'Failed to add clue');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to add clue';
@@ -264,7 +395,64 @@ export const useTreasureHunts = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentTreasureHunt, fetchTreasureHuntById]);
+  }, [currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
+
+  // Update clue - NEW FUNCTION
+  const updateClue = useCallback(async (huntId: string, clueId: string, updateData: UpdateClueRequest): Promise<TreasureHuntClue | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.put<ClueResponse>(`/treasure-hunts/${huntId}/clues/${clueId}`, updateData);
+      
+      if (response.data.success) {
+        // Refresh the treasure hunt data
+        if (currentTreasureHunt?.id === huntId) {
+          await fetchTreasureHuntById(huntId);
+        }
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
+        }
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to update clue');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to update clue';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
+
+  // Delete clue
+  const deleteClue = useCallback(async (huntId: string, clueId: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.delete(`/treasure-hunts/${huntId}/clues/${clueId}`);
+      
+      if (response.status === 200 || response.status === 204) {
+        if (currentTreasureHunt?.id === huntId) {
+          await fetchTreasureHuntById(huntId);
+        }
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
+        }
+        return true;
+      } else {
+        throw new Error('Failed to delete clue');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to delete clue';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
 
   // Submit clue solution
   const submitClue = useCallback(async (huntId: string, clueId: string, teamId: string, submitData: SubmitClueRequest): Promise<boolean> => {
@@ -300,9 +488,11 @@ export const useTreasureHunts = () => {
       const response = await api.post(`/treasure-hunts/${huntId}/clues/${clueId}/approve`, approvalData);
       
       if (response.status === 200 || response.status === 201) {
-        // Refresh current treasure hunt if it matches
         if (currentTreasureHunt?.id === huntId) {
           await fetchTreasureHuntById(huntId);
+        }
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
         }
         return true;
       } else {
@@ -315,7 +505,7 @@ export const useTreasureHunts = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentTreasureHunt, fetchTreasureHuntById]);
+  }, [currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
 
   // Reject clue
   const rejectClue = useCallback(async (huntId: string, clueId: string, rejectionData: ApproveRejectClueRequest): Promise<boolean> => {
@@ -326,9 +516,11 @@ export const useTreasureHunts = () => {
       const response = await api.post(`/treasure-hunts/${huntId}/clues/${clueId}/reject`, rejectionData);
       
       if (response.status === 200 || response.status === 201) {
-        // Refresh current treasure hunt if it matches
         if (currentTreasureHunt?.id === huntId) {
           await fetchTreasureHuntById(huntId);
+        }
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
         }
         return true;
       } else {
@@ -341,7 +533,57 @@ export const useTreasureHunts = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentTreasureHunt, fetchTreasureHuntById]);
+  }, [currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
+
+  // Approve submission (for submissions in clues)
+  const approveSubmission = useCallback(async (huntId: string, submissionId: string, approvalData: ApproveRejectClueRequest = {}): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.post(`/treasure-hunts/${huntId}/submissions/${submissionId}/approve`, approvalData);
+      
+      if (response.status === 200 || response.status === 201) {
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
+        }
+        return true;
+      } else {
+        throw new Error('Failed to approve submission');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to approve submission';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentTreasureHuntWithClues, fetchTreasureHuntWithClues]);
+
+  // Reject submission (for submissions in clues)
+  const rejectSubmission = useCallback(async (huntId: string, submissionId: string, rejectionData: ApproveRejectClueRequest): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.post(`/treasure-hunts/${huntId}/submissions/${submissionId}/reject`, rejectionData);
+      
+      if (response.status === 200 || response.status === 201) {
+        if (currentTreasureHuntWithClues?.id === huntId) {
+          await fetchTreasureHuntWithClues(huntId);
+        }
+        return true;
+      } else {
+        throw new Error('Failed to reject submission');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to reject submission';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentTreasureHuntWithClues, fetchTreasureHuntWithClues]);
 
   // Declare winner
   const declareWinner = useCallback(async (huntId: string, teamId: string): Promise<boolean> => {
@@ -352,10 +594,10 @@ export const useTreasureHunts = () => {
       const response = await api.post(`/treasure-hunts/${huntId}/winner`, { teamId });
       
       if (response.status === 200 || response.status === 201) {
-        // Refresh treasure hunts and current hunt
         await Promise.all([
           fetchTreasureHunts(),
-          currentTreasureHunt?.id === huntId ? fetchTreasureHuntById(huntId) : Promise.resolve()
+          currentTreasureHunt?.id === huntId ? fetchTreasureHuntById(huntId) : Promise.resolve(),
+          currentTreasureHuntWithClues?.id === huntId ? fetchTreasureHuntWithClues(huntId) : Promise.resolve()
         ]);
         return true;
       } else {
@@ -368,7 +610,7 @@ export const useTreasureHunts = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchTreasureHunts, currentTreasureHunt, fetchTreasureHuntById]);
+  }, [fetchTreasureHunts, currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
 
   // Get team progress for a treasure hunt
   const getTeamProgress = useCallback(async (huntId: string, teamId: string): Promise<TeamProgress | null> => {
@@ -396,20 +638,19 @@ export const useTreasureHunts = () => {
   // Get hunt statistics
   const getHuntStats = useCallback((huntId: string) => {
     try {
-      const hunt = treasureHunts.find(h => h.id === huntId);
+      const hunt = treasureHunts.find((h: TreasureHunt) => h.id === huntId);
       if (!hunt) {
         console.warn(`Hunt with ID ${huntId} not found`);
         return null;
       }
 
-      // Safe access to arrays with fallbacks
       const clues = hunt.clues || [];
       const assignedTeams = hunt.assignedTeams || [];
 
       const totalClues = clues.length;
-      const completedClues = clues.filter(c => c.status === 'APPROVED').length;
-      const pendingClues = clues.filter(c => c.status === 'PENDING').length;
-      const rejectedClues = clues.filter(c => c.status === 'REJECTED').length;
+      const completedClues = clues.filter((c: TreasureHuntClue) => c.status === 'APPROVED').length;
+      const pendingClues = clues.filter((c: TreasureHuntClue) => c.status === 'PENDING').length;
+      const rejectedClues = clues.filter((c: TreasureHuntClue) => c.status === 'REJECTED').length;
 
       return {
         totalTeams: assignedTeams.length,
@@ -448,6 +689,7 @@ export const useTreasureHunts = () => {
   // Reset current treasure hunt
   const resetCurrentTreasureHunt = useCallback(() => {
     setCurrentTreasureHunt(null);
+    setCurrentTreasureHuntWithClues(null);
   }, []);
 
   return {
@@ -455,14 +697,22 @@ export const useTreasureHunts = () => {
     error,
     treasureHunts,
     currentTreasureHunt,
+    currentTreasureHuntWithClues,
     createTreasureHunt,
+    updateTreasureHunt,
+    deleteTreasureHunt,
     fetchTreasureHunts,
     fetchTreasureHuntById,
+    fetchTreasureHuntWithClues,
     fetchMyAssignedTreasureHunts,
     addClue,
+    updateClue,
+    deleteClue,
     submitClue,
     approveClue,
     rejectClue,
+    approveSubmission,
+    rejectSubmission,
     declareWinner,
     getTeamProgress,
     getHuntStats,
