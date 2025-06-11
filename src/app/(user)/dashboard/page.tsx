@@ -12,6 +12,7 @@ import UserActivitiesTab from '../../../components/user/UserActivitiesTab';
 import UserProfileTab from '../../../components/user/UserProfileTab';
 import UserTeamTab from '../../../components/user/UserTeamTab';
 import UserQuizTab from '../../../components/user/UserQuizTab';
+import UserTreasureHuntTab from '../../../components/user/UserTreasureHuntTab';
 import { useActivities } from '../../../hooks/useActivities';
 import { useTeams } from '../../../hooks/useTeams';
 import { 
@@ -24,6 +25,7 @@ import {
   Shield,
   Zap,
   Activity as ActivityIcon,
+  MapPin,
 } from 'lucide-react';
 
 // Static notifications data
@@ -96,6 +98,8 @@ export default function UserDashboardUI() {
         return <UserProfileTab user={user} />;
       case 'quiz':
         return <UserQuizTab />;
+      case 'treasureHunt':
+        return <UserTreasureHuntTab />;
       default:
         return <UserOverviewTab user={user} />;
     }
@@ -145,6 +149,7 @@ export default function UserDashboardUI() {
               { id: 'team', label: 'My Team', icon: Users },
               { id: 'profile', label: 'Profile', icon: UserIcon },
               { id: 'quiz', label: 'Quiz', icon: Shield },
+              { id: 'treasureHunt', label: 'Treasure Hunt', icon: MapPin },
             ].map((tab) => (
               <button
                 key={tab.id}
