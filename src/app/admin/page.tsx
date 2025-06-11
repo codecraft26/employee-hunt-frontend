@@ -12,7 +12,8 @@ import PollsTab from '../../components/tabs/PollsTab';
 import TeamsTab from '../../components/tabs/TeamsTab';
 import QuizzesTab from '../../components/tabs/QuizzesTab';
 import ApprovalsTab from '../../components/tabs/ApprovalsTab';
-import CluesManagementTab from '../../components/tabs/CluesManagementTab'; // NEW COMPONENT
+import CluesManagementTab from '../../components/tabs/CluesManagementTab';
+import SubmissionsManagementTab from '../../components/tabs/SubmissionsManagementTab'; // NEW IMPORT
 import WinnerSelectionModal from '../../components/modals/WinnerSelectionModal';
 import { 
   Stats, 
@@ -24,8 +25,8 @@ import {
   TabView 
 } from '../../types/admin';
 
-// Extended TabView type to include clue management
-type ExtendedTabView = TabView | 'clues-management';
+// Extended TabView type to include clue and submission management
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -131,7 +132,7 @@ const mockRecentActivities: RecentActivity[] = [
 
 export default function AdminDashboard() {
   const [activeView, setActiveView] = useState<ExtendedTabView>('overview');
-  const [selectedTreasureHuntId, setSelectedTreasureHuntId] = useState<string | null>(null); // NEW STATE
+  const [selectedTreasureHuntId, setSelectedTreasureHuntId] = useState<string | null>(null);
   const [winnerSelectionModal, setWinnerSelectionModal] = useState<{
     isOpen: boolean;
     huntId: string | null;
@@ -185,7 +186,7 @@ export default function AdminDashboard() {
     // TODO: Navigate to quiz edit form
   };
 
-  // Treasure hunt handlers - Updated to use the new treasure hunt system
+  // Treasure hunt handlers
   const handleViewClues = async (huntId: string) => {
     console.log(`View clues: ${huntId}`);
     setSelectedTreasureHuntId(huntId);
@@ -197,6 +198,15 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Failed to fetch treasure hunt with clues:', error);
     }
+  };
+
+  // NEW: Handler for viewing submissions
+  const handleViewSubmissions = async (huntId: string) => {
+    console.log(`View submissions: ${huntId}`);
+    setSelectedTreasureHuntId(huntId);
+    setActiveView('submissions-management');
+    
+    // The SubmissionsManagementTab will handle fetching submissions
   };
 
   const handleDeclareWinner = (huntId: string) => {
@@ -220,8 +230,8 @@ export default function AdminDashboard() {
     // Optionally show a success message or refresh data
   };
 
-  // Navigation back from clues management
-  const handleBackFromClues = () => {
+  // Navigation back from clues/submissions management
+  const handleBackFromManagement = () => {
     setActiveView('treasure-hunts');
     setSelectedTreasureHuntId(null);
     resetCurrentTreasureHunt();
@@ -303,6 +313,7 @@ export default function AdminDashboard() {
         return (
           <TreasureHuntsTab
             onViewClues={handleViewClues}
+            onViewSubmissions={handleViewSubmissions} // NEW PROP
             onDeclareWinner={handleDeclareWinner}
           />
         );
@@ -310,7 +321,14 @@ export default function AdminDashboard() {
         return (
           <CluesManagementTab
             treasureHuntId={selectedTreasureHuntId}
-            onBack={handleBackFromClues}
+            onBack={handleBackFromManagement}
+          />
+        );
+      case 'submissions-management': // NEW CASE
+        return (
+          <SubmissionsManagementTab
+            treasureHuntId={selectedTreasureHuntId}
+            onBack={handleBackFromManagement}
           />
         );
       case 'polls':
@@ -355,8 +373,8 @@ export default function AdminDashboard() {
         onLogout={handleLogout}
         userName={user?.name || user?.email || 'Admin'}
       />
-      {/* Only show navigation if not in clues management view */}
-      {activeView !== 'clues-management' && (
+      {/* Only show navigation if not in clues or submissions management view */}
+      {!['clues-management', 'submissions-management'].includes(activeView) && (
         <AdminNavigation
           activeView={activeView as TabView}
           onViewChange={(view) => setActiveView(view as ExtendedTabView)}

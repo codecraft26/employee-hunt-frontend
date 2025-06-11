@@ -1,6 +1,6 @@
 // components/tabs/TreasureHuntsTab.tsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Trophy, Calendar, Users, Clock, AlertCircle, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Eye, Trophy, Calendar, Users, Clock, AlertCircle, Edit, Trash2, MoreVertical, FileText } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import CreateTreasureHuntModal from '../modals/CreateTreasureHuntModal';
 import EditTreasureHuntModal from '../modals/EditTreasureHuntModal';
@@ -8,11 +8,13 @@ import DeleteTreasureHuntModal from '../modals/DeleteTreasureHuntModal';
 
 interface TreasureHuntsTabProps {
   onViewClues: (huntId: string) => void;
+  onViewSubmissions: (huntId: string) => void; // NEW PROP
   onDeclareWinner: (huntId: string) => void;
 }
 
 const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({ 
   onViewClues, 
+  onViewSubmissions, // NEW PROP
   onDeclareWinner 
 }) => {
   const { 
@@ -243,7 +245,7 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                             className="fixed inset-0 z-10" 
                             onClick={closeDropdown}
                           ></div>
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                          <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
                             <div className="py-1">
                               <button
                                 onClick={() => handleEdit(hunt)}
@@ -258,6 +260,16 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                               >
                                 <Eye className="h-4 w-4 mr-2" />
                                 Manage Clues
+                              </button>
+                              <button
+                                onClick={() => {
+                                  onViewSubmissions(hunt.id);
+                                  setDropdownOpen(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                View Submissions
                               </button>
                               <div className="border-t border-gray-200 my-1"></div>
                               <button
@@ -355,14 +367,23 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                   </div>
                 </div>
 
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between">
-                  <button 
-                    onClick={() => onViewClues(hunt.id)}
-                    className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>View Clues</span>
-                  </button>
+                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
+                  <div className="flex space-x-3">
+                    <button 
+                      onClick={() => onViewClues(hunt.id)}
+                      className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>Clues</span>
+                    </button>
+                    <button 
+                      onClick={() => onViewSubmissions(hunt.id)}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Submissions</span>
+                    </button>
+                  </div>
                   {hunt.status === 'ACTIVE' && !hunt.winningTeam && (
                     <button 
                       onClick={() => handleDeclareWinner(hunt.id)}

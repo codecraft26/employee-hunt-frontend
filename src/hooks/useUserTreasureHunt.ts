@@ -1,11 +1,11 @@
-// hooks/useTreasureHunt.ts
+// hooks/useUserTreasureHunt.ts
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// Types matching your backend
+// Types matching your backend API response
 export interface TreasureHunt {
   id: string;
   title: string;
@@ -26,27 +26,18 @@ export interface TreasureHunt {
     id: string;
     name: string;
   } | null;
-  clues: TreasureHuntClue[];
+  clues?: TreasureHuntClue[];
   createdAt: string;
   updatedAt: string;
 }
 
 export interface TreasureHuntClue {
   id: string;
-  clueNumber?: number; // For backward compatibility
   stageNumber: number;
   description: string;
   imageUrl?: string;
   status: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
   adminFeedback?: string;
-  submittedBy?: {
-    id: string;
-    name: string;
-  };
-  approvedBy?: {
-    id: string;
-    name: string;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -54,10 +45,7 @@ export interface TreasureHuntClue {
 export interface CurrentStage {
   id: string;
   stageNumber: number;
-  clueNumber?: number;
   description: string;
-  imageUrl?: string;
-  status: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
 export interface Submission {
@@ -65,28 +53,11 @@ export interface Submission {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   imageUrl: string;
   adminFeedback?: string;
-  submittedAt?: string;
   createdAt: string;
-  updatedAt: string;
-  stageNumber?: number;
-  clueNumber?: number;
   clue: {
     id: string;
     stageNumber: number;
     description: string;
-    imageUrl?: string;
-    status: string;
-    adminFeedback?: string;
-  };
-  team: {
-    id: string;
-    name: string;
-    description?: string;
-  };
-  approvedBy?: {
-    id: string;
-    name: string;
-    email: string;
   };
 }
 
@@ -97,7 +68,6 @@ export interface TeamProgress {
   rejectedStages: number;
   currentStage?: CurrentStage;
   submissions: Submission[];
-  clues: TreasureHuntClue[];
 }
 
 // API Response Types
@@ -184,7 +154,6 @@ export const useTreasureHunt = () => {
   const [progress, setProgress] = useState<TeamProgress | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [progressLoading, setProgressLoading] = useState(false);
-  const [allSubmissions, setAllSubmissions] = useState<Submission[]>([]);
 
   // Polling reference
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
@@ -318,45 +287,6 @@ export const useTreasureHunt = () => {
     }
   }, []);
 
-  // NEW: Fetch all submissions for a treasure hunt
-  const fetchAllSubmissions = useCallback(async (huntId: string): Promise<Submission[]> => {
-    console.log('📋 Fetching all submissions for hunt:', huntId);
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await api.get<ApiResponse<Submission[]>>(`/treasure-hunts/${huntId}/submissions`);
-      
-      if (response.data.success) {
-        const submissions = response.data.data || [];
-        console.log('📄 Submissions received:', submissions.length);
-        setAllSubmissions(submissions);
-        return submissions;
-      } else {
-        throw new Error(response.data.message || 'Failed to fetch submissions');
-      }
-    } catch (err: any) {
-      console.error('💥 Fetch submissions error:', err);
-      
-      let errorMessage = 'Failed to fetch submissions';
-      
-      if (err.response?.status === 404) {
-        errorMessage = 'Submissions not found for this treasure hunt.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Authentication failed for submissions fetch.';
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Public fetch progress function
   const fetchProgress = useCallback(async (huntId?: string): Promise<TeamProgress | null> => {
     const targetHuntId = huntId || selectedHunt?.id;
@@ -368,77 +298,7 @@ export const useTreasureHunt = () => {
     return await fetchProgressInternal(targetHuntId);
   }, [selectedHunt?.id, fetchProgressInternal]);
 
-  // NEW: Submit clue solution for a specific stage
-  const submitClueForStage = useCallback(async (
-    huntId: string,
-    clueId: string,
-    imageUrl: string,
-    teamId?: string
-  ): Promise<boolean> => {
-    if (!imageUrl.trim()) {
-      setError('Image URL is required');
-      return false;
-    }
-
-    console.log('📤 Submitting clue solution:', { 
-      huntId, 
-      clueId, 
-      teamId, 
-      imageUrl: imageUrl.substring(0, 50) + '...' 
-    });
-    setSubmitting(true);
-    setError(null);
-    
-    try {
-      // Using your backend route: POST /api/treasure-hunts/{treasureHuntId}/clues/{clueId}/submit
-      const payload = { 
-        imageUrl: imageUrl.trim(),
-        ...(teamId && { teamId })
-      };
-      
-      const response = await api.post<ApiResponse<any>>(
-        `/treasure-hunts/${huntId}/clues/${clueId}/submit`,
-        payload
-      );
-      
-      if (response.data.success) {
-        console.log('✅ Clue submitted successfully');
-        // Immediately fetch updated progress and submissions
-        await Promise.all([
-          fetchProgressInternal(huntId),
-          fetchAllSubmissions(huntId)
-        ]);
-        return true;
-      } else {
-        throw new Error(response.data.message || 'Failed to submit clue');
-      }
-    } catch (err: any) {
-      console.error('💥 Submit clue error:', err);
-      
-      let errorMessage = 'Failed to submit clue';
-      
-      if (err.response?.status === 400) {
-        errorMessage = err.response.data?.message || 'Invalid submission data. Please check your image URL format.';
-      } else if (err.response?.status === 404) {
-        errorMessage = 'Clue not found or submission endpoint not available.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
-      } else if (err.response?.status === 403) {
-        errorMessage = 'You are not authorized to submit for this clue.';
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-      return false;
-    } finally {
-      setSubmitting(false);
-    }
-  }, [fetchProgressInternal, fetchAllSubmissions]);
-
-  // LEGACY: Submit stage solution (for backward compatibility)
+  // Submit clue solution for current stage
   const submitStage = useCallback(async (
     huntId: string,
     stageId: string,
@@ -450,7 +310,7 @@ export const useTreasureHunt = () => {
       return false;
     }
 
-    console.log('📤 Submitting stage solution (legacy):', { 
+    console.log('📤 Submitting stage solution:', { 
       huntId, 
       stageId, 
       teamId, 
@@ -460,8 +320,11 @@ export const useTreasureHunt = () => {
     setError(null);
     
     try {
-      // Using your backend route: POST /api/treasure-hunts/{treasureHuntId}/stages/{stageId}/submit
-      const payload = { imageUrl: imageUrl.trim() };
+      // Using the correct backend route: POST /api/treasure-hunts/{treasureHuntId}/stages/{stageId}/submit
+      const payload = { 
+        imageUrl: imageUrl.trim(),
+        ...(teamId && { teamId })
+      };
       
       const response = await api.post<ApiResponse<any>>(
         `/treasure-hunts/${huntId}/stages/${stageId}/submit`,
@@ -482,11 +345,13 @@ export const useTreasureHunt = () => {
       let errorMessage = 'Failed to submit stage';
       
       if (err.response?.status === 400) {
-        errorMessage = 'Invalid submission data. Please check your image URL format.';
+        errorMessage = err.response.data?.message || 'Invalid submission data. Please check your image URL format.';
       } else if (err.response?.status === 404) {
         errorMessage = 'Stage not found or submission endpoint not available.';
       } else if (err.response?.status === 401) {
         errorMessage = 'Authentication failed. Please log in again.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'You are not authorized to submit for this stage.';
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.message) {
@@ -505,13 +370,9 @@ export const useTreasureHunt = () => {
     console.log('🎯 Selecting hunt:', hunt.title);
     setSelectedHunt(hunt);
     setProgress(null);
-    setAllSubmissions([]);
     stopPolling();
-    await Promise.all([
-      fetchProgressInternal(hunt.id),
-      fetchAllSubmissions(hunt.id)
-    ]);
-  }, [fetchProgressInternal, fetchAllSubmissions, stopPolling]);
+    await fetchProgressInternal(hunt.id);
+  }, [fetchProgressInternal, stopPolling]);
 
   // Start polling for progress updates
   const startPolling = useCallback((huntId: string, interval: number = 10000) => {
@@ -521,9 +382,8 @@ export const useTreasureHunt = () => {
     pollingInterval.current = setInterval(() => {
       console.log('🔄 Polling for updates...');
       fetchProgressInternal(huntId);
-      fetchAllSubmissions(huntId);
     }, interval);
-  }, [fetchProgressInternal, fetchAllSubmissions, stopPolling]);
+  }, [fetchProgressInternal, stopPolling]);
 
   // Refresh data
   const refresh = useCallback(async (teamId?: string) => {
@@ -531,17 +391,14 @@ export const useTreasureHunt = () => {
     try {
       const hunts = await fetchAssignedHunts(teamId);
       
-      // If we have a selected hunt, refresh its progress and submissions
+      // If we have a selected hunt, refresh its progress
       if (selectedHunt && hunts.find(h => h.id === selectedHunt.id)) {
-        await Promise.all([
-          fetchProgressInternal(selectedHunt.id),
-          fetchAllSubmissions(selectedHunt.id)
-        ]);
+        await fetchProgressInternal(selectedHunt.id);
       }
     } catch (error) {
       console.error('Failed to refresh data:', error);
     }
-  }, [fetchAssignedHunts, selectedHunt, fetchProgressInternal, fetchAllSubmissions]);
+  }, [fetchAssignedHunts, selectedHunt, fetchProgressInternal]);
 
   // Get hunt statistics
   const getHuntStats = useCallback(() => {
@@ -564,83 +421,78 @@ export const useTreasureHunt = () => {
     };
   }, [progress]);
 
-  // Check if submission is allowed for a specific clue
-  const canSubmitClue = useCallback((clueId: string, stageNumber?: number) => {
-    if (!progress?.clues) return false;
-    
-    // Find the clue
-    const clue = progress.clues.find(c => c.id === clueId || c.stageNumber === stageNumber);
-    if (!clue) return false;
-    
-    // Check if clue is already approved or pending
-    if (clue.status === 'APPROVED' || clue.status === 'PENDING') {
-      return false;
-    }
-    
-    // Check if there's already a pending submission for this stage
-    const pendingSubmission = allSubmissions.find(
-      sub => sub.clue.id === clueId && sub.status === 'PENDING'
-    );
-    
-    return !pendingSubmission;
-  }, [progress, allSubmissions]);
-
-  // LEGACY: Check if submission is allowed
+  // Check if submission is allowed
   const canSubmit = useCallback(() => {
     if (!progress?.currentStage) return false;
     
     // Check if there's already a pending submission for current stage
     const currentStageNumber = progress.currentStage.stageNumber;
     const currentStageSubmission = progress.submissions.find(
-      sub => sub.stageNumber === currentStageNumber && sub.status === 'PENDING'
+      sub => sub.clue.stageNumber === currentStageNumber && sub.status === 'PENDING'
     );
     
     return !currentStageSubmission;
   }, [progress]);
 
-  // Get submission status for a specific clue
-  const getClueSubmissionStatus = useCallback((clueId: string, stageNumber?: number) => {
-    if (!allSubmissions.length) return null;
-    
-    // Find submission by clue ID or stage number
-    const submission = allSubmissions.find(
-      sub => sub.clue.id === clueId || sub.clue.stageNumber === stageNumber
-    );
-    
-    return submission || null;
-  }, [allSubmissions]);
-
-  // LEGACY: Get current stage submission status
+  // Get current stage submission status
   const getCurrentStageStatus = useCallback(() => {
     if (!progress?.currentStage) return null;
     
     const currentStageNumber = progress.currentStage.stageNumber;
     const submission = progress.submissions.find(
-      sub => sub.stageNumber === currentStageNumber
+      sub => sub.clue.stageNumber === currentStageNumber
     );
     
     return submission || null;
   }, [progress]);
 
-  // Get submissions for a specific stage
-  const getStageSubmissions = useCallback((stageNumber: number) => {
-    return allSubmissions.filter(sub => sub.clue.stageNumber === stageNumber);
-  }, [allSubmissions]);
-
-  // Get all clues with their submission status
-  const getCluesWithStatus = useCallback(() => {
-    if (!progress?.clues) return [];
+  // Get submission for a specific stage
+  const getStageSubmission = useCallback((stageNumber: number) => {
+    if (!progress?.submissions) return null;
     
-    return progress.clues.map(clue => {
-      const submission = getClueSubmissionStatus(clue.id, clue.stageNumber);
-      return {
-        ...clue,
+    return progress.submissions.find(
+      sub => sub.clue.stageNumber === stageNumber
+    ) || null;
+  }, [progress]);
+
+  // Check if a stage is unlocked (can be submitted)
+  const isStageUnlocked = useCallback((stageNumber: number) => {
+    if (!progress) return false;
+    
+    // First stage is always unlocked
+    if (stageNumber === 1) return true;
+    
+    // Check if previous stage is completed
+    const previousStageSubmission = progress.submissions.find(
+      sub => sub.clue.stageNumber === stageNumber - 1
+    );
+    
+    return previousStageSubmission?.status === 'APPROVED';
+  }, [progress]);
+
+  // Get all stages with their status
+  const getAllStagesWithStatus = useCallback(() => {
+    if (!progress) return [];
+    
+    const stages = [];
+    for (let i = 1; i <= progress.totalStages; i++) {
+      const submission = getStageSubmission(i);
+      const isUnlocked = isStageUnlocked(i);
+      const isCurrent = progress.currentStage?.stageNumber === i;
+      
+      stages.push({
+        stageNumber: i,
         submission,
-        canSubmit: canSubmitClue(clue.id, clue.stageNumber),
-        isUnlocked: clue.status !== 'NOT_STARTED' || clue.stageNumber === 1, // First stage is always unlocked
-      };
-    }).sort((a, b) => a.stageNumber - b.stageNumber);
-  }, [progress, getClueSubmissionStatus, canSubmitClue]);
+        isUnlocked,
+        isCurrent,
+        canSubmit: isUnlocked && !submission?.status || submission?.status === 'REJECTED',
+        description: isCurrent ? progress.currentStage?.description : `Stage ${i}`,
+        id: isCurrent ? progress.currentStage?.id : `stage-${i}`,
+      });
+    }
+    
+    return stages;
+  }, [progress, getStageSubmission, isStageUnlocked]);
 
   // Format time remaining
   const getTimeRemaining = useCallback((endTime: string) => {
@@ -666,7 +518,6 @@ export const useTreasureHunt = () => {
     setAssignedHunts([]);
     setSelectedHunt(null);
     setProgress(null);
-    setAllSubmissions([]);
     setError(null);
     setLoading(false);
     setSubmitting(false);
@@ -683,14 +534,11 @@ export const useTreasureHunt = () => {
     progress,
     submitting,
     progressLoading,
-    allSubmissions,
     
     // Actions
     fetchAssignedHunts,
     fetchProgress,
-    fetchAllSubmissions,
-    submitClueForStage, // NEW: Stage-wise clue submission
-    submitStage, // LEGACY: For backward compatibility
+    submitStage,
     selectHunt,
     refresh,
     clearError,
@@ -702,12 +550,11 @@ export const useTreasureHunt = () => {
     
     // Helpers
     getHuntStats,
-    canSubmitClue, // NEW: Check if clue can be submitted
-    canSubmit, // LEGACY: For backward compatibility
-    getClueSubmissionStatus, // NEW: Get submission status for clue
-    getCurrentStageStatus, // LEGACY: For backward compatibility
-    getStageSubmissions, // NEW: Get all submissions for a stage
-    getCluesWithStatus, // NEW: Get clues with submission status
+    canSubmit,
+    getCurrentStageStatus,
+    getStageSubmission,
+    isStageUnlocked,
+    getAllStagesWithStatus,
     getTimeRemaining,
   };
 };
