@@ -164,6 +164,10 @@ export interface ApproveRejectSubmissionRequest {
   feedback?: string;
 }
 
+export interface DeclareWinnerRequest {
+  teamId: string;
+}
+
 export interface TeamProgress {
   totalClues: number;
   approvedClues: number;
@@ -324,7 +328,7 @@ export const useTreasureHunts = () => {
     }
   }, []);
 
-  // NEW: Fetch all submissions for a treasure hunt
+  // Fetch all submissions for a treasure hunt
   const fetchTreasureHuntSubmissions = useCallback(async (huntId: string): Promise<ClueSubmission[] | null> => {
     setLoading(true);
     setError(null);
@@ -612,7 +616,7 @@ export const useTreasureHunts = () => {
     }
   }, [currentTreasureHunt, currentTreasureHuntWithClues, fetchTreasureHuntById, fetchTreasureHuntWithClues]);
 
-  // NEW: Approve submission
+  // Approve submission
   const approveSubmission = useCallback(async (huntId: string, submissionId: string, approvalData: ApproveRejectSubmissionRequest = {}): Promise<boolean> => {
     setLoading(true);
     setError(null);
@@ -654,7 +658,7 @@ export const useTreasureHunts = () => {
     }
   }, [currentTreasureHuntWithClues, fetchTreasureHuntWithClues, fetchTreasureHuntSubmissions]);
 
-  // NEW: Reject submission
+  // Reject submission
   const rejectSubmission = useCallback(async (huntId: string, submissionId: string, rejectionData: ApproveRejectSubmissionRequest): Promise<boolean> => {
     setLoading(true);
     setError(null);
@@ -683,26 +687,60 @@ export const useTreasureHunts = () => {
     }
   }, [currentTreasureHuntWithClues, fetchTreasureHuntWithClues, fetchTreasureHuntSubmissions]);
 
-  // Declare winner
+  // UPDATED: Declare winner using the correct endpoint
   const declareWinner = useCallback(async (huntId: string, teamId: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.post(`/treasure-hunts/${huntId}/winner`, { teamId });
+      // First, fetch assigned teams to verify the team is assigned to this hunt
+      console.log('Fetching assigned teams for hunt:', huntId);
+      const assignedTeamsResponse = await api.get(`/treasure-hunts/${huntId}/assigned-teams`);
+      
+      if (!assignedTeamsResponse.data.success) {
+        throw new Error('Failed to fetch assigned teams');
+      }
+
+      const assignedTeams = assignedTeamsResponse.data.data;
+      const isTeamAssigned = assignedTeams.some((team: any) => team.id === teamId);
+
+      if (!isTeamAssigned) {
+        throw new Error('Selected team is not assigned to this treasure hunt');
+      }
+
+      // If team is assigned, proceed with declaring winner
+      console.log('Declaring winner:', { 
+        huntId, 
+        teamId,
+        endpoint: `/treasure-hunts/${huntId}/declare-winner`
+      });
+
+      const payload: DeclareWinnerRequest = { teamId };
+      const response = await api.post(`/treasure-hunts/${huntId}/declare-winner`, payload);
       
       if (response.status === 200 || response.status === 201) {
+        console.log('Winner declared successfully');
+        
+        // Refresh all treasure hunt data
         await Promise.all([
           fetchTreasureHunts(),
           currentTreasureHunt?.id === huntId ? fetchTreasureHuntById(huntId) : Promise.resolve(),
           currentTreasureHuntWithClues?.id === huntId ? fetchTreasureHuntWithClues(huntId) : Promise.resolve()
         ]);
+        
         return true;
       } else {
-        throw new Error('Failed to declare winner');
+        throw new Error(response.data?.message || 'Failed to declare winner');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to declare winner';
+      console.error('Declare winner error:', {
+        error: err,
+        response: err.response?.data,
+        huntId,
+        teamId
+      });
+      
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to declare winner';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -761,6 +799,7 @@ export const useTreasureHunts = () => {
         isActive: hunt.status === 'ACTIVE',
         isCompleted: hunt.status === 'COMPLETED',
         hasWinner: !!(hunt.winningTeam && hunt.winningTeam.id),
+        canDeclareWinner: (hunt.status === 'ACTIVE' || hunt.status === 'COMPLETED') && !hunt.winningTeam,
       };
     } catch (error) {
       console.error('Error in getHuntStats:', error, { huntId, treasureHunts });
@@ -775,11 +814,12 @@ export const useTreasureHunts = () => {
         isActive: false,
         isCompleted: false,
         hasWinner: false,
+        canDeclareWinner: false,
       };
     }
   }, [treasureHunts]);
 
-  // NEW: Get submission statistics
+  // Get submission statistics
   const getSubmissionStats = useCallback(() => {
     const totalSubmissions = submissions.length;
     const pendingSubmissions = submissions.filter(s => s.status === 'PENDING').length;
