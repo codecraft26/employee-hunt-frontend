@@ -4,17 +4,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-import { registerUser, registerAdmin, clearError } from '../../store/authSlice';
-import { User, Shield, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle } from 'lucide-react';
+import { registerUser, clearError } from '../../store/authSlice';
+import { useCategories } from '../../hooks/useCategories';
+import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Building2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    department: ''
   });
-  const [isAdmin, setIsAdmin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
@@ -24,6 +25,13 @@ export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { isLoading, error, isAuthenticated, user } = useAppSelector((state) => state.auth);
+  
+  // Fetch categories
+  const { categories, fetchCategories, loading: categoriesLoading } = useCategories();
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -75,18 +83,25 @@ export default function RegisterPage() {
     if (formData.password !== formData.confirmPassword) {
       errors.push('Passwords do not match');
     }
+
+    if (!formData.department) {
+      errors.push('Please select a category');
+    }
     
     setValidationErrors(errors);
     return errors.length === 0;
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear validation errors when user starts typing
     if (validationErrors.length > 0) {
       setValidationErrors([]);
+    }
+
+    if (name === 'department') {
+      console.log('Department selected:', value);
     }
   };
 
@@ -101,16 +116,14 @@ export default function RegisterPage() {
     
     try {
       const userData = {
-        name: formData.name,
-        email: formData.email,
-        password: formData.password
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        department: formData.department
       };
 
-      if (isAdmin) {
-        await dispatch(registerAdmin(userData));
-      } else {
-        await dispatch(registerUser(userData));
-      }
+      console.log('Submitting user data:', userData);
+      await dispatch(registerUser(userData));
     } finally {
       setIsSubmitting(false);
     }
@@ -175,39 +188,6 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {/* User Type Selection */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-gray-700">Account Type</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setIsAdmin(false)}
-                className={`p-4 rounded-2xl border-2 transition-all duration-200 ${
-                  !isAdmin
-                    ? 'border-violet-500 bg-violet-50 text-violet-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                }`}
-              >
-                <User className="h-6 w-6 mx-auto mb-2" />
-                <div className="text-sm font-medium">User</div>
-                <div className="text-xs opacity-75">Regular access</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsAdmin(true)}
-                className={`p-4 rounded-2xl border-2 transition-all duration-200 ${
-                  isAdmin
-                    ? 'border-violet-500 bg-violet-50 text-violet-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                }`}
-              >
-                <Shield className="h-6 w-6 mx-auto mb-2" />
-                <div className="text-sm font-medium">Admin</div>
-                <div className="text-xs opacity-75">Full privileges</div>
-              </button>
-            </div>
-          </div>
-
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
               {/* Name Field */}
@@ -243,6 +223,51 @@ export default function RegisterPage() {
                   onChange={handleInputChange}
                 />
               </div>
+
+              {/* Category Dropdown */}
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Building2 className="h-5 w-5 text-gray-400 group-focus-within:text-violet-600 transition-colors duration-200" />
+                </div>
+                <select
+                  id="department"
+                  name="department"
+                  required
+                  className="block w-full pl-12 pr-10 py-4 border border-gray-200 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all duration-200 bg-white/50 hover:bg-white/80 appearance-none cursor-pointer"
+                  value={formData.department}
+                  onChange={handleInputChange}
+                >
+                  <option value="">Select a category</option>
+                  {categoriesLoading ? (
+                    <option value="" disabled>Loading categories...</option>
+                  ) : (
+                    categories
+                      .filter(category => category.isActive)
+                      .map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name} - {category.description}
+                        </option>
+                      ))
+                  )}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Selected Category Preview */}
+              {formData.department && (
+                <div className="bg-violet-50 border border-violet-200 rounded-2xl p-3">
+                  <div className="text-sm text-violet-700">
+                    <strong>Selected Category:</strong> {categories.find(cat => cat.id === formData.department)?.name}
+                  </div>
+                  <div className="text-xs text-violet-600 mt-1">
+                    {categories.find(cat => cat.id === formData.department)?.description}
+                  </div>
+                </div>
+              )}
 
               {/* Password Field */}
               <div className="space-y-2">
@@ -336,16 +361,10 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Terms Agreement */}
-            <div className="flex items-start space-x-3">
-             
-            
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading || isSubmitting}
+              disabled={isLoading || isSubmitting || categoriesLoading}
               className="group relative w-full flex justify-center items-center py-4 px-4 border border-transparent text-sm font-semibold rounded-2xl text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
             >
               {isLoading || isSubmitting ? (
@@ -359,22 +378,11 @@ export default function RegisterPage() {
               ) : (
                 <div className="flex items-center space-x-2">
                   <UserPlus className="h-5 w-5" />
-                  <span>Create {isAdmin ? 'Admin' : 'User'} Account</span>
+                  <span>Create Account</span>
                 </div>
               )}
             </button>
           </form>
-
-          {/* Social Login Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-           
-          </div>
-
-         
-         
         </div>
 
         {/* Footer */}
@@ -383,8 +391,8 @@ export default function RegisterPage() {
             Protected by reCAPTCHA and subject to our{' '}
             <a href="#" className="text-violet-600 hover:text-violet-500 transition-colors duration-200">
               Privacy Policy
-            </a>{' '}
-            and{' '}
+            </a>
+            {' '}and{' '}
             <a href="#" className="text-violet-600 hover:text-violet-500 transition-colors duration-200">
               Terms of Service
             </a>
@@ -398,15 +406,8 @@ export default function RegisterPage() {
           25% { transform: translateX(-5px); }
           75% { transform: translateX(5px); }
         }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
         .animate-shake {
           animation: shake 0.5s ease-in-out;
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
         }
       `}</style>
     </div>

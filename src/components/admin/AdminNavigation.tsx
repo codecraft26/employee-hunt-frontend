@@ -1,6 +1,6 @@
 // components/AdminNavigation.tsx
 import React from 'react';
-import { BarChart3, Target, MapPin, Vote, Users, CheckCircle } from 'lucide-react';
+import { BarChart3, Target, MapPin, Vote, Users, CheckCircle, Building2 } from 'lucide-react';
 import { TabView } from '../../types/admin';
 
 interface AdminNavigationProps {
@@ -9,10 +9,10 @@ interface AdminNavigationProps {
   pendingApprovals: number;
 }
 
-const AdminNavigation: React.FC<AdminNavigationProps> = ({ 
-  activeView, 
-  onViewChange, 
-  pendingApprovals 
+const AdminNavigation: React.FC<AdminNavigationProps> = ({
+  activeView,
+  onViewChange,
+  pendingApprovals
 }) => {
   const tabs = [
     { id: 'overview' as TabView, label: 'Overview', icon: BarChart3 },
@@ -20,6 +20,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = ({
     { id: 'treasure-hunts' as TabView, label: 'Treasure Hunts', icon: MapPin },
     { id: 'polls' as TabView, label: 'Polls & Voting', icon: Vote },
     { id: 'teams' as TabView, label: 'Teams', icon: Users },
+    { id: 'categories' as TabView, label: 'Categories', icon: Building2 }, // NEW TAB ADDED
     { id: 'approvals' as TabView, label: 'Approvals', icon: CheckCircle },
   ];
 

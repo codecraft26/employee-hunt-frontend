@@ -58,7 +58,7 @@ interface OTPVerifyData {
 }
 
 // API base URL - replace with your actual API URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 // Configure axios
 const api = axios.create({
@@ -79,7 +79,7 @@ export const registerUser = createAsyncThunk(
   'auth/registerUser',
   async (userData: RegisterData, { rejectWithValue }) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/register/user', userData);
+      const response = await api.post<AuthResponse>('/auth/register', userData);
       const { token, user } = response.data.data;
       
       // Store token in cookie

@@ -10,10 +10,10 @@ import OverviewTab from '../../components/tabs/OverviewTab';
 import TreasureHuntsTab from '../../components/tabs/TreasureHuntsTab';
 import PollsTab from '../../components/tabs/PollsTab';
 import TeamsTab from '../../components/tabs/TeamsTab';
+import CategoriesTab from '../../components/tabs/CategoriesTab'; // NEW IMPORT
 import QuizzesTab from '../../components/tabs/QuizzesTab';
-
 import CluesManagementTab from '../../components/tabs/CluesManagementTab';
-import SubmissionsManagementTab from '../../components/tabs/SubmissionsManagementTab'; // NEW IMPORT
+import SubmissionsManagementTab from '../../components/tabs/SubmissionsManagementTab';
 import WinnerSelectionModal from '../../components/modals/WinnerSelectionModal';
 import { 
   Stats, 
@@ -25,8 +25,8 @@ import {
   TabView 
 } from '../../types/admin';
 
-// Extended TabView type to include clue and submission management
-type ExtendedTabView = TabView | 'clues-management' | 'submissions-management';
+// Extended TabView type to include clue, submission management, and categories
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -162,6 +162,9 @@ export default function AdminDashboard() {
       case 'create-team':
         setActiveView('teams');
         break;
+      case 'create-category': // NEW CASE
+        setActiveView('categories');
+        break;
       case 'view-approvals':
         setActiveView('approvals');
         break;
@@ -200,7 +203,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // NEW: Handler for viewing submissions
   const handleViewSubmissions = async (huntId: string) => {
     console.log(`View submissions: ${huntId}`);
     setSelectedTreasureHuntId(huntId);
@@ -274,6 +276,22 @@ export default function AdminDashboard() {
     // This is now handled within the TeamsTab component
   };
 
+  // NEW: Category handlers - handled by the CategoriesTab component itself
+  const handleCreateCategory = () => {
+    console.log('Create category - handled by CategoriesTab component');
+    // This is now handled within the CategoriesTab component
+  };
+
+  const handleManageUsers = (categoryId: string) => {
+    console.log(`Manage users for category: ${categoryId}`);
+    // This is now handled within the CategoriesTab component
+  };
+
+  const handleViewCategoryStats = (categoryId: string) => {
+    console.log(`View stats for category: ${categoryId}`);
+    // This is now handled within the CategoriesTab component
+  };
+
   // Approval handlers
   const handleApprove = (approvalId: number) => {
     console.log(`Approve: ${approvalId}`);
@@ -313,7 +331,7 @@ export default function AdminDashboard() {
         return (
           <TreasureHuntsTab
             onViewClues={handleViewClues}
-            onViewSubmissions={handleViewSubmissions} // NEW PROP
+            onViewSubmissions={handleViewSubmissions}
             onDeclareWinner={handleDeclareWinner}
           />
         );
@@ -324,7 +342,7 @@ export default function AdminDashboard() {
             onBack={handleBackFromManagement}
           />
         );
-      case 'submissions-management': // NEW CASE
+      case 'submissions-management':
         return (
           <SubmissionsManagementTab
             treasureHuntId={selectedTreasureHuntId}
@@ -345,6 +363,15 @@ export default function AdminDashboard() {
             onImportUsers={handleImportUsers}
             onManageMembers={handleManageMembers}
             onViewStats={handleViewStats}
+          />
+        );
+      case 'categories': // NEW CASE
+        return (
+          <CategoriesTab
+            onCreateCategory={handleCreateCategory}
+            onImportUsers={handleImportUsers}
+            onManageUsers={handleManageUsers}
+            onViewStats={handleViewCategoryStats}
           />
         );
      
