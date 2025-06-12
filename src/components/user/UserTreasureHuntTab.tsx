@@ -147,7 +147,12 @@ export default function UserTreasureHuntTab() {
     }
   }, [myTeam?.id, refresh, fetchMyTeam]);
 
-  // Handle stage submission
+  // Add helper function to check if hunt is accessible
+  const canAccessHunt = (hunt: any) => {
+    return hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS';
+  };
+
+  // Update handleSubmitStage
   const handleSubmitStage = useCallback(async () => {
     if (!submissionUrl.trim() || !selectedHunt || !progress?.currentStage) {
       console.log('⚠️ Missing required data for submission:', {
@@ -156,6 +161,11 @@ export default function UserTreasureHuntTab() {
         hasStage: !!progress?.currentStage,
         teamId: myTeam?.id
       });
+      return;
+    }
+
+    if (!canAccessHunt(selectedHunt)) {
+      console.error('Cannot submit: Hunt is not active');
       return;
     }
 
@@ -314,375 +324,400 @@ export default function UserTreasureHuntTab() {
       </div>
 
       {/* Hunt Selection */}
-      {assignedHunts.length > 1 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Treasure Hunts</h3>
-          <div className="grid gap-4 md:grid-cols-2">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Treasure Hunt</h3>
+        {assignedHunts.length === 0 ? (
+          <div className="text-center py-8">
+            <Trophy className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No treasure hunts assigned to your team yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {assignedHunts.map((hunt) => (
               <div
                 key={hunt.id}
-                onClick={() => handleHuntSelect(hunt)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                className={`border rounded-lg p-4 cursor-pointer transition-all ${
                   selectedHunt?.id === hunt.id
                     ? 'border-indigo-500 bg-indigo-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : 'border-gray-200 hover:border-indigo-300'
                 }`}
+                onClick={() => handleHuntSelect(hunt)}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{hunt.title}</h4>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hunt.status)}`}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-1">{hunt.title}</h4>
+                    <p className="text-sm text-gray-600 line-clamp-2">{hunt.description}</p>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(hunt.status)}`}>
                     {hunt.status}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">{hunt.description}</p>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {hunt.status === 'IN_PROGRESS' || hunt.status === 'ACTIVE' 
-                      ? getTimeRemaining(hunt.endTime) 
-                      : formatDate(hunt.startTime)
-                    }
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(hunt.startTime)}
-                  </span>
-                </div>
+                {!canAccessHunt(hunt) && (
+                  <div className="mt-3 text-sm text-red-600">
+                    {hunt.status === 'UPCOMING' 
+                      ? 'This hunt has not started yet'
+                      : 'This hunt has ended'}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Selected Hunt Details */}
       {selectedHunt && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h3 className="text-xl font-semibold text-gray-900">{selectedHunt.title}</h3>
-              <p className="text-gray-600 mt-1">{selectedHunt.description}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedHunt.status)}`}>
-                {selectedHunt.status}
-              </span>
-              {(selectedHunt.status === 'IN_PROGRESS' || selectedHunt.status === 'ACTIVE') && (
-                <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  {getTimeRemaining(selectedHunt.endTime)}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Progress Overview */}
-          {huntStats && (
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Progress</span>
-                <span className="text-sm text-gray-500">
-                  {huntStats.completedStages} of {huntStats.totalStages} stages completed ({huntStats.completionPercentage}%)
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500"
-                  style={{ width: `${huntStats.completionPercentage}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between mt-2 text-xs text-gray-500">
-                <span className="flex items-center gap-1">
-                  <CheckCircle className="h-3 w-3 text-green-500" />
-                  {huntStats.completedStages} completed
-                </span>
-                <span className="flex items-center gap-1">
-                  <AlertCircle className="h-3 w-3 text-yellow-500" />
-                  {huntStats.pendingStages} pending
-                </span>
-                <span className="flex items-center gap-1">
-                  <XCircle className="h-3 w-3 text-red-500" />
-                  {huntStats.rejectedStages} rejected
+        <div className="space-y-6">
+          {/* Hunt Status Warning */}
+          {!canAccessHunt(selectedHunt) && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2 text-red-800">
+                <AlertCircle className="h-5 w-5" />
+                <span className="font-medium">
+                  {selectedHunt.status === 'UPCOMING' 
+                    ? 'This hunt has not started yet. Actions will be available when the hunt becomes active.'
+                    : 'This hunt has ended. Actions are no longer available.'}
                 </span>
               </div>
             </div>
           )}
 
-          {progressLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
-              <span className="ml-2 text-gray-600">Loading progress...</span>
-            </div>
-          ) : progress ? (
-            <>
-              {/* Current Stage */}
-              {progress.currentStage ? (
-                <div className="mb-6">
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6 border border-indigo-200">
-                    <div className="flex items-start gap-4">
-                      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full h-10 w-10 flex items-center justify-center text-sm font-bold">
-                        {progress.currentStage.stageNumber}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
-                          <Target className="h-5 w-5" />
-                          Stage {progress.currentStage.stageNumber}
-                        </h4>
-                        <p className="text-indigo-800 mb-4 text-lg">{progress.currentStage.description}</p>
-
-                        {/* Current Stage Status */}
-                        {currentStageStatus?.status === 'PENDING' ? (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <div className="flex items-center gap-2 text-yellow-800 mb-2">
-                              <AlertCircle className="h-5 w-5" />
-                              <span className="font-medium">Submission Under Review</span>
-                            </div>
-                            <p className="text-yellow-700 text-sm mb-2">
-                              Your submission is being reviewed by the admin. You'll be notified once it's approved or rejected.
-                            </p>
-                            {currentStageStatus.imageUrl && (
-                              <div className="text-xs text-yellow-600">
-                                Submitted: <a href={currentStageStatus.imageUrl} target="_blank" rel="noopener noreferrer" className="underline">View Image</a>
-                              </div>
-                            )}
-                            {currentStageStatus.adminFeedback && (
-                              <div className="bg-white rounded-md p-3 border border-yellow-200 mt-2">
-                                <p className="text-sm font-medium text-yellow-800 mb-1">Admin Feedback:</p>
-                                <p className="text-sm text-yellow-700">{currentStageStatus.adminFeedback}</p>
-                              </div>
-                            )}
-                          </div>
-                        ) : currentStageStatus?.status === 'REJECTED' ? (
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                            <div className="flex items-center gap-2 text-red-800 mb-2">
-                              <XCircle className="h-5 w-5" />
-                              <span className="font-medium">Submission Rejected</span>
-                            </div>
-                            {currentStageStatus.adminFeedback && (
-                              <div className="bg-white rounded-md p-3 border border-red-200 mt-2">
-                                <p className="text-sm font-medium text-red-800 mb-1">Admin Feedback:</p>
-                                <p className="text-sm text-red-700">{currentStageStatus.adminFeedback}</p>
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
-
-                        {/* Submission Form */}
-                        {submissionAllowed && (
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium text-indigo-900 mb-2">
-                                Submit Your Evidence
-                              </label>
-                              <p className="text-sm text-indigo-700 mb-3">
-                                Take a photo of the location and upload it, then paste the image URL here.
-                              </p>
-                              <div className="flex gap-2">
-                                <div className="flex-1 relative">
-                                  <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                  <input
-                                    type="url"
-                                    value={submissionUrl}
-                                    onChange={(e) => setSubmissionUrl(e.target.value)}
-                                    placeholder="https://example.com/your-image.jpg"
-                                    className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    disabled={submitting}
-                                  />
-                                </div>
-                                <button
-                                  onClick={handleSubmitStage}
-                                  disabled={!submissionUrl.trim() || submitting}
-                                  className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                >
-                                  {submitting ? (
-                                    <>
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                      Submitting...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Send className="h-4 w-4" />
-                                      Submit
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {!submissionAllowed && !currentStageStatus && (
-                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <p className="text-gray-600 text-sm">
-                              Please wait for your previous submission to be reviewed before submitting again.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* All Stages Completed */
-                <div className="text-center py-12">
-                  <div className="relative">
-                    <Trophy className="h-20 w-20 text-yellow-500 mx-auto mb-4" />
-                    <div className="absolute -top-2 -right-2 bg-yellow-100 rounded-full p-2">
-                      <Flag className="h-6 w-6 text-yellow-600" />
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Quest Complete!</h3>
-                  <p className="text-gray-600 mb-4">
-                    Congratulations! You have successfully completed all stages of this treasure hunt.
-                  </p>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
-                    <p className="text-green-800 font-medium">
-                      🎉 {huntStats?.completedStages} out of {huntStats?.totalStages} stages completed!
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* All Stages Overview */}
-              {allStages.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Trophy className="h-5 w-5" />
-                    All Stages Overview
-                  </h4>
-                  <div className="space-y-3">
-                    {allStages.map((stage) => {
-                      const submission = stage.submission;
-                      
-                      return (
-                        <div
-                          key={stage.stageNumber}
-                          className={`border rounded-lg p-4 transition-all ${
-                            stage.isCurrent
-                              ? 'border-indigo-300 bg-indigo-50'
-                              : stage.isUnlocked
-                              ? 'border-gray-300 bg-white'
-                              : 'border-gray-200 bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`rounded-full h-8 w-8 flex items-center justify-center text-sm font-bold ${
-                                stage.isCurrent
-                                  ? 'bg-indigo-600 text-white'
-                                  : stage.isUnlocked
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-gray-200 text-gray-500'
-                              }`}>
-                                {stage.isUnlocked ? (
-                                  submission?.status === 'APPROVED' ? (
-                                    <CheckCircle className="h-4 w-4" />
-                                  ) : (
-                                    stage.stageNumber
-                                  )
-                                ) : (
-                                  <Lock className="h-4 w-4" />
-                                )}
-                              </div>
-                              <div>
-                                <h5 className="font-medium text-gray-900">
-                                  Stage {stage.stageNumber}
-                                  {stage.isCurrent && <span className="text-indigo-600 ml-2">(Current)</span>}
-                                </h5>
-                                {stage.description && (
-                                  <p className="text-sm text-gray-600">{stage.description}</p>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              {submission && getSubmissionStatusBadge(submission.status)}
-                              {submission && (
-                                <button
-                                  onClick={() => setSelectedSubmissionModal({ 
-                                    isOpen: true, 
-                                    submission 
-                                  })}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </button>
-                              )}
-                              {!stage.isUnlocked && (
-                                <Lock className="h-4 w-4 text-gray-400" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Submission History */}
-              {progress.submissions.length > 0 && (
+          {/* Current Stage */}
+          {progress?.currentStage && canAccessHunt(selectedHunt) && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    Recent Submissions
-                  </h4>
-                  <div className="space-y-3">
-                    {progress.submissions
-                      .slice()
-                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                      .slice(0, 5)
-                      .map((submission) => (
-                        <div key={submission.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-gray-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold">
-                                {submission.clue.stageNumber}
-                              </div>
-                              <span className="font-medium text-gray-700">
-                                Stage {submission.clue.stageNumber}
-                              </span>
-                              {getSubmissionStatusBadge(submission.status)}
-                            </div>
-                            <div className="text-right">
-                              <span className="text-xs text-gray-500">
-                                {formatDate(submission.createdAt)}
-                              </span>
-                              <button
-                                onClick={() => setSelectedSubmissionModal({ 
-                                  isOpen: true, 
-                                  submission 
-                                })}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                          {submission.adminFeedback && (
-                            <div className="bg-white rounded-md p-3 border border-gray-200 mt-2">
-                              <p className="text-sm font-medium text-gray-700 mb-1">Admin Feedback:</p>
-                              <p className="text-sm text-gray-600">{submission.adminFeedback}</p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                  <h3 className="text-xl font-semibold text-gray-900">{selectedHunt.title}</h3>
+                  <p className="text-gray-600 mt-1">{selectedHunt.description}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedHunt.status)}`}>
+                    {selectedHunt.status}
+                  </span>
+                  {(selectedHunt.status === 'IN_PROGRESS' || selectedHunt.status === 'ACTIVE') && (
+                    <span className="text-sm text-gray-500 flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {getTimeRemaining(selectedHunt.endTime)}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress Overview */}
+              {huntStats && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Progress</span>
+                    <span className="text-sm text-gray-500">
+                      {huntStats.completedStages} of {huntStats.totalStages} stages completed ({huntStats.completionPercentage}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                      style={{ width: `${huntStats.completionPercentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                      {huntStats.completedStages} completed
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3 text-yellow-500" />
+                      {huntStats.pendingStages} pending
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <XCircle className="h-3 w-3 text-red-500" />
+                      {huntStats.rejectedStages} rejected
+                    </span>
                   </div>
                 </div>
               )}
-            </>
-          ) : (
-            /* No Progress Data */
-            <div className="text-center py-8">
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Progress Data</h3>
-              <p className="text-gray-600 mb-4">Unable to load progress for this treasure hunt.</p>
-              <button
-                onClick={() => fetchProgress(selectedHunt.id)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Retry
-              </button>
+
+              {progressLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
+                  <span className="ml-2 text-gray-600">Loading progress...</span>
+                </div>
+              ) : progress ? (
+                <>
+                  {/* Current Stage */}
+                  {progress.currentStage ? (
+                    <div className="mb-6">
+                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-6 border border-indigo-200">
+                        <div className="flex items-start gap-4">
+                          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full h-10 w-10 flex items-center justify-center text-sm font-bold">
+                            {progress.currentStage.stageNumber}
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                              <Target className="h-5 w-5" />
+                              Stage {progress.currentStage.stageNumber}
+                            </h4>
+                            <p className="text-indigo-800 mb-4 text-lg">{progress.currentStage.description}</p>
+
+                            {/* Current Stage Status */}
+                            {currentStageStatus?.status === 'PENDING' ? (
+                              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 text-yellow-800 mb-2">
+                                  <AlertCircle className="h-5 w-5" />
+                                  <span className="font-medium">Submission Under Review</span>
+                                </div>
+                                <p className="text-yellow-700 text-sm mb-2">
+                                  Your submission is being reviewed by the admin. You'll be notified once it's approved or rejected.
+                                </p>
+                                {currentStageStatus.imageUrl && (
+                                  <div className="text-xs text-yellow-600">
+                                    Submitted: <a href={currentStageStatus.imageUrl} target="_blank" rel="noopener noreferrer" className="underline">View Image</a>
+                                  </div>
+                                )}
+                                {currentStageStatus.adminFeedback && (
+                                  <div className="bg-white rounded-md p-3 border border-yellow-200 mt-2">
+                                    <p className="text-sm font-medium text-yellow-800 mb-1">Admin Feedback:</p>
+                                    <p className="text-sm text-yellow-700">{currentStageStatus.adminFeedback}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : currentStageStatus?.status === 'REJECTED' ? (
+                              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                                <div className="flex items-center gap-2 text-red-800 mb-2">
+                                  <XCircle className="h-5 w-5" />
+                                  <span className="font-medium">Submission Rejected</span>
+                                </div>
+                                {currentStageStatus.adminFeedback && (
+                                  <div className="bg-white rounded-md p-3 border border-red-200 mt-2">
+                                    <p className="text-sm font-medium text-red-800 mb-1">Admin Feedback:</p>
+                                    <p className="text-sm text-red-700">{currentStageStatus.adminFeedback}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : null}
+
+                            {/* Submission Form */}
+                            {submissionAllowed && (
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-indigo-900 mb-2">
+                                    Submit Your Evidence
+                                  </label>
+                                  <p className="text-sm text-indigo-700 mb-3">
+                                    Take a photo of the location and upload it, then paste the image URL here.
+                                  </p>
+                                  <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                      <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                      <input
+                                        type="url"
+                                        value={submissionUrl}
+                                        onChange={(e) => setSubmissionUrl(e.target.value)}
+                                        placeholder="https://example.com/your-image.jpg"
+                                        className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        disabled={submitting}
+                                      />
+                                    </div>
+                                    <button
+                                      onClick={handleSubmitStage}
+                                      disabled={!submissionUrl.trim() || submitting}
+                                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    >
+                                      {submitting ? (
+                                        <>
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                          Submitting...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Send className="h-4 w-4" />
+                                          Submit
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {!submissionAllowed && !currentStageStatus && (
+                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <p className="text-gray-600 text-sm">
+                                  Please wait for your previous submission to be reviewed before submitting again.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* All Stages Completed */
+                    <div className="text-center py-12">
+                      <div className="relative">
+                        <Trophy className="h-20 w-20 text-yellow-500 mx-auto mb-4" />
+                        <div className="absolute -top-2 -right-2 bg-yellow-100 rounded-full p-2">
+                          <Flag className="h-6 w-6 text-yellow-600" />
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Quest Complete!</h3>
+                      <p className="text-gray-600 mb-4">
+                        Congratulations! You have successfully completed all stages of this treasure hunt.
+                      </p>
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 inline-block">
+                        <p className="text-green-800 font-medium">
+                          🎉 {huntStats?.completedStages} out of {huntStats?.totalStages} stages completed!
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* All Stages Overview */}
+                  {allStages.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Trophy className="h-5 w-5" />
+                        All Stages Overview
+                      </h4>
+                      <div className="space-y-3">
+                        {allStages.map((stage) => {
+                          const submission = stage.submission;
+                          const isAccessible = canAccessHunt(selectedHunt);
+                          
+                          return (
+                            <div
+                              key={stage.stageNumber}
+                              className={`border rounded-lg p-4 transition-all ${
+                                stage.isCurrent
+                                  ? 'border-indigo-300 bg-indigo-50'
+                                  : stage.isUnlocked
+                                  ? 'border-gray-300 bg-white'
+                                  : 'border-gray-200 bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={`rounded-full h-8 w-8 flex items-center justify-center text-sm font-bold ${
+                                    stage.isCurrent
+                                      ? 'bg-indigo-600 text-white'
+                                      : stage.isUnlocked
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-gray-200 text-gray-500'
+                                  }`}>
+                                    {stage.isUnlocked ? (
+                                      submission?.status === 'APPROVED' ? (
+                                        <CheckCircle className="h-4 w-4" />
+                                      ) : (
+                                        stage.stageNumber
+                                      )
+                                    ) : (
+                                      <Lock className="h-4 w-4" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h5 className="font-medium text-gray-900">
+                                      Stage {stage.stageNumber}
+                                      {stage.isCurrent && <span className="text-indigo-600 ml-2">(Current)</span>}
+                                    </h5>
+                                    {stage.description && (
+                                      <p className="text-sm text-gray-600">{stage.description}</p>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                  {submission && getSubmissionStatusBadge(submission.status)}
+                                  {submission && (
+                                    <button
+                                      onClick={() => setSelectedSubmissionModal({ 
+                                        isOpen: true, 
+                                        submission 
+                                      })}
+                                      className="text-gray-400 hover:text-gray-600"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                  {!stage.isUnlocked && (
+                                    <Lock className="h-4 w-4 text-gray-400" />
+                                  )}
+                                  {!isAccessible && (
+                                    <span className="text-xs text-red-600">
+                                      {selectedHunt.status === 'UPCOMING' ? 'Not Started' : 'Ended'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submission History */}
+                  {progress.submissions.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Recent Submissions
+                      </h4>
+                      <div className="space-y-3">
+                        {progress.submissions
+                          .slice()
+                          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                          .slice(0, 5)
+                          .map((submission) => (
+                            <div key={submission.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-gray-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold">
+                                    {submission.clue.stageNumber}
+                                  </div>
+                                  <span className="font-medium text-gray-700">
+                                    Stage {submission.clue.stageNumber}
+                                  </span>
+                                  {getSubmissionStatusBadge(submission.status)}
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-xs text-gray-500">
+                                    {formatDate(submission.createdAt)}
+                                  </span>
+                                  <button
+                                    onClick={() => setSelectedSubmissionModal({ 
+                                      isOpen: true, 
+                                      submission 
+                                    })}
+                                    className="ml-2 text-gray-400 hover:text-gray-600"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              {submission.adminFeedback && (
+                                <div className="bg-white rounded-md p-3 border border-gray-200 mt-2">
+                                  <p className="text-sm font-medium text-gray-700 mb-1">Admin Feedback:</p>
+                                  <p className="text-sm text-gray-600">{submission.adminFeedback}</p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* No Progress Data */
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Progress Data</h3>
+                  <button
+                    onClick={() => fetchProgress(selectedHunt.id)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

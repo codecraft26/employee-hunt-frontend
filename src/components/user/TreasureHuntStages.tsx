@@ -202,8 +202,19 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
     return () => clearInterval(interval);
   }, [hunt.id, fetchProgress]);
 
+  // Add helper function to check if hunt is accessible
+  const canAccessHunt = (hunt: any) => {
+    return hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS';
+  };
+
+  // Update the handleSubmitClue function
   const handleSubmitClue = async (imageUrl: string) => {
     if (!submissionModal.clue) return;
+
+    if (!canAccessHunt(hunt)) {
+      console.error('Cannot submit: Hunt is not active');
+      return;
+    }
 
     try {
       const success = await submitStage(
@@ -214,7 +225,6 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
 
       if (success) {
         setSubmissionModal({ isOpen: false, clue: null });
-        // Show success message or handle success UI
       }
     } catch (error) {
       console.error('Failed to submit stage:', error);
@@ -412,6 +422,20 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
             />
           </div>
         </div>
+
+        {/* Status Warning */}
+        {!canAccessHunt(hunt) && (
+          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2 text-red-800">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-medium">
+                {hunt.status === 'UPCOMING' 
+                  ? 'This hunt has not started yet. Actions will be available when the hunt becomes active.'
+                  : 'This hunt has ended. Actions are no longer available.'}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error Message */}
@@ -448,7 +472,19 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
           </button>
         </div>
 
-        {cluesWithStatus.length === 0 ? (
+        {!canAccessHunt(hunt) ? (
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <Lock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {hunt.status === 'UPCOMING' ? 'Hunt Not Started' : 'Hunt Ended'}
+            </h3>
+            <p className="text-gray-500">
+              {hunt.status === 'UPCOMING'
+                ? 'This treasure hunt has not started yet. You will be able to access the stages when the hunt becomes active.'
+                : 'This treasure hunt has ended. You can view your submissions but cannot make new ones.'}
+            </p>
+          </div>
+        ) : cluesWithStatus.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No stages available</h3>
@@ -463,7 +499,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                 description: submission.clue.description,
                 status: submission.status,
                 createdAt: submission.createdAt,
-                updatedAt: submission.createdAt, // Using createdAt as updatedAt since it's not provided
+                updatedAt: submission.createdAt,
                 adminFeedback: submission.adminFeedback
               };
               return renderSubmission(submission, clue, index);
