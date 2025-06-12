@@ -11,7 +11,7 @@ import TreasureHuntsTab from '../../components/tabs/TreasureHuntsTab';
 import PollsTab from '../../components/tabs/PollsTab';
 import TeamsTab from '../../components/tabs/TeamsTab';
 import QuizzesTab from '../../components/tabs/QuizzesTab';
-import ApprovalsTab from '../../components/tabs/ApprovalsTab';
+
 import CluesManagementTab from '../../components/tabs/CluesManagementTab';
 import SubmissionsManagementTab from '../../components/tabs/SubmissionsManagementTab'; // NEW IMPORT
 import WinnerSelectionModal from '../../components/modals/WinnerSelectionModal';
@@ -347,15 +347,7 @@ export default function AdminDashboard() {
             onViewStats={handleViewStats}
           />
         );
-      case 'approvals':
-        return (
-          <ApprovalsTab
-            pendingApprovals={mockPendingApprovals}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            onAddFeedback={handleAddFeedback}
-          />
-        );
+     
       default:
         return (
           <div className="text-center py-12">

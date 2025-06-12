@@ -8,13 +8,13 @@ import DeleteTreasureHuntModal from '../modals/DeleteTreasureHuntModal';
 
 interface TreasureHuntsTabProps {
   onViewClues: (huntId: string) => void;
-  onViewSubmissions: (huntId: string) => void; // NEW PROP
+  onViewSubmissions: (huntId: string) => void;
   onDeclareWinner: (huntId: string) => void;
 }
 
 const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({ 
   onViewClues, 
-  onViewSubmissions, // NEW PROP
+  onViewSubmissions,
   onDeclareWinner 
 }) => {
   const { 
@@ -120,9 +120,17 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
 
   const handleDeclareWinner = (huntId: string) => {
     const hunt = treasureHunts.find(h => h.id === huntId);
-    if (hunt && hunt.status === 'ACTIVE') {
+    const stats = getHuntStats(huntId);
+    
+    // Allow declaring winner for ACTIVE or COMPLETED hunts that don't have a winner yet
+    if (hunt && stats?.canDeclareWinner) {
       onDeclareWinner(huntId);
     }
+  };
+
+  // Check if hunt can be deleted (only UPCOMING or COMPLETED hunts without winners)
+  const canDeleteHunt = (hunt: any) => {
+    return hunt.status === 'UPCOMING' || (hunt.status === 'COMPLETED' && !hunt.winningTeam);
   };
 
   if (loading && treasureHunts.length === 0) {
@@ -227,6 +235,12 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                             Winner: {hunt.winningTeam.name}
                           </span>
                         )}
+                        {hunt.status === 'COMPLETED' && !hunt.winningTeam && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            No Winner Declared
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -271,15 +285,27 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                                 <FileText className="h-4 w-4 mr-2" />
                                 View Submissions
                               </button>
+                              {stats?.canDeclareWinner && (
+                                <button
+                                  onClick={() => {
+                                    handleDeclareWinner(hunt.id);
+                                    setDropdownOpen(null);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-green-700 hover:bg-green-50 transition-colors"
+                                >
+                                  <Trophy className="h-4 w-4 mr-2" />
+                                  Declare Winner
+                                </button>
+                              )}
                               <div className="border-t border-gray-200 my-1"></div>
                               <button
                                 onClick={() => handleDelete(hunt)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                disabled={hunt.status === 'ACTIVE'}
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!canDeleteHunt(hunt)}
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                {hunt.status === 'ACTIVE'
-                                  ? 'Cannot Delete (Active)' 
+                                {!canDeleteHunt(hunt)
+                                  ? 'Cannot Delete' 
                                   : 'Delete Hunt'
                                 }
                               </button>
@@ -384,10 +410,10 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                       <span>Submissions</span>
                     </button>
                   </div>
-                  {hunt.status === 'ACTIVE' && !hunt.winningTeam && (
+                  {stats?.canDeclareWinner && (
                     <button 
                       onClick={() => handleDeclareWinner(hunt.id)}
-                      className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
+                      className="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded font-medium text-sm flex items-center space-x-1 transition-colors"
                     >
                       <Trophy className="h-4 w-4" />
                       <span>Declare Winner</span>
