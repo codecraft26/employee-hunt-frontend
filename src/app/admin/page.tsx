@@ -150,15 +150,19 @@ export default function AdminDashboard() {
     
     // Navigate to appropriate tab based on quick action
     switch (type) {
+      case 'quiz':
       case 'create-quiz':
         setActiveView('quizzes');
         break;
+      case 'treasure':
       case 'create-hunt':
         setActiveView('treasure-hunts');
         break;
+      case 'poll':
       case 'create-poll':
         setActiveView('polls');
         break;
+      case 'team':
       case 'create-team':
         setActiveView('teams');
         break;
@@ -282,11 +286,6 @@ export default function AdminDashboard() {
     // This is now handled within the CategoriesTab component
   };
 
-  const handleManageUsers = (categoryId: string) => {
-    console.log(`Manage users for category: ${categoryId}`);
-    // This is now handled within the CategoriesTab component
-  };
-
   const handleViewCategoryStats = (categoryId: string) => {
     console.log(`View stats for category: ${categoryId}`);
     // This is now handled within the CategoriesTab component
@@ -369,8 +368,6 @@ export default function AdminDashboard() {
         return (
           <CategoriesTab
             onCreateCategory={handleCreateCategory}
-            onImportUsers={handleImportUsers}
-            onManageUsers={handleManageUsers}
             onViewStats={handleViewCategoryStats}
           />
         );
