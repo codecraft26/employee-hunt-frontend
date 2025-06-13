@@ -302,62 +302,47 @@ export const useTreasureHunt = () => {
   const submitStage = useCallback(async (
     huntId: string,
     stageId: string,
-    imageUrl: string,
+    file: File,
     teamId?: string
   ): Promise<boolean> => {
-    if (!imageUrl.trim()) {
-      setError('Image URL is required');
+    if (!file) {
+      setError('Image file is required');
       return false;
     }
 
-    console.log('📤 Submitting stage solution:', { 
-      huntId, 
-      stageId, 
-      teamId, 
-      imageUrl: imageUrl.substring(0, 50) + '...' 
-    });
     setSubmitting(true);
     setError(null);
-    
+
     try {
-      // Using the correct backend route: POST /api/treasure-hunts/{treasureHuntId}/stages/{stageId}/submit
-      const payload = { 
-        imageUrl: imageUrl.trim(),
-        ...(teamId && { teamId })
-      };
-      
+      const formData = new FormData();
+      formData.append('image', file);
+      if (teamId) {
+        formData.append('teamId', teamId);
+      }
+
       const response = await api.post<ApiResponse<any>>(
         `/treasure-hunts/${huntId}/stages/${stageId}/submit`,
-        payload
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
-      
+
       if (response.data.success) {
-        console.log('✅ Stage submitted successfully');
-        // Immediately fetch updated progress
         await fetchProgressInternal(huntId);
         return true;
       } else {
         throw new Error(response.data.message || 'Failed to submit stage');
       }
     } catch (err: any) {
-      console.error('💥 Submit stage error:', err);
-      
       let errorMessage = 'Failed to submit stage';
-      
-      if (err.response?.status === 400) {
-        errorMessage = err.response.data?.message || 'Invalid submission data. Please check your image URL format.';
-      } else if (err.response?.status === 404) {
-        errorMessage = 'Stage not found or submission endpoint not available.';
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
-      } else if (err.response?.status === 403) {
-        errorMessage = 'You are not authorized to submit for this stage.';
-      } else if (err.response?.data?.message) {
+      if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
       setError(errorMessage);
       return false;
     } finally {

@@ -21,7 +21,7 @@ import { useTreasureHunt, TreasureHunt, TeamProgress, Submission, TreasureHuntCl
 interface SubmissionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (imageUrl: string) => void;
+  onSubmit: (file: File) => void;
   submitting: boolean;
   clue: TreasureHuntClue | null;
 }
@@ -31,6 +31,8 @@ interface TreasureHuntStagesProps {
   teamId?: string;
 }
 
+const MAX_FILE_SIZE_MB = 5;
+
 const SubmissionModal: React.FC<SubmissionModalProps> = ({
   isOpen,
   clue,
@@ -38,31 +40,60 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({
   onSubmit,
   submitting
 }) => {
-  const [imageUrl, setImageUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setImageUrl('');
+      setFile(null);
       setImagePreview(null);
+      setError(null);
     }
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (imageUrl.trim()) {
-      onSubmit(imageUrl.trim());
+  const validateFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      return 'Only image files are allowed.';
+    }
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      return `File size must be less than ${MAX_FILE_SIZE_MB}MB.`;
+    }
+    return null;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files && e.target.files[0];
+    if (selected) {
+      const validationError = validateFile(selected);
+      if (validationError) {
+        setError(validationError);
+        setFile(null);
+        setImagePreview(null);
+        return;
+      }
+      setFile(selected);
+      setImagePreview(URL.createObjectURL(selected));
+      setError(null);
+    } else {
+      setFile(null);
+      setImagePreview(null);
+      setError(null);
     }
   };
 
-  const handleImageUrlChange = (url: string) => {
-    setImageUrl(url);
-    // Simple URL validation for preview
-    if (url && (url.startsWith('http://') || url.startsWith('https://')) && 
-        (url.includes('.jpg') || url.includes('.png') || url.includes('.jpeg') || url.includes('.gif'))) {
-      setImagePreview(url);
-    } else {
-      setImagePreview(null);
+  const handleRemove = () => {
+    setFile(null);
+    setImagePreview(null);
+    setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (file && !error) {
+      onSubmit(file);
     }
   };
 
@@ -96,36 +127,81 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-2">
-                Solution Image URL
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Solution Photo
               </label>
-              <input
-                id="imageUrl"
-                type="url"
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="https://example.com/your-solution-image.jpg"
-                value={imageUrl}
-                onChange={(e) => handleImageUrlChange(e.target.value)}
-                disabled={submitting}
-              />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 disabled:opacity-50"
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.accept = 'image/*';
+                      fileInputRef.current.capture = 'environment';
+                      fileInputRef.current.click();
+                    }
+                  }}
+                  disabled={submitting}
+                >
+                  <Camera className="h-5 w-5 mr-2" />
+                  <span>Take Photo</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2 disabled:opacity-50"
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.accept = 'image/*';
+                      fileInputRef.current.removeAttribute('capture');
+                      fileInputRef.current.click();
+                    }
+                  }}
+                  disabled={submitting}
+                >
+                  <Upload className="h-5 w-5 mr-2" />
+                  <span>Choose from Gallery</span>
+                </button>
+                <input
+                  ref={fileInputRef}
+                  id="fileInput"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  disabled={submitting}
+                />
+              </div>
               <p className="text-xs text-gray-500 mt-1">
-                Upload your image to a service like Imgur, Cloudinary, or any image hosting service and paste the URL here.
+                Upload a photo from your device or take a new one with your camera. Max size: {MAX_FILE_SIZE_MB}MB.
               </p>
+              {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
             </div>
 
-            {/* Image Preview */}
-            {imagePreview && (
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Image Preview:</p>
-                <div className="border border-gray-300 rounded-lg p-2">
-                  <img
-                    src={imagePreview}
-                    alt="Solution preview"
-                    className="max-w-full h-48 object-contain mx-auto rounded"
-                    onError={() => setImagePreview(null)}
-                  />
+            {/* File Info and Preview */}
+            {file && (
+              <div className="mt-2 flex flex-col sm:flex-row items-center gap-4">
+                <div className="flex-1">
+                  <div className="text-xs text-gray-700 font-medium">Selected file:</div>
+                  <div className="text-xs text-gray-600 truncate">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</div>
+                  <button
+                    type="button"
+                    onClick={handleRemove}
+                    className="text-xs text-red-500 hover:underline mt-1"
+                    disabled={submitting}
+                  >
+                    Remove
+                  </button>
                 </div>
+                {imagePreview && (
+                  <div className="border border-gray-300 rounded-lg p-2 bg-gray-50">
+                    <img
+                      src={imagePreview}
+                      alt="Solution preview"
+                      className="max-w-[120px] h-24 object-contain mx-auto rounded"
+                      onError={() => setImagePreview(null)}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -140,7 +216,7 @@ const SubmissionModal: React.FC<SubmissionModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={!imageUrl.trim() || submitting}
+                disabled={!file || !!error || submitting}
                 className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2"
               >
                 {submitting ? (
@@ -208,7 +284,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
   };
 
   // Update the handleSubmitClue function
-  const handleSubmitClue = async (imageUrl: string) => {
+  const handleSubmitClue = async (file: File) => {
     if (!submissionModal.clue) return;
 
     if (!canAccessHunt(hunt)) {
@@ -220,7 +296,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
       const success = await submitStage(
         hunt.id,
         submissionModal.clue.id,
-        imageUrl
+        file
       );
 
       if (success) {

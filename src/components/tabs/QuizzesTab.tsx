@@ -389,7 +389,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
 
   const canDeleteQuiz = (quiz: Quiz) => {
     // Allow deletion for DRAFT and UPCOMING quizzes
-    return quiz.status === 'DRAFT' || quiz.status === 'UPCOMING';
+    return quiz.status === 'DRAFT' || quiz.status === 'UPCOMING' || quiz.status === 'COMPLETED' || quiz.status === 'ACTIVE';
   };
 
   return (
