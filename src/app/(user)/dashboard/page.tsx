@@ -108,6 +108,21 @@ export default function UserDashboardUI() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
+        {/* Banner */}
+        <div className="relative w-full h-40 sm:h-56 md:h-64 rounded-b-3xl overflow-hidden mb-2">
+          <img
+            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
+            alt="Trip Games Banner"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="relative z-10 px-6 pt-8 pb-4 flex flex-col h-full justify-between">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow">Trip Games</h1>
+              <p className="text-white text-base sm:text-lg opacity-90">Let's play together!</p>
+            </div>
+          </div>
+        </div>
         {/* Mobile-First Header */}
         <div className="bg-white shadow-sm border-b sticky top-0 z-40">
           <div className="px-4 sm:px-6 lg:px-8">
@@ -138,7 +153,6 @@ export default function UserDashboardUI() {
             </div>
           </div>
         </div>
-
         {/* Mobile Navigation Tabs */}
         <div className="bg-white border-b overflow-x-auto">
           <div className="flex space-x-8 px-4 sm:px-6 lg:px-8">
@@ -166,7 +180,6 @@ export default function UserDashboardUI() {
             ))}
           </div>
         </div>
-
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {renderActiveTab()}

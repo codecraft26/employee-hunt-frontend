@@ -1,6 +1,6 @@
 // components/tabs/PollsTab.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, BarChart3, Send, Clock, Users, Eye, Edit, Trash2, Calendar, RefreshCw } from 'lucide-react';
+import { Plus, BarChart3, Send, Clock, Users, Eye, Edit, Trash2, Calendar, RefreshCw, Building2 } from 'lucide-react';
 import { Vote, VoteStatus, VoteType } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 import CreatePollModal from '../modals/CreatePollModal';
@@ -256,6 +256,10 @@ const PollsTab: React.FC<PollsTabProps> = ({
                         <span className="text-sm text-gray-600 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           {poll.type === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}
+                        </span>
+                        <span className="text-sm text-gray-600 flex items-center">
+                          <Building2 className="h-4 w-4 mr-1" />
+                          {poll.categoryType === 'ALL' ? 'All Categories' : `${poll.allowedCategories?.length || 0} Categories`}
                         </span>
                         <span className="text-sm text-gray-600 flex items-center">
                           <Users className="h-4 w-4 mr-1" />

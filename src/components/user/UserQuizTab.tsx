@@ -43,6 +43,7 @@ const UserQuizTab: React.FC = () => {
       document.head.removeChild(style);
     };
   }, []);
+
   const {
     loading,
     error,
@@ -172,7 +173,7 @@ const UserQuizTab: React.FC = () => {
           setTimeRemaining(0); // No timer for completed questions
         } else {
           // Set timer for unanswered question
-          const timeLimit = questions[startIndex]?.timeLimit || 30;
+          const timeLimit = questions[startIndex]?.question?.timeLimit || 30;
           setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
         }
         
@@ -204,38 +205,43 @@ const UserQuizTab: React.FC = () => {
 
     setIsSubmitting(true);
     
-    const timeTaken = currentQuestion.timeLimit - timeRemaining;
+    const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
     
     try {
-      const success = await submitAnswer(selectedQuiz.id, currentQuestion.id, {
+      // Use the question's ID from the nested question object, not the assignment ID
+      const questionId = currentQuestion.question?.id || currentQuestion.id;
+      const result = await submitAnswer(selectedQuiz.id, questionId, {
         selectedOption: selectedAnswer,
         timeTaken: timeTaken
       });
 
-      if (success) {
-        // Get the updated question data from the assignedQuestions state
-        const updatedQuestion = assignedQuestions.find(q => q.id === currentQuestion.id);
+      if (result && result.success) {
+        // Use the response data directly for immediate feedback
+        setFeedbackData({
+          isCorrect: Boolean(result.isCorrect),
+          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
+          selectedAnswer: selectedAnswer,
+          score: Number(result.score || 0)
+        });
+        setShowImmediateFeedback(true);
         
-        if (updatedQuestion) {
-          // Show immediate feedback
-          setFeedbackData({
-            isCorrect: updatedQuestion.isCorrect || false,
-            correctAnswer: updatedQuestion.correctAnswer || 0,
-            selectedAnswer: selectedAnswer,
-            score: updatedQuestion.score || 0
-          });
-          setShowImmediateFeedback(true);
-          
-          // Auto-move to next question after 2.5 seconds
-          setTimeout(() => {
-            setShowImmediateFeedback(false);
-            setFeedbackData(null);
-            handleMoveToNextQuestion();
-          }, 2500);
-        } else {
-          // Fallback: move to next question immediately
+        console.log('Feedback data set from API response:', {
+          isCorrect: Boolean(result.isCorrect),
+          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
+          selectedAnswer: selectedAnswer,
+          score: Number(result.score || 0)
+        }); // Debug log
+        
+        // Auto-move to next question after 2.5 seconds
+        setTimeout(() => {
+          setShowImmediateFeedback(false);
+          setFeedbackData(null);
           handleMoveToNextQuestion();
-        }
+        }, 2500);
+      } else {
+        console.log('No valid result from submit answer, moving to next question'); // Debug log
+        // Fallback: move to next question immediately
+        handleMoveToNextQuestion();
       }
       
     } catch (err) {
@@ -269,7 +275,7 @@ const UserQuizTab: React.FC = () => {
       setShowQuestionReview(false);
       
       const nextQuestion = assignedQuestions[nextUnansweredIndex];
-      const timeLimit = nextQuestion?.timeLimit || 30;
+      const timeLimit = nextQuestion?.question?.timeLimit || 30;
       setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
     } else {
       // No more unanswered questions, but move to next question for review
@@ -301,7 +307,7 @@ const UserQuizTab: React.FC = () => {
       } else {
         setSelectedAnswer(null);
         setShowQuestionReview(false);
-        const timeLimit = prevQuestion?.timeLimit || 30;
+        const timeLimit = prevQuestion?.question?.timeLimit || 30;
         setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
       }
     }
@@ -320,7 +326,7 @@ const UserQuizTab: React.FC = () => {
       } else {
         setSelectedAnswer(null);
         setShowQuestionReview(false);
-        const timeLimit = nextQuestion?.timeLimit || 30;
+        const timeLimit = nextQuestion?.question?.timeLimit || 30;
         setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
       }
     }
@@ -343,38 +349,43 @@ const UserQuizTab: React.FC = () => {
     setSelectedAnswer(optionIndex);
     setIsSubmitting(true);
     
-    const timeTaken = currentQuestion.timeLimit - timeRemaining;
+    const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
     
     try {
-      const success = await submitAnswer(selectedQuiz.id, currentQuestion.id, {
+      // Use the question's ID from the nested question object, not the assignment ID
+      const questionId = currentQuestion.question?.id || currentQuestion.id;
+      const result = await submitAnswer(selectedQuiz.id, questionId, {
         selectedOption: optionIndex,
         timeTaken: timeTaken
       });
 
-      if (success) {
-        // Get the updated question data from the assignedQuestions state
-        const updatedQuestion = assignedQuestions.find(q => q.id === currentQuestion.id);
+      if (result && result.success) {
+        // Use the response data directly for immediate feedback
+        setFeedbackData({
+          isCorrect: Boolean(result.isCorrect),
+          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
+          selectedAnswer: optionIndex,
+          score: Number(result.score || 0)
+        });
+        setShowImmediateFeedback(true);
         
-        if (updatedQuestion) {
-          // Show immediate feedback
-          setFeedbackData({
-            isCorrect: Boolean(updatedQuestion.isCorrect),
-            correctAnswer: Number(updatedQuestion.correctAnswer || 0),
-            selectedAnswer: optionIndex,
-            score: Number(updatedQuestion.score || 0)
-          });
-          setShowImmediateFeedback(true);
-          
-          // Auto-move to next question after 2.5 seconds
-          setTimeout(() => {
-            setShowImmediateFeedback(false);
-            setFeedbackData(null);
-            handleMoveToNextQuestion();
-          }, 2500);
-        } else {
-          // Fallback: move to next question immediately
+        console.log('Answer selection - Feedback data set from API response:', {
+          isCorrect: Boolean(result.isCorrect),
+          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
+          selectedAnswer: optionIndex,
+          score: Number(result.score || 0)
+        }); // Debug log
+        
+        // Auto-move to next question after 2.5 seconds
+        setTimeout(() => {
+          setShowImmediateFeedback(false);
+          setFeedbackData(null);
           handleMoveToNextQuestion();
-        }
+        }, 2500);
+      } else {
+        console.log('Answer selection - No valid result from submit answer, moving to next question'); // Debug log
+        // Fallback: move to next question immediately
+        handleMoveToNextQuestion();
       }
       
     } catch (err) {
@@ -714,7 +725,7 @@ const UserQuizTab: React.FC = () => {
                   {!feedbackData.isCorrect && (
                     <p className="text-sm text-red-700">
                       Correct answer: <span className="font-medium">
-                        {String.fromCharCode(65 + feedbackData.correctAnswer)} - {assignedQuestions[currentQuestionIndex]?.options[feedbackData.correctAnswer]}
+                        {String.fromCharCode(65 + feedbackData.correctAnswer)} - {assignedQuestions[currentQuestionIndex]?.question?.options[feedbackData.correctAnswer]}
                       </span>
                     </p>
                   )}
@@ -742,19 +753,16 @@ const UserQuizTab: React.FC = () => {
                     : 'bg-gray-50'
               }`}>
                 <h4 className="text-lg font-medium text-gray-900 mb-4">
-                  {assignedQuestions[currentQuestionIndex]?.question ? 
-                    String(assignedQuestions[currentQuestionIndex].question) : 
-                    'Loading question...'
-                  }
+                  {assignedQuestions[currentQuestionIndex]?.question?.question || 'Loading question...'}
                 </h4>
                 
                 <div className="space-y-3">
-                  {assignedQuestions[currentQuestionIndex].options?.map((option, index) => {
+                  {assignedQuestions[currentQuestionIndex]?.question?.options?.map((option, index) => {
                     const isSelected = selectedAnswer === index;
                     
                     // Ensure we're comparing numbers properly
                     const currentCorrectAnswer = showQuestionReview ? 
-                      Number(assignedQuestions[currentQuestionIndex].correctAnswer) : 
+                      Number(assignedQuestions[currentQuestionIndex]?.question?.correctAnswer) : 
                       Number(feedbackData?.correctAnswer);
                     const currentUserAnswer = showQuestionReview ? 
                       Number(assignedQuestions[currentQuestionIndex].userAnswer) : 
@@ -764,15 +772,6 @@ const UserQuizTab: React.FC = () => {
                       (currentCorrectAnswer === index);
                     const isUserAnswer = (showQuestionReview || showImmediateFeedback) && 
                       (currentUserAnswer === index);
-                    
-                    console.log(`Debug - Option ${index}:`, {
-                      isCorrect,
-                      isUserAnswer,
-                      currentCorrectAnswer,
-                      currentUserAnswer,
-                      showReview: showQuestionReview,
-                      showFeedback: showImmediateFeedback
-                    }); // Debug log
                     
                     let buttonStyle = '';
                     let iconStyle = '';
@@ -850,8 +849,8 @@ const UserQuizTab: React.FC = () => {
 
               {/* Question Info */}
               <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>Points: {String(assignedQuestions[currentQuestionIndex]?.points || 0)}</span>
-                <span>Time Limit: {String(assignedQuestions[currentQuestionIndex]?.timeLimit || 0)}s</span>
+                <span>Points: {String(assignedQuestions[currentQuestionIndex]?.question?.points || 0)}</span>
+                <span>Time Limit: {String(assignedQuestions[currentQuestionIndex]?.question?.timeLimit || 0)}s</span>
               </div>
 
               {/* Navigation Buttons */}

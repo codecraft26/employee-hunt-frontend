@@ -19,19 +19,60 @@ export interface UserQuiz {
   questionsPerParticipant: number;
   createdAt: string;
   updatedAt: string;
+  isCompleted: boolean;
+  maxScore: number;
+  totalParticipants: number;
+  userScore: number;
+  winningTeam?: {
+    name: string;
+  } | null;
+  teamRank?: number;
+  totalTeams?: number;
 }
 
-export interface UserQuizQuestion {
+export interface QuestionData {
   id: string;
   question: string;
   options: string[];
   correctAnswer: number;
   points: number;
   timeLimit: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QuizData {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  questionDistributionType: string;
+  startTime: string;
+  endTime: string;
+  resultDisplayTime: string;
+  isResultPublished: boolean;
+  totalTeams: number;
+  totalParticipants: number;
+  totalQuestions: number;
+  questionsPerParticipant: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserQuizQuestion {
+  id: string;
   isCompleted: boolean;
+  score: number;
+  timeTaken: number;
+  answer: number | null;
+  isCorrect: boolean;
+  createdAt: string;
+  updatedAt: string;
+  question: QuestionData;
+  quiz: QuizData;
+  status: string;
+  message: string;
   userAnswer?: number;
-  isCorrect?: boolean;
-  score?: number;
 }
 
 export interface TeamRanking {
@@ -40,11 +81,14 @@ export interface TeamRanking {
   totalScore: number;
   completedQuestions: number;
   rank: number;
+  completedParticipants?: number;
+  totalParticipants?: number;
+  averageScore?: number;
 }
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: 'http://localhost:4000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -110,7 +154,7 @@ export const useUserQuizzes = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get(`/quizzes/${quizId}/questions`);
+      const response = await api.get(`/quizzes/${quizId}/assigned-questions`);
       if (response.data.success) {
         setAssignedQuestions(response.data.data);
         return response.data.data;
@@ -130,11 +174,19 @@ export const useUserQuizzes = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.post(`/quizzes/${quizId}/questions/${questionId}/submit`, answer);
+      const response = await api.post(`/quizzes/${quizId}/questions/${questionId}/answer`, answer);
       if (response.data.success) {
         // Update the question in assignedQuestions
         setAssignedQuestions(prev => 
-          prev.map(q => q.id === questionId ? { ...q, ...response.data.data } : q)
+          prev.map(q => q.id === questionId ? { 
+            ...q, 
+            isCompleted: true,
+            answer: answer.selectedOption,
+            userAnswer: answer.selectedOption,
+            timeTaken: answer.timeTaken,
+            isCorrect: response.data.data.isCorrect || false,
+            score: response.data.data.score || 0
+          } : q)
         );
         return true;
       } else {
@@ -177,6 +229,8 @@ export const useUserQuizzes = () => {
         return 'bg-green-100 text-green-800';
       case 'COMPLETED':
         return 'bg-blue-100 text-blue-800';
+      case 'EXPIRED':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -197,12 +251,12 @@ export const useUserQuizzes = () => {
   const getQuizProgress = useCallback((quiz: UserQuiz) => {
     const completedQuestions = assignedQuestions.filter(q => q.isCompleted).length;
     const totalQuestions = assignedQuestions.length;
-    const progress = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
+    const percentage = totalQuestions > 0 ? (completedQuestions / totalQuestions) * 100 : 0;
 
     return {
       completed: completedQuestions,
       total: totalQuestions,
-      progress: Math.round(progress),
+      percentage: Math.round(percentage),
       isCompleted: completedQuestions === totalQuestions && totalQuestions > 0
     };
   }, [assignedQuestions]);

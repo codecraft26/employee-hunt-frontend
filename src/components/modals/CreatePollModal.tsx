@@ -1,8 +1,9 @@
 // components/modals/CreatePollModal.tsx
-import React, { useState } from 'react';
-import { X, Plus, Calendar, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Calendar, Clock, AlertCircle, Building2 } from 'lucide-react';
 import { VoteType, CreateVoteRequest } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
+import { useCategories } from '../../hooks/useCategories';
 
 interface CreatePollModalProps {
   isOpen: boolean;
@@ -15,8 +16,11 @@ interface PollOption {
   imageUrl: string;
 }
 
+type CategoryType = 'ALL' | 'SPECIFIC';
+
 const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { createVote, loading, error } = useVotes();
+  const { categories, fetchCategories } = useCategories();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -25,6 +29,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
     startTime: '',
     endTime: '',
     resultDisplayTime: '',
+    categoryType: 'ALL' as CategoryType,
+    allowedCategories: [] as string[]
   });
 
   const [options, setOptions] = useState<PollOption[]>([
@@ -33,6 +39,12 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
   ]);
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen, fetchCategories]);
 
   const addOption = () => {
     setOptions([...options, { name: '', imageUrl: '' }]);
@@ -69,6 +81,10 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
       errors.endTime = 'End time must be after start time';
     }
 
+    if (formData.categoryType === 'SPECIFIC' && formData.allowedCategories.length === 0) {
+      errors.categories = 'Please select at least one category';
+    }
+
     const validOptions = options.filter(option => option.name.trim());
     if (validOptions.length < 2) {
       errors.options = 'At least 2 options are required';
@@ -93,6 +109,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
         startTime: formData.startTime,
         endTime: formData.endTime,
         resultDisplayTime: formData.resultDisplayTime || undefined,
+        categoryType: formData.categoryType,
+        allowedCategories: formData.categoryType === 'SPECIFIC' ? formData.allowedCategories : undefined,
         options: options
           .filter(option => option.name.trim())
           .map(option => ({
@@ -117,6 +135,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
       startTime: '',
       endTime: '',
       resultDisplayTime: '',
+      categoryType: 'ALL' as CategoryType,
+      allowedCategories: []
     });
     setOptions([
       { name: '', imageUrl: '' },
@@ -197,6 +217,54 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
                 <option value={VoteType.MULTI_CHOICE}>Multiple Choice</option>
               </select>
             </div>
+
+            {/* Category Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category Type
+              </label>
+              <select
+                value={formData.categoryType}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  categoryType: e.target.value as CategoryType,
+                  allowedCategories: e.target.value === 'ALL' ? [] : formData.allowedCategories
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="ALL">All Categories</option>
+                <option value="SPECIFIC">Specific Categories</option>
+              </select>
+            </div>
+
+            {formData.categoryType === 'SPECIFIC' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Categories *
+                </label>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                  {categories.map((category) => (
+                    <label key={category.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.allowedCategories.includes(category.id)}
+                        onChange={(e) => {
+                          const newCategories = e.target.checked
+                            ? [...formData.allowedCategories, category.id]
+                            : formData.allowedCategories.filter(id => id !== category.id);
+                          setFormData({ ...formData, allowedCategories: newCategories });
+                        }}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-700">{category.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {validationErrors.categories && (
+                  <p className="text-red-500 text-sm mt-1">{validationErrors.categories}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Timing */}

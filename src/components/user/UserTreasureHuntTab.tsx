@@ -20,8 +20,11 @@ import {
   Lock,
   Unlock,
   Eye,
-  Calendar
+  Calendar,
+  Upload,
+  Camera
 } from 'lucide-react';
+import React from 'react';
 
 export default function UserTreasureHuntTab() {
   const {
@@ -51,7 +54,6 @@ export default function UserTreasureHuntTab() {
 
   const { myTeam, fetchMyTeam } = useTeams();
 
-  const [submissionUrl, setSubmissionUrl] = useState('');
   const [initialized, setInitialized] = useState(false);
   const [selectedSubmissionModal, setSelectedSubmissionModal] = useState<{
     isOpen: boolean;
@@ -59,6 +61,13 @@ export default function UserTreasureHuntTab() {
   }>({
     isOpen: false,
     submission: null
+  });
+  const [submissionModal, setSubmissionModal] = useState<{
+    isOpen: boolean;
+    clue: any | null;
+  }>({
+    isOpen: false,
+    clue: null
   });
 
   // Initialize component and fetch team data
@@ -147,53 +156,14 @@ export default function UserTreasureHuntTab() {
     }
   }, [myTeam?.id, refresh, fetchMyTeam]);
 
+  const handleHuntSelect = (hunt: any) => {
+    selectHunt(hunt);
+  };
+
   // Add helper function to check if hunt is accessible
   const canAccessHunt = (hunt: any) => {
     return hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS';
   };
-
-  // Update handleSubmitStage
-  const handleSubmitStage = useCallback(async () => {
-    if (!submissionUrl.trim() || !selectedHunt || !progress?.currentStage) {
-      console.log('⚠️ Missing required data for submission:', {
-        hasUrl: !!submissionUrl.trim(),
-        hasHunt: !!selectedHunt,
-        hasStage: !!progress?.currentStage,
-        teamId: myTeam?.id
-      });
-      return;
-    }
-
-    if (!canAccessHunt(selectedHunt)) {
-      console.error('Cannot submit: Hunt is not active');
-      return;
-    }
-
-    console.log('📤 Submitting stage:', {
-      huntId: selectedHunt.id,
-      stageId: progress.currentStage.id,
-      teamId: myTeam?.id,
-      imageUrl: submissionUrl.trim()
-    });
-
-    const success = await submitStage(
-      selectedHunt.id,
-      progress.currentStage.id,
-      submissionUrl.trim(),
-      myTeam?.id
-    );
-
-    if (success) {
-      setSubmissionUrl('');
-      console.log('✅ Submission successful, URL cleared');
-    }
-  }, [submissionUrl, selectedHunt, progress?.currentStage, myTeam?.id, submitStage]);
-
-  // Handle hunt selection
-  const handleHuntSelect = useCallback(async (hunt: any) => {
-    console.log('🎯 Selecting hunt:', hunt.title);
-    await selectHunt(hunt);
-  }, [selectHunt]);
 
   // Get status badge color
   const getStatusColor = (status: string) => {
@@ -253,6 +223,233 @@ export default function UserTreasureHuntTab() {
   const currentStageStatus = getCurrentStageStatus();
   const submissionAllowed = canSubmit();
   const allStages = getAllStagesWithStatus();
+
+  // New handler for file submission
+  const handleSubmitClue = async (file: File) => {
+    if (!selectedHunt || !progress?.currentStage) return;
+    if (!canAccessHunt(selectedHunt)) {
+      console.error('Cannot submit: Hunt is not active');
+      return;
+    }
+    const success = await submitStage(
+      selectedHunt.id,
+      progress.currentStage.id,
+      file,
+      myTeam?.id
+    );
+    if (success) {
+      setSubmissionModal({ isOpen: false, clue: null });
+    }
+  };
+
+  // Inline the SubmissionModal component here
+  const MAX_FILE_SIZE_MB = 5;
+
+  const SubmissionModal: React.FC<{
+    isOpen: boolean;
+    clue: any | null;
+    onClose: () => void;
+    onSubmit: (file: File) => void;
+    submitting: boolean;
+  }> = ({ isOpen, clue, onClose, onSubmit, submitting }) => {
+    const [file, setFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (isOpen) {
+        setFile(null);
+        setImagePreview(null);
+        setError(null);
+      }
+    }, [isOpen]);
+
+    const validateFile = (file: File) => {
+      if (!file.type.startsWith('image/')) {
+        return 'Only image files are allowed.';
+      }
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        return `File size must be less than ${MAX_FILE_SIZE_MB}MB.`;
+      }
+      return null;
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selected = e.target.files && e.target.files[0];
+      if (selected) {
+        const validationError = validateFile(selected);
+        if (validationError) {
+          setError(validationError);
+          setFile(null);
+          setImagePreview(null);
+          return;
+        }
+        setFile(selected);
+        setImagePreview(URL.createObjectURL(selected));
+        setError(null);
+      } else {
+        setFile(null);
+        setImagePreview(null);
+        setError(null);
+      }
+    };
+
+    const handleRemove = () => {
+      setFile(null);
+      setImagePreview(null);
+      setError(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (file && !error) {
+        onSubmit(file);
+      }
+    };
+
+    if (!isOpen || !clue) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-lg mx-4">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Submit Solution - Stage {clue.stageNumber}
+              </h3>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={submitting}
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-blue-800 mb-1">Clue Description:</p>
+                <p className="text-blue-700">{clue.description}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Solution Photo
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 disabled:opacity-50"
+                    onClick={() => {
+                      if (fileInputRef.current) {
+                        fileInputRef.current.accept = 'image/*';
+                        fileInputRef.current.capture = 'environment';
+                        fileInputRef.current.click();
+                      }
+                    }}
+                    disabled={submitting}
+                  >
+                    <Camera className="h-5 w-5 mr-2" />
+                    <span>Take Photo</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2 disabled:opacity-50"
+                    onClick={() => {
+                      if (fileInputRef.current) {
+                        fileInputRef.current.accept = 'image/*';
+                        fileInputRef.current.removeAttribute('capture');
+                        fileInputRef.current.click();
+                      }
+                    }}
+                    disabled={submitting}
+                  >
+                    <Upload className="h-5 w-5 mr-2" />
+                    <span>Choose from Gallery</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    id="fileInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={submitting}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Upload a photo from your device or take a new one with your camera. Max size: {MAX_FILE_SIZE_MB}MB.
+                </p>
+                {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+              </div>
+
+              {/* File Info and Preview */}
+              {file && (
+                <div className="mt-2 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex-1">
+                    <div className="text-xs text-gray-700 font-medium">Selected file:</div>
+                    <div className="text-xs text-gray-600 truncate">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</div>
+                    <button
+                      type="button"
+                      onClick={handleRemove}
+                      className="text-xs text-red-500 hover:underline mt-1"
+                      disabled={submitting}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  {imagePreview && (
+                    <div className="border border-gray-300 rounded-lg p-2 bg-gray-50">
+                      <img
+                        src={imagePreview}
+                        alt="Solution preview"
+                        className="max-w-[120px] h-24 object-contain mx-auto rounded"
+                        onError={() => setImagePreview(null)}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!file || !!error || submitting}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      <span>Submit Solution</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Show loading state while initializing
   if (!initialized || (loading && assignedHunts.length === 0)) {
@@ -502,39 +699,25 @@ export default function UserTreasureHuntTab() {
                                     Submit Your Evidence
                                   </label>
                                   <p className="text-sm text-indigo-700 mb-3">
-                                    Take a photo of the location and upload it, then paste the image URL here.
+                                    Take a photo of the location and upload it as your evidence.
                                   </p>
-                                  <div className="flex gap-2">
-                                    <div className="flex-1 relative">
-                                      <ImageIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                      <input
-                                        type="url"
-                                        value={submissionUrl}
-                                        onChange={(e) => setSubmissionUrl(e.target.value)}
-                                        placeholder="https://example.com/your-image.jpg"
-                                        className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                        disabled={submitting}
-                                      />
-                                    </div>
-                                    <button
-                                      onClick={handleSubmitStage}
-                                      disabled={!submissionUrl.trim() || submitting}
-                                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                    >
-                                      {submitting ? (
-                                        <>
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                          Submitting...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Send className="h-4 w-4" />
-                                          Submit
-                                        </>
-                                      )}
-                                    </button>
-                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSubmissionModal({ isOpen: true, clue: progress.currentStage })}
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                    disabled={submitting}
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    Upload Photo
+                                  </button>
                                 </div>
+                                <SubmissionModal
+                                  isOpen={submissionModal.isOpen}
+                                  clue={submissionModal.clue}
+                                  onClose={() => setSubmissionModal({ isOpen: false, clue: null })}
+                                  onSubmit={handleSubmitClue}
+                                  submitting={submitting}
+                                />
                               </div>
                             )}
 
