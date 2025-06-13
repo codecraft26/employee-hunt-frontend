@@ -43,6 +43,12 @@ export interface Vote {
   // User-specific fields
   userHasVoted?: boolean;
   userSelectedOptions?: string[];
+  // Category fields
+  categoryType: 'ALL' | 'SPECIFIC';
+  allowedCategories?: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 export interface CreateVoteRequest {
@@ -52,6 +58,8 @@ export interface CreateVoteRequest {
   endTime: string;
   resultDisplayTime?: string;
   type: VoteType;
+  categoryType: 'ALL' | 'SPECIFIC';
+  allowedCategories?: string[]; // Array of category IDs
   options: {
     name: string;
     imageUrl?: string;

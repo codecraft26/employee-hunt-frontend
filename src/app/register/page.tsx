@@ -8,6 +8,42 @@ import { registerUser, clearError } from '../../store/authSlice';
 import { useCategories } from '../../hooks/useCategories';
 import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Building2 } from 'lucide-react';
 
+// Add SVG as a React component
+const TeamPlayBanner = () => (
+  <div className="w-full flex justify-center">
+    <svg width="100%" height="180" viewBox="0 0 414 220" fill="none" xmlns="http://www.w3.org/2000/svg" style={{maxWidth: 414, height: 220}}>
+      <defs>
+        <linearGradient id="bannerGradient" x1="0" y1="0" x2="414" y2="220" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#a18aff"/>
+          <stop offset="1" stopColor="#6f55ff"/>
+        </linearGradient>
+        <clipPath id="roundedBanner">
+          <rect width="414" height="220" rx="24" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#roundedBanner)">
+        <rect width="414" height="220" fill="url(#bannerGradient)"/>
+        <circle cx="207" cy="110" r="75" fill="white" fillOpacity="0.22"/>
+        <image href="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" x="0" y="0" height="220" width="414" opacity="0.55"/>
+        <g>
+          <circle cx="207" cy="110" r="48" fill="white"/>
+          <g>
+            <path d="M197 110 h20 m-10-10 v20" stroke="#a18aff" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="202" cy="115" r="2" fill="#a18aff"/>
+            <circle cx="212" cy="115" r="2" fill="#a18aff"/>
+          </g>
+        </g>
+        <text x="207" y="180" textAnchor="middle" fill="white" fontSize="26" fontFamily="Inter,sans-serif" fontWeight="bold">
+          Welcome to TeamPlay
+        </text>
+        <text x="207" y="200" textAnchor="middle" fill="#e0e0ff" fontSize="16" fontFamily="Inter,sans-serif">
+          Sign in to join your squad
+        </text>
+      </g>
+    </svg>
+  </div>
+);
+
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -61,48 +97,33 @@ export default function RegisterPage() {
     setPasswordStrength(strength);
   }, [formData.password]);
 
-  const validateForm = () => {
-    const errors: string[] = [];
-    
-    if (!formData.name.trim()) {
-      errors.push('Name is required');
-    }
-    
-    if (!formData.email.trim()) {
-      errors.push('Email is required');
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.push('Email is invalid');
-    }
-    
-    if (!formData.password) {
-      errors.push('Password is required');
-    } else if (formData.password.length < 8) {
-      errors.push('Password must be at least 8 characters');
-    }
-    
-    if (formData.password !== formData.confirmPassword) {
-      errors.push('Passwords do not match');
-    }
-
-    if (!formData.department) {
-      errors.push('Please select a category');
-    }
-    
-    setValidationErrors(errors);
-    return errors.length === 0;
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
+    // Clear validation errors when user starts typing
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
+  };
 
-    if (name === 'department') {
-      console.log('Department selected:', value);
+  const validateForm = () => {
+    const errors: string[] = [];
+    
+    if (formData.password !== formData.confirmPassword) {
+      errors.push('Passwords do not match');
     }
+    
+    if (formData.password.length < 8) {
+      errors.push('Password must be at least 8 characters long');
+    }
+    
+    if (!formData.department) {
+      errors.push('Please select a department');
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,305 +132,260 @@ export default function RegisterPage() {
     if (!validateForm()) {
       return;
     }
-
+    
     setIsSubmitting(true);
     
     try {
-      const userData = {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
+      await dispatch(registerUser({
+        name: formData.name,
+        email: formData.email,
         password: formData.password,
         department: formData.department
-      };
-
-      console.log('Submitting user data:', userData);
-      await dispatch(registerUser(userData));
+      }));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const getPasswordStrengthColor = () => {
-    if (passwordStrength <= 2) return 'bg-red-500';
-    if (passwordStrength <= 3) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getPasswordStrengthText = () => {
-    if (passwordStrength <= 2) return 'Weak';
-    if (passwordStrength <= 3) return 'Medium';
-    return 'Strong';
+    switch (passwordStrength) {
+      case 0:
+      case 1:
+        return 'bg-red-500';
+      case 2:
+        return 'bg-orange-500';
+      case 3:
+        return 'bg-yellow-500';
+      case 4:
+        return 'bg-green-500';
+      case 5:
+        return 'bg-emerald-500';
+      default:
+        return 'bg-gray-200';
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-pink-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-gradient-to-br from-violet-400 to-purple-400 opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-gradient-to-br from-pink-400 to-rose-400 opacity-20 blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-br from-blue-400 to-indigo-400 opacity-10 blur-3xl animate-pulse delay-500"></div>
-      </div>
-
-      <div className="max-w-md w-full space-y-8 relative z-10">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg transform -rotate-3 hover:rotate-3 transition-transform duration-300">
-            <UserPlus className="h-8 w-8 text-white" />
-          </div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-            Join Our Community
-          </h2>
-          <p className="mt-3 text-gray-600">
-            Create your account and start your journey with us
-          </p>
-          <p className="mt-2 text-sm text-gray-500">
-            Already have an account?{' '}
-            <Link href="/login" className="font-semibold text-violet-600 hover:text-violet-500 transition-colors duration-200">
-              Sign in here
-            </Link>
-          </p>
-        </div>
-
-        {/* Main Form Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 space-y-6">
-          {/* Error Messages */}
-          {(error || validationErrors.length > 0) && (
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-4 space-y-2 animate-shake">
-              <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                <span className="text-red-700 font-medium text-sm">Please fix the following errors:</span>
-              </div>
-              <ul className="text-red-600 text-sm space-y-1 ml-7">
-                {error && <li>• {error}</li>}
-                {validationErrors.map((err, index) => (
-                  <li key={index}>• {err}</li>
-                ))}
-              </ul>
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="w-full max-w-md bg-white rounded-b-2xl shadow-lg overflow-hidden">
+        <TeamPlayBanner />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+          <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg">
+            {/* Header */}
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Join us and start your journey
+              </p>
             </div>
-          )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-4">
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
+            {/* Validation Errors */}
+            {validationErrors.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <ul className="list-disc list-inside space-y-1">
+                  {validationErrors.map((error, index) => (
+                    <li key={index} className="text-sm text-red-700">{error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Registration Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Name Field */}
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400 group-focus-within:text-violet-600 transition-colors duration-200" />
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter your full name"
+                  />
                 </div>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all duration-200 bg-white/50 hover:bg-white/80"
-                  placeholder="Enter your full name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
               </div>
 
               {/* Email Field */}
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-violet-600 transition-colors duration-200" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="block w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all duration-200 bg-white/50 hover:bg-white/80"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* Category Dropdown */}
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Building2 className="h-5 w-5 text-gray-400 group-focus-within:text-violet-600 transition-colors duration-200" />
-                </div>
-                <select
-                  id="department"
-                  name="department"
-                  required
-                  className="block w-full pl-12 pr-10 py-4 border border-gray-200 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all duration-200 bg-white/50 hover:bg-white/80 appearance-none cursor-pointer"
-                  value={formData.department}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select a category</option>
-                  {categoriesLoading ? (
-                    <option value="" disabled>Loading categories...</option>
-                  ) : (
-                    categories
-                      .filter(category => category.isActive)
-                      .map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name} - {category.description}
-                        </option>
-                      ))
-                  )}
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  Email address
+                </label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter your email"
+                  />
                 </div>
               </div>
 
-              {/* Selected Category Preview */}
-              {formData.department && (
-                <div className="bg-violet-50 border border-violet-200 rounded-2xl p-3">
-                  <div className="text-sm text-violet-700">
-                    <strong>Selected Category:</strong> {categories.find(cat => cat.id === formData.department)?.name}
+              {/* Department Field */}
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                  Department
+                </label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Building2 className="h-5 w-5 text-gray-400" />
                   </div>
-                  <div className="text-xs text-violet-600 mt-1">
-                    {categories.find(cat => cat.id === formData.department)?.description}
-                  </div>
+                  <select
+                    id="department"
+                    name="department"
+                    required
+                    value={formData.department}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select your department</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
+              </div>
 
               {/* Password Field */}
-              <div className="space-y-2">
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-violet-600 transition-colors duration-200" />
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all duration-200 bg-white/50 hover:bg-white/80"
-                    placeholder="Create a password"
                     value={formData.password}
                     onChange={handleInputChange}
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Create a password"
                   />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-200" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-200" />
-                    )}
-                  </button>
-                </div>
-                
-                {/* Password Strength Indicator */}
-                {formData.password && (
-                  <div className="px-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                          style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className={`text-xs font-medium ${
-                        passwordStrength <= 2 ? 'text-red-600' : 
-                        passwordStrength <= 3 ? 'text-yellow-600' : 'text-green-600'
-                      }`}>
-                        {getPasswordStrengthText()}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Use 8+ characters with uppercase, lowercase, numbers, and symbols
-                    </div>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
                   </div>
-                )}
+                </div>
+                {/* Password Strength Indicator */}
+                <div className="mt-2 h-1 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${getPasswordStrengthColor()} transition-all duration-300`}
+                    style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Password strength: {passwordStrength}/5
+                </p>
               </div>
 
               {/* Confirm Password Field */}
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-violet-600 transition-colors duration-200" />
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Confirm your password"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  required
-                  className="block w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-600 focus:border-transparent transition-all duration-200 bg-white/50 hover:bg-white/80"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                />
+              </div>
+
+              {/* Submit Button */}
+              <div>
                 <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  type="submit"
+                  disabled={isSubmitting || categoriesLoading}
+                  className="w-full flex justify-center items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-200" />
+                  {isSubmitting ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors duration-200" />
+                    <>
+                      <span>Create Account</span>
+                      <UserPlus className="h-4 w-4" />
+                    </>
                   )}
                 </button>
-                {/* Password Match Indicator */}
-                {formData.confirmPassword && (
-                  <div className="absolute inset-y-0 right-12 flex items-center pr-2">
-                    {formData.password === formData.confirmPassword ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                    )}
-                  </div>
-                )}
               </div>
+            </form>
+
+            {/* Login Link */}
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
+                Already have an account?{' '}
+                <Link
+                  href="/login"
+                  className="font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Sign in here
+                </Link>
+              </p>
             </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading || isSubmitting || categoriesLoading}
-              className="group relative w-full flex justify-center items-center py-4 px-4 border border-transparent text-sm font-semibold rounded-2xl text-white bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
-            >
-              {isLoading || isSubmitting ? (
-                <div className="flex items-center space-x-2">
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Creating your account...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <UserPlus className="h-5 w-5" />
-                  <span>Create Account</span>
-                </div>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center text-xs text-gray-500">
-          <p>
-            Protected by reCAPTCHA and subject to our{' '}
-            <a href="#" className="text-violet-600 hover:text-violet-500 transition-colors duration-200">
-              Privacy Policy
-            </a>
-            {' '}and{' '}
-            <a href="#" className="text-violet-600 hover:text-violet-500 transition-colors duration-200">
-              Terms of Service
-            </a>
-          </p>
+          </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 }
