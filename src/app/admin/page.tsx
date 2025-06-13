@@ -313,9 +313,6 @@ export default function AdminDashboard() {
         return (
           <OverviewTab
             stats={mockStats}
-            teams={mockTeams}
-            recentActivities={mockRecentActivities}
-            onQuickAction={handleQuickAction}
           />
         );
       case 'quizzes':
@@ -389,16 +386,10 @@ export default function AdminDashboard() {
         onLogout={handleLogout}
         userName={user?.name || user?.email || 'Admin'}
       />
-      {/* Only show navigation if not in clues or submissions management view */}
-      {!['clues-management', 'submissions-management'].includes(activeView) && (
-        <AdminNavigation
-          activeView={activeView as TabView}
-          onViewChange={(view) => setActiveView(view as ExtendedTabView)}
-          pendingApprovals={mockStats.pendingApprovals}
-        />
-      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderActiveTab()}
+        <OverviewTab
+          stats={mockStats}
+        />
       </div>
 
       {/* Winner Selection Modal */}
