@@ -208,40 +208,35 @@ const UserQuizTab: React.FC = () => {
     const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
     
     try {
-      // Use the question's ID from the nested question object, not the assignment ID
-      const questionId = currentQuestion.question?.id || currentQuestion.id;
-      const result = await submitAnswer(selectedQuiz.id, questionId, {
+      const success = await submitAnswer(selectedQuiz.id, currentQuestion.id, {
         selectedOption: selectedAnswer,
         timeTaken: timeTaken
       });
 
-      if (result && result.success) {
-        // Use the response data directly for immediate feedback
-        setFeedbackData({
-          isCorrect: Boolean(result.isCorrect),
-          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
-          selectedAnswer: selectedAnswer,
-          score: Number(result.score || 0)
-        });
-        setShowImmediateFeedback(true);
+      if (success) {
+        // Get the updated question data from the assignedQuestions state
+        const updatedQuestion = assignedQuestions.find(q => q.id === currentQuestion.id);
         
-        console.log('Feedback data set from API response:', {
-          isCorrect: Boolean(result.isCorrect),
-          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
-          selectedAnswer: selectedAnswer,
-          score: Number(result.score || 0)
-        }); // Debug log
-        
-        // Auto-move to next question after 2.5 seconds
-        setTimeout(() => {
-          setShowImmediateFeedback(false);
-          setFeedbackData(null);
+        if (updatedQuestion) {
+          // Show immediate feedback
+          setFeedbackData({
+            isCorrect: updatedQuestion.isCorrect || false,
+            correctAnswer: updatedQuestion.question?.correctAnswer || 0,
+            selectedAnswer: selectedAnswer,
+            score: updatedQuestion.score || 0
+          });
+          setShowImmediateFeedback(true);
+          
+          // Auto-move to next question after 2.5 seconds
+          setTimeout(() => {
+            setShowImmediateFeedback(false);
+            setFeedbackData(null);
+            handleMoveToNextQuestion();
+          }, 2500);
+        } else {
+          // Fallback: move to next question immediately
           handleMoveToNextQuestion();
-        }, 2500);
-      } else {
-        console.log('No valid result from submit answer, moving to next question'); // Debug log
-        // Fallback: move to next question immediately
-        handleMoveToNextQuestion();
+        }
       }
       
     } catch (err) {
@@ -352,40 +347,35 @@ const UserQuizTab: React.FC = () => {
     const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
     
     try {
-      // Use the question's ID from the nested question object, not the assignment ID
-      const questionId = currentQuestion.question?.id || currentQuestion.id;
-      const result = await submitAnswer(selectedQuiz.id, questionId, {
+      const success = await submitAnswer(selectedQuiz.id, currentQuestion.id, {
         selectedOption: optionIndex,
         timeTaken: timeTaken
       });
 
-      if (result && result.success) {
-        // Use the response data directly for immediate feedback
-        setFeedbackData({
-          isCorrect: Boolean(result.isCorrect),
-          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
-          selectedAnswer: optionIndex,
-          score: Number(result.score || 0)
-        });
-        setShowImmediateFeedback(true);
+      if (success) {
+        // Get the updated question data from the assignedQuestions state
+        const updatedQuestion = assignedQuestions.find(q => q.id === currentQuestion.id);
         
-        console.log('Answer selection - Feedback data set from API response:', {
-          isCorrect: Boolean(result.isCorrect),
-          correctAnswer: Number(currentQuestion.question?.correctAnswer || 0),
-          selectedAnswer: optionIndex,
-          score: Number(result.score || 0)
-        }); // Debug log
-        
-        // Auto-move to next question after 2.5 seconds
-        setTimeout(() => {
-          setShowImmediateFeedback(false);
-          setFeedbackData(null);
+        if (updatedQuestion) {
+          // Show immediate feedback
+          setFeedbackData({
+            isCorrect: Boolean(updatedQuestion.isCorrect),
+            correctAnswer: Number(updatedQuestion.question?.correctAnswer || 0),
+            selectedAnswer: optionIndex,
+            score: Number(updatedQuestion.score || 0)
+          });
+          setShowImmediateFeedback(true);
+          
+          // Auto-move to next question after 2.5 seconds
+          setTimeout(() => {
+            setShowImmediateFeedback(false);
+            setFeedbackData(null);
+            handleMoveToNextQuestion();
+          }, 2500);
+        } else {
+          // Fallback: move to next question immediately
           handleMoveToNextQuestion();
-        }, 2500);
-      } else {
-        console.log('Answer selection - No valid result from submit answer, moving to next question'); // Debug log
-        // Fallback: move to next question immediately
-        handleMoveToNextQuestion();
+        }
       }
       
     } catch (err) {

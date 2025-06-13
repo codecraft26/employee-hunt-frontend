@@ -70,7 +70,7 @@ export interface QuickAction {
   title: string;
   icon: any;
   color: string;
-  type: 'quiz' | 'treasure' | 'poll' | 'team';
+  type: 'quiz' | 'treasure' | 'poll' | 'team' | 'create-quiz' | 'create-hunt' | 'create-poll' | 'create-team' | 'create-category';
 }
 
 export type TabView = 'overview' | 'quizzes' | 'treasure-hunts' | 'polls' | 'teams' | 'approvals';

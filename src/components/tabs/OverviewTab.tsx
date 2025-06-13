@@ -8,7 +8,8 @@ import {
   Plus,
   Target,
   MapPin,
-  Vote
+  Vote,
+  Building2
 } from 'lucide-react';
 import { Stats, Team, RecentActivity, QuickAction } from '../../types/admin';
 
@@ -26,10 +27,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   onQuickAction 
 }) => {
   const quickActions: QuickAction[] = [
-    { title: 'Create Quiz', icon: Target, color: 'from-blue-500 to-blue-600', type: 'quiz' },
-    { title: 'Start Treasure Hunt', icon: MapPin, color: 'from-green-500 to-green-600', type: 'treasure' },
-    { title: 'Create Poll/Vote', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'poll' },
-    { title: 'Manage Teams', icon: Users, color: 'from-orange-500 to-orange-600', type: 'team' }
+    { title: 'Create Quiz', icon: Target, color: 'from-blue-500 to-blue-600', type: 'create-quiz' },
+    { title: 'Start Treasure Hunt', icon: MapPin, color: 'from-green-500 to-green-600', type: 'create-hunt' },
+    { title: 'Create Poll/Vote', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'create-poll' },
+    { title: 'Manage Teams', icon: Users, color: 'from-orange-500 to-orange-600', type: 'create-team' },
+    { title: 'Manage Categories', icon: Building2, color: 'from-indigo-500 to-indigo-600', type: 'create-category' }
   ];
 
   const getTypeIcon = (type: string) => {
@@ -38,6 +40,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       case 'treasure': return MapPin;
       case 'poll': return Vote;
       case 'team': return Users;
+      case 'category': return Building2;
       default: return Activity;
     }
   };
@@ -108,7 +111,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Quick Actions */}
       <div className="bg-white rounded-2xl shadow-sm border p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {quickActions.map((action, index) => (
             <button
               key={index}
