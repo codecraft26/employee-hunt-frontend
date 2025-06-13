@@ -1,76 +1,72 @@
 // pages/user/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '../../../hooks/redux';
 import { logout } from '../../../store/authSlice';
 import ProtectedRoute from '../../../components/ProtectedRoute';
-import UserPollsTab from '../../../components/user/UserPollsTab';
-import UserOverviewTab from '../../../components/user/UserOverviewTab';
-import UserActivitiesTab from '../../../components/user/UserActivitiesTab';
-import UserProfileTab from '../../../components/user/UserProfileTab';
-import UserTeamTab from '../../../components/user/UserTeamTab';
-import UserQuizTab from '../../../components/user/UserQuizTab';
-import UserTreasureHuntTab from '../../../components/user/UserTreasureHuntTab';
-import { useActivities } from '../../../hooks/useActivities';
-import { useTeams } from '../../../hooks/useTeams';
-import { 
-  User as UserIcon, 
-  Trophy, 
-  Vote, 
-  Bell, 
-  LogOut,
-  Users,
-  Shield,
-  Zap,
-  Activity as ActivityIcon,
-  MapPin,
-} from 'lucide-react';
+import OptimizedHeader from '../../../components/shared/OptimizedHeader';
+import LazyWrapper from '../../../components/shared/LazyWrapper';
+import { useOptimizedData } from '../../../hooks/useOptimizedData';
+import { Trophy } from 'lucide-react';
+import { lazy } from 'react';
 
-// Static notifications data
-const notifications = [
+// Lazy load the UserOverviewTab component
+const UserOverviewTab = lazy(() => import('../../../components/user/UserOverviewTab'));
+
+// Static notifications data - moved outside component to prevent re-creation
+const STATIC_NOTIFICATIONS = [
   { id: 1, title: 'New Quiz Available', message: 'Team Alpha has a new quiz to complete', time: '2 hours ago', type: 'quiz' },
   { id: 2, title: 'Treasure Hunt Update', message: 'Your clue has been approved!', time: '4 hours ago', type: 'treasure' },
   { id: 3, title: 'Voting Ends Soon', message: 'Office Event voting ends in 2 hours', time: '6 hours ago', type: 'vote' }
 ];
 
 export default function UserDashboardUI() {
-  const [activeTab, setActiveTab] = useState('overview');
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user, isLoading } = useAppSelector((state) => state.auth);
 
-  // Activities hook for initial data fetching
-  const { fetchActivities } = useActivities();
-  
-  // Teams hook for initial data fetching
-  const { fetchMyTeam } = useTeams();
+  // Optimized data fetching with caching
+  const { data: activities, loading: activitiesLoading } = useOptimizedData(
+    'user-activities',
+    async () => {
+      if (!user) return [];
+      // This will be handled by the UserOverviewTab component
+      return [];
+    },
+    { staleTime: 30000 } // 30 seconds
+  );
 
-  useEffect(() => {
-    if (!isLoading && user?.role === 'admin') {
-      router.push('/admin');
-    }
-  }, [user, isLoading, router]);
+  const { data: teamData, loading: teamLoading } = useOptimizedData(
+    'user-team',
+    async () => {
+      if (!user) return null;
+      // This will be handled by the UserOverviewTab component
+      return null;
+    },
+    { staleTime: 60000 } // 1 minute
+  );
 
-  // Fetch initial data on component mount
-  useEffect(() => {
-    if (user) {
-      fetchActivities();
-      fetchMyTeam();
-    }
-  }, [user, fetchActivities, fetchMyTeam]);
-
+  // Memoized handlers to prevent re-renders
   const handleLogout = useCallback(() => {
     dispatch(logout());
     router.push('/login');
   }, [dispatch, router]);
 
-  const handleTabChange = useCallback((tab: string) => {
-    setActiveTab(tab);
-  }, []);
+  // Memoized redirect logic
+  const shouldRedirectToAdmin = useMemo(() => {
+    return !isLoading && user?.role === 'admin';
+  }, [isLoading, user?.role]);
 
-  if (!user) {
+  // Handle admin redirect
+  if (shouldRedirectToAdmin) {
+    router.push('/admin');
+    return null;
+  }
+
+  // Loading state
+  if (!user && isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
@@ -78,42 +74,22 @@ export default function UserDashboardUI() {
     );
   }
 
-  const renderActiveTab = () => {
-    switch (activeTab) {
-      case 'overview':
-        return <UserOverviewTab user={user} />;
-      case 'activities':
-        return <UserActivitiesTab />;
-      case 'polls':
-        return (
-          <UserPollsTab 
-            onVoteSuccess={() => {
-              console.log('User voted successfully');
-            }} 
-          />
-        );
-      case 'team':
-        return <UserTeamTab user={user} />;
-      case 'profile':
-        return <UserProfileTab user={user} />;
-      case 'quiz':
-        return <UserQuizTab />;
-      case 'treasureHunt':
-        return <UserTreasureHuntTab />;
-      default:
-        return <UserOverviewTab user={user} />;
-    }
-  };
+  // Not authenticated
+  if (!user) {
+    return null;
+  }
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        {/* Banner */}
+        {/* Banner - Optimized with better image loading */}
         <div className="relative w-full h-40 sm:h-56 md:h-64 rounded-b-3xl overflow-hidden mb-2">
           <img
             src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
             alt="Trip Games Banner"
             className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="relative z-10 px-6 pt-8 pb-4 flex flex-col h-full justify-between">
@@ -123,70 +99,63 @@ export default function UserDashboardUI() {
             </div>
           </div>
         </div>
-        {/* Mobile-First Header */}
-        <div className="bg-white shadow-sm border-b sticky top-0 z-40">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <Trophy className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-                  <p className="text-sm text-gray-600 hidden sm:block">Welcome back, {user.name}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                  <Bell className="h-6 w-6" />
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                >
-                  <LogOut className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Mobile Navigation Tabs */}
-        <div className="bg-white border-b">
-          <div className="relative">
-            <div className="overflow-x-auto hide-scrollbar">
-              <div className="flex space-x-8 px-4 sm:px-6 lg:px-8 min-w-max">
-                {[
-                  { id: 'overview', label: 'Overview', icon: ActivityIcon },
-                  { id: 'activities', label: 'Activities', icon: Zap },
-                  { id: 'polls', label: 'Polls', icon: Vote },
-                  { id: 'team', label: 'My Team', icon: Users },
-                  { id: 'profile', label: 'Profile', icon: UserIcon },
-                  { id: 'quiz', label: 'Quiz', icon: Shield },
-                  { id: 'treasureHunt', label: 'Treasure Hunt', icon: MapPin },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                      activeTab === tab.id
-                        ? 'border-indigo-500 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <tab.icon className="h-4 w-4" />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Main Content */}
+
+        {/* Optimized Header */}
+        <OptimizedHeader
+          title="Dashboard"
+          subtitle="Welcome back"
+          icon={Trophy}
+          iconGradient="from-indigo-600 to-purple-600"
+          userName={user.name}
+          notificationCount={STATIC_NOTIFICATIONS.length}
+          onLogout={handleLogout}
+        />
+
+        {/* Main Content with Lazy Loading */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {renderActiveTab()}
+          <LazyWrapper
+            fallback={
+              <div className="space-y-8">
+                {/* Loading skeleton */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+                  <div className="space-y-4 lg:space-y-6">
+                    <div className="animate-pulse">
+                      <div className="h-6 bg-gray-300 rounded w-1/3 mb-2"></div>
+                      <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border animate-pulse">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="h-3 bg-gray-300 rounded w-2/3 mb-2"></div>
+                              <div className="h-8 bg-gray-300 rounded w-1/2"></div>
+                            </div>
+                            <div className="w-10 h-10 bg-gray-300 rounded-lg"></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-4 lg:space-y-6">
+                    <div className="animate-pulse">
+                      <div className="h-6 bg-gray-300 rounded w-1/3 mb-2"></div>
+                      <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                    </div>
+                    <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border p-4 lg:p-6">
+                      <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                        {[...Array(6)].map((_, i) => (
+                          <div key={i} className="h-20 bg-gray-300 rounded-lg animate-pulse"></div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          >
+            <UserOverviewTab user={user} />
+          </LazyWrapper>
         </div>
       </div>
     </ProtectedRoute>
