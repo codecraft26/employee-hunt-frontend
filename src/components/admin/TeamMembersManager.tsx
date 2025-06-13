@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo, useEffect } from 'react';
 import { Trash2, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
 import { Team, TeamMember } from '../../types/teams';
@@ -8,7 +8,7 @@ interface TeamMembersManagerProps {
   onMemberRemoved?: () => void;
 }
 
-const TeamMembersManager: React.FC<TeamMembersManagerProps> = ({ 
+const TeamMembersManager: React.FC<TeamMembersManagerProps> = memo(({ 
   team,
   onMemberRemoved 
 }) => {
@@ -16,7 +16,18 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = ({
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleRemoveMember = async (member: TeamMember) => {
+  // Clear success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Memoized handler for removing team members
+  const handleRemoveMember = useCallback(async (member: TeamMember) => {
     if (!confirm(`Are you sure you want to remove ${member.name} from the team?`)) {
       return;
     }
@@ -31,7 +42,10 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = ({
       onMemberRemoved?.();
     }
     setRemovingUserId(null);
-  };
+  }, [team.id, removeMemberFromTeam, clearError, onMemberRemoved]);
+
+  // Memoized member list to prevent unnecessary re-renders
+  const membersList = team.members || [];
 
   return (
     <div className="space-y-4">
@@ -52,14 +66,14 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = ({
       )}
 
       <div className="bg-white shadow-sm rounded-lg border">
-        {team.members.length === 0 ? (
+        {membersList.length === 0 ? (
           <div className="p-8 text-center">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">No members in this team yet</p>
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">
-            {team.members.map((member) => (
+            {membersList.map((member) => (
               <li key={member.id} className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -78,6 +92,7 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = ({
                     onClick={() => handleRemoveMember(member)}
                     disabled={loading && removingUserId === member.id}
                     className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={`Remove ${member.name} from team`}
                   >
                     {loading && removingUserId === member.id ? (
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
@@ -93,6 +108,8 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = ({
       </div>
     </div>
   );
-};
+});
+
+TeamMembersManager.displayName = 'TeamMembersManager';
 
 export default TeamMembersManager; 

@@ -1,20 +1,24 @@
 // pages/admin/AdminDashboard.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, lazy, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import AdminHeader from '../../components/admin/AdminHeader';
 import AdminNavigation from '../../components/admin/AdminNavigation';
-import OverviewTab from '../../components/tabs/OverviewTab';
-import TreasureHuntsTab from '../../components/tabs/TreasureHuntsTab';
-import PollsTab from '../../components/tabs/PollsTab';
-import TeamsTab from '../../components/tabs/TeamsTab';
-import CategoriesTab from '../../components/tabs/CategoriesTab'; // NEW IMPORT
-import QuizzesTab from '../../components/tabs/QuizzesTab';
-import CluesManagementTab from '../../components/tabs/CluesManagementTab';
-import SubmissionsManagementTab from '../../components/tabs/SubmissionsManagementTab';
-import WinnerSelectionModal from '../../components/modals/WinnerSelectionModal';
+import LazyWrapper from '../../components/shared/LazyWrapper';
+
+// Lazy load tab components for better performance
+const OverviewTab = lazy(() => import('../../components/tabs/OverviewTab'));
+const TreasureHuntsTab = lazy(() => import('../../components/tabs/TreasureHuntsTab'));
+const PollsTab = lazy(() => import('../../components/tabs/PollsTab'));
+const TeamsTab = lazy(() => import('../../components/tabs/TeamsTab'));
+const CategoriesTab = lazy(() => import('../../components/tabs/CategoriesTab'));
+const QuizzesTab = lazy(() => import('../../components/tabs/QuizzesTab'));
+const CluesManagementTab = lazy(() => import('../../components/tabs/CluesManagementTab'));
+const SubmissionsManagementTab = lazy(() => import('../../components/tabs/SubmissionsManagementTab'));
+const WinnerSelectionModal = lazy(() => import('../../components/modals/WinnerSelectionModal'));
+
 import { 
   Stats, 
   Team, 
@@ -145,7 +149,7 @@ export default function AdminDashboard() {
   const { resetCurrentTreasureHunt, fetchTreasureHuntWithClues } = useTreasureHunts();
 
   // Handler functions for API calls - These will be implemented when connecting to backend
-  const handleQuickAction = (type: string) => {
+  const handleQuickAction = useCallback((type: string) => {
     console.log(`Quick action: ${type}`);
     
     // Navigate to appropriate tab based on quick action
@@ -175,73 +179,72 @@ export default function AdminDashboard() {
       default:
         console.log(`Unhandled quick action: ${type}`);
     }
-  };
+  }, []);
 
   // Quiz handlers
-  const handleCreateQuiz = () => {
+  const handleCreateQuiz = useCallback(() => {
     console.log('Create quiz');
     // TODO: API call to create quiz
-  };
+  }, []);
 
-  const handleViewQuiz = (quizId: string) => {
+  const handleViewQuiz = useCallback((quizId: string) => {
     console.log(`View quiz: ${quizId}`);
     // TODO: Navigate to quiz details
-  };
+  }, []);
 
-  const handleEditQuiz = (quizId: string) => {
+  const handleEditQuiz = useCallback((quizId: string) => {
     console.log(`Edit quiz: ${quizId}`);
     // TODO: Navigate to quiz edit form
-  };
+  }, []);
 
   // Treasure hunt handlers
-  const handleViewClues = async (huntId: string) => {
+  const handleViewClues = useCallback(async (huntId: string) => {
     console.log(`View clues: ${huntId}`);
     setSelectedTreasureHuntId(huntId);
     setActiveView('clues-management');
     
-    // Fetch the treasure hunt with clues data
     try {
       await fetchTreasureHuntWithClues(huntId);
     } catch (error) {
       console.error('Failed to fetch treasure hunt with clues:', error);
     }
-  };
+  }, [fetchTreasureHuntWithClues]);
 
-  const handleViewSubmissions = async (huntId: string) => {
+  const handleViewSubmissions = useCallback(async (huntId: string) => {
     console.log(`View submissions: ${huntId}`);
     setSelectedTreasureHuntId(huntId);
     setActiveView('submissions-management');
     
     // The SubmissionsManagementTab will handle fetching submissions
-  };
+  }, []);
 
-  const handleDeclareWinner = (huntId: string) => {
+  const handleDeclareWinner = useCallback((huntId: string) => {
     console.log(`Declare winner: ${huntId}`);
     setWinnerSelectionModal({
       isOpen: true,
       huntId: huntId
     });
-  };
+  }, []);
 
-  const handleWinnerSelectionClose = () => {
+  const handleWinnerSelectionClose = useCallback(() => {
     setWinnerSelectionModal({
       isOpen: false,
       huntId: null
     });
     resetCurrentTreasureHunt();
-  };
+  }, [resetCurrentTreasureHunt]);
 
-  const handleWinnerSelectionSuccess = () => {
+  const handleWinnerSelectionSuccess = useCallback(() => {
     console.log('Winner declared successfully');
     // Optionally show a success message or refresh data
-  };
+  }, []);
 
   // Navigation back from clues/submissions management
-  const handleBackFromManagement = () => {
+  const handleBackFromManagement = useCallback(() => {
     setActiveView('treasure-hunts');
     setSelectedTreasureHuntId(null);
     resetCurrentTreasureHunt();
-  };
+  }, [resetCurrentTreasureHunt]);
 
   // Poll handlers
   const handleCreatePoll = () => {
@@ -311,65 +314,78 @@ export default function AdminDashboard() {
     switch (activeView) {
       case 'overview':
         return (
-          <OverviewTab
-            stats={mockStats}
-            teams={mockTeams}
-            recentActivities={mockRecentActivities}
-            onQuickAction={handleQuickAction}
-          />
+          <LazyWrapper>
+            <OverviewTab
+              stats={mockStats}
+            />
+          </LazyWrapper>
         );
       case 'quizzes':
         return (
-          <QuizzesTab
-            onCreateQuiz={handleCreateQuiz}
-            onViewQuiz={handleViewQuiz}
-            onEditQuiz={handleEditQuiz}
-          />
+          <LazyWrapper>
+            <QuizzesTab
+              onCreateQuiz={handleCreateQuiz}
+              onViewQuiz={handleViewQuiz}
+              onEditQuiz={handleEditQuiz}
+            />
+          </LazyWrapper>
         );
       case 'treasure-hunts':
         return (
-          <TreasureHuntsTab
-            onViewClues={handleViewClues}
-            onViewSubmissions={handleViewSubmissions}
-            onDeclareWinner={handleDeclareWinner}
-          />
+          <LazyWrapper>
+            <TreasureHuntsTab
+              onViewClues={handleViewClues}
+              onViewSubmissions={handleViewSubmissions}
+              onDeclareWinner={handleDeclareWinner}
+            />
+          </LazyWrapper>
         );
       case 'clues-management':
         return (
-          <CluesManagementTab
-            treasureHuntId={selectedTreasureHuntId}
-            onBack={handleBackFromManagement}
-          />
+          <LazyWrapper>
+            <CluesManagementTab
+              treasureHuntId={selectedTreasureHuntId}
+              onBack={handleBackFromManagement}
+            />
+          </LazyWrapper>
         );
       case 'submissions-management':
         return (
-          <SubmissionsManagementTab
-            treasureHuntId={selectedTreasureHuntId}
-            onBack={handleBackFromManagement}
-          />
+          <LazyWrapper>
+            <SubmissionsManagementTab
+              treasureHuntId={selectedTreasureHuntId}
+              onBack={handleBackFromManagement}
+            />
+          </LazyWrapper>
         );
       case 'polls':
         return (
-          <PollsTab
-            onViewResults={handleViewResults}
-            onNotifyWinner={handleNotifyWinner}
-          />
+          <LazyWrapper>
+            <PollsTab
+              onViewResults={handleViewResults}
+              onNotifyWinner={handleNotifyWinner}
+            />
+          </LazyWrapper>
         );
       case 'teams':
         return (
-          <TeamsTab
-            onCreateTeam={handleCreateTeam}
-            onImportUsers={handleImportUsers}
-            onManageMembers={handleManageMembers}
-            onViewStats={handleViewStats}
-          />
+          <LazyWrapper>
+            <TeamsTab
+              onCreateTeam={handleCreateTeam}
+              onImportUsers={handleImportUsers}
+              onManageMembers={handleManageMembers}
+              onViewStats={handleViewStats}
+            />
+          </LazyWrapper>
         );
       case 'categories': // NEW CASE
         return (
-          <CategoriesTab
-            onCreateCategory={handleCreateCategory}
-            onViewStats={handleViewCategoryStats}
-          />
+          <LazyWrapper>
+            <CategoriesTab
+              onCreateCategory={handleCreateCategory}
+              onViewStats={handleViewCategoryStats}
+            />
+          </LazyWrapper>
         );
      
       default:
@@ -389,25 +405,26 @@ export default function AdminDashboard() {
         onLogout={handleLogout}
         userName={user?.name || user?.email || 'Admin'}
       />
-      {/* Only show navigation if not in clues or submissions management view */}
-      {!['clues-management', 'submissions-management'].includes(activeView) && (
-        <AdminNavigation
-          activeView={activeView as TabView}
-          onViewChange={(view) => setActiveView(view as ExtendedTabView)}
-          pendingApprovals={mockStats.pendingApprovals}
-        />
-      )}
+      
+      <AdminNavigation
+        activeView={activeView as TabView}
+        onViewChange={setActiveView}
+        pendingApprovals={mockStats.pendingApprovals}
+      />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderActiveTab()}
       </div>
 
       {/* Winner Selection Modal */}
-      <WinnerSelectionModal
-        isOpen={winnerSelectionModal.isOpen}
-        huntId={winnerSelectionModal.huntId}
-        onClose={handleWinnerSelectionClose}
-        onSuccess={handleWinnerSelectionSuccess}
-      />
+      <LazyWrapper>
+        <WinnerSelectionModal
+          isOpen={winnerSelectionModal.isOpen}
+          huntId={winnerSelectionModal.huntId}
+          onClose={handleWinnerSelectionClose}
+          onSuccess={handleWinnerSelectionSuccess}
+        />
+      </LazyWrapper>
     </div>
   );
 }
