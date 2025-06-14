@@ -130,11 +130,11 @@ const DeleteTreasureHuntModal: React.FC<DeleteTreasureHuntModalProps> = ({
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Status:</span>
                 <span className={`text-sm font-medium ${
-                  treasureHunt.status === 'ACTIVE' || treasureHunt.status === 'IN_PROGRESS' 
-                    ? 'text-green-600' 
+                  treasureHunt.status === 'UPCOMING'
+                    ? 'text-orange-600' 
                     : treasureHunt.status === 'COMPLETED'
                     ? 'text-blue-600'
-                    : 'text-orange-600'
+                    : 'text-green-600'
                 }`}>
                   {treasureHunt.status}
                 </span>
