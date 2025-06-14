@@ -406,11 +406,11 @@ export default function AdminDashboard() {
         userName={user?.name || user?.email || 'Admin'}
       />
       
-      <AdminNavigation
+      {/* <AdminNavigation
         activeView={activeView as TabView}
         onViewChange={setActiveView}
         pendingApprovals={mockStats.pendingApprovals}
-      />
+      /> */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderActiveTab()}
