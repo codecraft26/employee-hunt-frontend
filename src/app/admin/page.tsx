@@ -5,7 +5,7 @@ import React, { useState, useCallback, lazy, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import AdminHeader from '../../components/admin/AdminHeader';
-import AdminNavigation from '../../components/admin/AdminNavigation';
+
 import LazyWrapper from '../../components/shared/LazyWrapper';
 
 // Lazy load tab components for better performance
@@ -18,6 +18,7 @@ const QuizzesTab = lazy(() => import('../../components/tabs/QuizzesTab'));
 const CluesManagementTab = lazy(() => import('../../components/tabs/CluesManagementTab'));
 const SubmissionsManagementTab = lazy(() => import('../../components/tabs/SubmissionsManagementTab'));
 const WinnerSelectionModal = lazy(() => import('../../components/modals/WinnerSelectionModal'));
+const AdminApprovalsTab = lazy(() => import('../../components/tabs/AdminApprovalsTab'));
 
 import { 
   Stats, 
@@ -30,7 +31,7 @@ import {
 } from '../../types/admin';
 
 // Extended TabView type to include clue, submission management, and categories
-type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories';
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -176,6 +177,10 @@ export default function AdminDashboard() {
       case 'view-approvals':
         setActiveView('approvals');
         break;
+      case 'approve-user':
+        setActiveView('approve-users');
+        break;
+      
       default:
         console.log(`Unhandled quick action: ${type}`);
     }
@@ -315,9 +320,29 @@ export default function AdminDashboard() {
       case 'overview':
         return (
           <LazyWrapper>
-            <OverviewTab
-              stats={mockStats}
-            />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button
+                  onClick={() => handleQuickAction('approve-user')}
+                  className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">Admin Approvals</h3>
+                      <p className="mt-1 text-sm text-gray-500">Manage admin access requests</p>
+                    </div>
+                    <div className="bg-blue-100 p-3 rounded-full">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              <OverviewTab
+                stats={mockStats}
+              />
+            </div>
           </LazyWrapper>
         );
       case 'quizzes':
@@ -385,6 +410,13 @@ export default function AdminDashboard() {
               onCreateCategory={handleCreateCategory}
               onViewStats={handleViewCategoryStats}
             />
+          </LazyWrapper>
+        );
+
+      case 'approve-users':
+        return (
+          <LazyWrapper>
+            <AdminApprovalsTab />
           </LazyWrapper>
         );
      
