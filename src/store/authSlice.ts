@@ -42,10 +42,14 @@ interface AuthResponse {
 }
 
 interface RegisterData {
+  name: string;
   email: string;
   password: string;
-  name: string;
   department: string;
+  employeeCode: string;
+  gender: string;
+  hobbies: string[];
+  profileImage: File;
 }
 
 interface LoginData {
@@ -78,9 +82,13 @@ api.interceptors.request.use((config) => {
 // Async thunks
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
-  async (userData: RegisterData, { rejectWithValue }) => {
+  async (userData: FormData, { rejectWithValue }) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/register', userData);
+      const response = await api.post<AuthResponse>('/auth/register', userData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       const { token, user } = response.data.data;
       
       // Store token in cookie

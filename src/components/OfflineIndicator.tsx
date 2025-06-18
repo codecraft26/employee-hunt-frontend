@@ -1,11 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { WifiOff } from 'lucide-react';
 import { usePWA } from '../hooks/usePWA';
 
 const OfflineIndicator: React.FC = () => {
   const { isOnline } = usePWA();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render anything during SSR or initial client render
+  if (!mounted) {
+    return null;
+  }
 
   if (isOnline) {
     return null;
