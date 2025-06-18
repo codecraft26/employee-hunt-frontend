@@ -19,6 +19,22 @@ interface AssignedTeam {
   members: any[];
 }
 
+// Create axios instance matching useTreasureHunts pattern
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Add token to requests
+api.interceptors.request.use((config) => {
+  const token = Cookies.get('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
   isOpen,
   huntId,
@@ -60,21 +76,18 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
         }
       });
       
-      // Only fetch teams if hunt is active
+      // Fetch teams using the same pattern as useTreasureHunts
       const fetchAssignedTeams = async () => {
         setLoadingTeams(true);
+        setTeamsError(null);
         try {
-          const token = Cookies.get('token');
           console.log('Fetching assigned teams for hunt:', huntId);
+          console.log('API Base URL:', API_BASE_URL);
+          console.log('Full URL:', `${API_BASE_URL}/treasure-hunts/${huntId}/assigned-teams`);
           
-          const response = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/treasure-hunts/${huntId}/assigned-teams`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            }
-          );
+          const response = await api.get(`/treasure-hunts/${huntId}/assigned-teams`);
+          
+          console.log('API Response:', response);
           
           if (response.data.success) {
             console.log('Assigned teams fetched successfully:', response.data.data);
@@ -84,7 +97,29 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
           }
         } catch (err: any) {
           console.error('Failed to fetch assigned teams:', err);
-          setTeamsError(err.response?.data?.message || 'Failed to fetch assigned teams');
+          console.error('Error details:', {
+            message: err.message,
+            status: err.response?.status,
+            statusText: err.response?.statusText,
+            data: err.response?.data,
+            config: err.config
+          });
+          
+          // Provide more specific error messages
+          let errorMessage = 'Failed to fetch assigned teams';
+          if (err.response?.status === 404) {
+            errorMessage = 'Treasure hunt not found or no teams assigned';
+          } else if (err.response?.status === 401) {
+            errorMessage = 'Authentication required. Please login again.';
+          } else if (err.response?.status === 500) {
+            errorMessage = 'Server error. Please try again later.';
+          } else if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
+            errorMessage = 'Cannot connect to server. Please check if the server is running.';
+          } else if (err.response?.data?.message) {
+            errorMessage = err.response.data.message;
+          }
+          
+          setTeamsError(errorMessage);
         } finally {
           setLoadingTeams(false);
         }
