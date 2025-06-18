@@ -387,15 +387,25 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
 
             {/* Submission Image */}
             {submission.imageUrl && (
-              <div className="mb-3">
+              <div className="mb-3 relative group">
                 <img
                   src={submission.imageUrl}
                   alt={`Submission for stage ${clue.stageNumber}`}
-                  className="max-w-full h-32 object-contain border border-gray-200 rounded"
+                  className="max-w-full h-32 object-contain border border-gray-200 rounded cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => window.open(submission.imageUrl, '_blank')}
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                   }}
                 />
+                <button
+                  onClick={() => window.open(submission.imageUrl, '_blank')}
+                  className="absolute top-1 right-1 bg-black bg-opacity-50 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Open in new tab"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </button>
               </div>
             )}
 
@@ -623,11 +633,23 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
 
                 <div>
                   <p className="text-sm font-medium text-gray-700 mb-2">Submitted Image:</p>
-                  <img
-                    src={selectedSubmission.submission.imageUrl}
-                    alt="Submission"
-                    className="max-w-full h-64 object-contain border border-gray-200 rounded"
-                  />
+                  <div className="relative group">
+                    <img
+                      src={selectedSubmission.submission.imageUrl}
+                      alt="Submission"
+                      className="max-w-full h-64 object-contain border border-gray-200 rounded cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => window.open(selectedSubmission.submission.imageUrl, '_blank')}
+                    />
+                    <button
+                      onClick={() => window.open(selectedSubmission.submission.imageUrl, '_blank')}
+                      className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Open in new tab"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div>

@@ -491,18 +491,30 @@ const SubmissionsManagementTab: React.FC<SubmissionsManagementTabProps> = ({
                           <ImageIcon className="h-4 w-4 mr-2" />
                           Submitted Image:
                         </p>
-                        <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center relative group">
                           {submission.imageUrl ? (
-                            <img
-                              src={submission.imageUrl}
-                              alt="Submission"
-                              className="max-w-full max-h-full object-contain rounded-lg"
-                              onError={(e) => {
-                                e.currentTarget.src = '';
-                                e.currentTarget.className = 'hidden';
-                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
+                            <>
+                              <img
+                                src={submission.imageUrl}
+                                alt="Submission"
+                                className="max-w-full max-h-full object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => window.open(submission.imageUrl, '_blank')}
+                                onError={(e) => {
+                                  e.currentTarget.src = '';
+                                  e.currentTarget.className = 'hidden';
+                                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                              <button
+                                onClick={() => window.open(submission.imageUrl, '_blank')}
+                                className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Open in new tab"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </button>
+                            </>
                           ) : null}
                           <div className={submission.imageUrl ? 'hidden' : 'text-gray-400 text-center'}>
                             <ImageIcon className="h-12 w-12 mx-auto mb-2" />

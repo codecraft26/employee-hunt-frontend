@@ -17,10 +17,12 @@ import { Stats, QuickAction } from '../../types/admin';
 
 interface OverviewTabProps {
   stats: Stats;
+  onQuickAction?: (type: string) => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ 
-  stats
+  stats,
+  onQuickAction
 }) => {
   const router = useRouter();
 
@@ -29,17 +31,20 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     { title: 'Start Treasure Hunt', icon: MapPin, color: 'from-green-500 to-green-600', type: 'create-hunt' },
     { title: 'Create Poll/Vote', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'create-poll' },
     { title: 'Manage Teams', icon: Users, color: 'from-orange-500 to-orange-600', type: 'create-team' },
-   
-    
     { title: 'Manage Categories', icon: Building2, color: 'from-indigo-500 to-indigo-600', type: 'create-category' },
     { title: 'Manage Approval', icon: User, color: 'from-indigo-500 to-indigo-600', type: 'approve-user' }
-  
   ];
 
   const handleQuickAction = (type: string) => {
     console.log(`Quick action: ${type}`);
     
-    // Navigate to appropriate route based on quick action
+    // Use parent's quick action handler if provided, otherwise use router navigation
+    if (onQuickAction) {
+      onQuickAction(type);
+      return;
+    }
+    
+    // Navigate to appropriate route based on quick action (fallback)
     switch (type) {
       case 'quiz':
       case 'create-quiz':

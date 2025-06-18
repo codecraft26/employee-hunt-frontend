@@ -461,12 +461,26 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
                           <div className="space-y-3">
                             {clue.submissions.map((submission) => (
                               <div key={submission.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                                <img
-                                  src={submission.imageUrl}
-                                  alt="Team submission"
-                                  className="w-16 h-16 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
-                                  onClick={() => setSelectedSubmission(submission)}
-                                />
+                                <div className="relative group">
+                                  <img
+                                    src={submission.imageUrl}
+                                    alt="Team submission"
+                                    className="w-16 h-16 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => setSelectedSubmission(submission)}
+                                  />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(submission.imageUrl, '_blank');
+                                    }}
+                                    className="absolute top-1 right-1 bg-black bg-opacity-50 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                    title="Open in new tab"
+                                  >
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </button>
+                                </div>
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2 mb-1">
                                     <span className="font-medium text-gray-900">{submission.team.name}</span>
@@ -540,12 +554,22 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
                 </button>
               </div>
               
-              <div className="mb-6">
+              <div className="mb-6 relative group">
                 <img
                   src={selectedSubmission.imageUrl}
                   alt="Team submission"
-                  className="w-full max-h-96 object-contain rounded-lg border"
+                  className="w-full max-h-96 object-contain rounded-lg border cursor-pointer"
+                  onClick={() => window.open(selectedSubmission.imageUrl, '_blank')}
                 />
+                <button
+                  onClick={() => window.open(selectedSubmission.imageUrl, '_blank')}
+                  className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Open in new tab"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </button>
               </div>
 
               <div className="flex items-center space-x-2 mb-4">
