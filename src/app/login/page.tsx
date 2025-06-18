@@ -8,6 +8,7 @@ import { loginUser, loginWithOTP, verifyOTPLogin, clearError } from '../../store
 import { Eye, EyeOff, Mail, Lock, Smartphone, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { Gamepad2 } from 'lucide-react';
+import PendingApprovalMessage from '../../components/PendingApprovalMessage';
 
 // Add SVG as a React component
 const TeamPlayBanner = () => (
@@ -58,6 +59,7 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -91,11 +93,15 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setIsPendingApproval(false);
     
     try {
       if (isOTPMode) {
         if (otpSent) {
-          await dispatch(verifyOTPLogin(otpData));
+          const result = await dispatch(verifyOTPLogin(otpData));
+          if (result.payload?.message?.includes('pending approval')) {
+            setIsPendingApproval(true);
+          }
         } else {
           const result = await dispatch(loginWithOTP(otpData.email));
           if (result.meta.requestStatus === 'fulfilled') {
@@ -103,7 +109,10 @@ export default function LoginPage() {
           }
         }
       } else {
-        await dispatch(loginUser(formData));
+        const result = await dispatch(loginUser(formData));
+        if (result.payload?.message?.includes('pending approval')) {
+          setIsPendingApproval(true);
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -129,6 +138,10 @@ export default function LoginPage() {
     setOtpData({ email: '', otp: '' });
     dispatch(clearError());
   };
+
+  if (isPendingApproval) {
+    return <PendingApprovalMessage />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
