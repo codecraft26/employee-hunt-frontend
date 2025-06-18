@@ -60,10 +60,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false);
 
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { isLoading, error, isAuthenticated, user } = useAppSelector((state) => state.auth);
+
+  useEffect(() => {
+    // Check if user was redirected from registration
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('registered') === 'true') {
+      setShowRegistrationSuccess(true);
+      // Clear the URL parameter
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -169,6 +180,16 @@ export default function LoginPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+        {/* Registration Success Message */}
+        {showRegistrationSuccess && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
+            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-green-700 font-medium">Registration successful!</p>
+              <p className="text-sm text-green-600">Please log in with your credentials to continue.</p>
+            </div>
           </div>
         )}
         {/* Success Message for OTP */}

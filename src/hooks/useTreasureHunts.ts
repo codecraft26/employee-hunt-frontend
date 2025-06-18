@@ -209,7 +209,7 @@ export interface SubmissionsResponse {
   data: ClueSubmission[];
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://:4000/api';
 
 // Create axios instance with interceptors
 const api = axios.create({

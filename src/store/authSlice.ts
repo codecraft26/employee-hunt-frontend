@@ -63,7 +63,7 @@ interface OTPVerifyData {
 }
 
 // API base URL - replace with your actual API URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Configure axios
 const api = axios.create({
@@ -89,12 +89,10 @@ export const registerUser = createAsyncThunk(
           'Content-Type': 'multipart/form-data',
         },
       });
-      const { token, user } = response.data.data;
       
-      // Store token in cookie
-      Cookies.set('token', token, { expires: 7, secure: true, sameSite: 'strict' });
-      
-      return { token, user };
+      // Don't automatically log in the user after registration
+      // Just return success message
+      return { success: true, message: response.data.message };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Registration failed');
     }
@@ -224,9 +222,7 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.isAuthenticated = true;
+        // Don't set authentication state - user needs to log in separately
         state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {

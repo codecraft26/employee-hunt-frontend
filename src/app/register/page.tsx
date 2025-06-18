@@ -80,7 +80,7 @@ export default function RegisterPage() {
 
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { isLoading, isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const { isLoading, isAuthenticated, user, error: authError } = useAppSelector((state) => state.auth);
   
   // Fetch categories
   const { categories, fetchCategories, loading: categoriesLoading } = useCategories();
@@ -88,16 +88,6 @@ export default function RegisterPage() {
   useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.role === 'admin') {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
-      }
-    }
-  }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     return () => {
@@ -220,7 +210,13 @@ export default function RegisterPage() {
         submitData.append('profileImage', formData.profileImage);
       }
 
-      await dispatch(registerUser(submitData));
+      const result = await dispatch(registerUser(submitData));
+      
+      // Check if registration was successful
+      if (registerUser.fulfilled.match(result)) {
+        // Redirect to login page with success message
+        router.push('/login?registered=true');
+      }
     } catch (error) {
       setError('An error occurred during registration');
     } finally {
