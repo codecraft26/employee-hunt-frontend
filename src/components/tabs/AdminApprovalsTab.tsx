@@ -2,9 +2,11 @@
 'use client';
 
 import React, { useEffect, useCallback, useState } from 'react';
+import { UserPlus } from 'lucide-react';
 import { useUserApprovals } from '@/hooks/useUserApprovals';
 import { PendingUser } from '@/hooks/useUserApprovals';
 import RejectUserModal from '@/components/modals/RejectUserModal';
+import UserManagementModal from '@/components/modals/UserManagementModal';
 
 interface AdminApprovalsTabProps {
   onApproveUser?: (userId: string, userName: string) => void;
@@ -39,6 +41,7 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<{
     type: 'single' | 'bulk';
     userId?: string;
@@ -155,6 +158,17 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
     onViewUserDetails?.(userId);
   }, [onViewUserDetails]);
 
+  // Handle create admin modal
+  const handleOpenCreateAdmin = useCallback(() => {
+    setUserManagementModalOpen(true);
+  }, []);
+
+  // Handle admin creation success (refresh pending users)
+  const handleAdminCreationSuccess = useCallback(() => {
+    // Refresh the pending users list in case the new admin affects anything
+    fetchPendingUsers();
+  }, [fetchPendingUsers]);
+
   // Get stats
   const stats = getPendingUsersStats();
 
@@ -176,16 +190,25 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-gray-900">User Approvals</h2>
           <p className="text-gray-600 mt-1">
-            {stats.totalPending} users pending approval
+            {stats.totalPending} users pending approval · Create admin users with instant approval
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </button>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleOpenCreateAdmin}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Create Admin</span>
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
       </div>
 
       {/* Error Display */}
@@ -358,6 +381,13 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
         isLoading={actionLoading === rejectTarget?.userId || actionLoading === 'bulk-reject'}
         isBulk={rejectTarget?.type === 'bulk'}
         userCount={rejectTarget?.userIds?.length || 1}
+      />
+
+      {/* User Management Modal */}
+      <UserManagementModal
+        isOpen={userManagementModalOpen}
+        onClose={() => setUserManagementModalOpen(false)}
+        initialTab="create"
       />
     </div>
   );

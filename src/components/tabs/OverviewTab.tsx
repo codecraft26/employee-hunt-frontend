@@ -1,5 +1,5 @@
 // components/tabs/OverviewTab.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Users, 
@@ -17,6 +17,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAdminStats } from '../../hooks/useAdminStats';
+import UserManagementModal from '../modals/UserManagementModal';
 
 interface QuickAction {
   title: string;
@@ -31,6 +32,8 @@ interface OverviewTabProps {
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ onQuickAction }) => {
   const router = useRouter();
+  const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
+  
   const {
     loading,
     error,
@@ -54,11 +57,18 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onQuickAction }) => {
     { title: 'Create Poll/Vote', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'create-poll' },
     { title: 'Manage Teams', icon: Users, color: 'from-orange-500 to-orange-600', type: 'create-team' },
     { title: 'Manage Categories', icon: Building2, color: 'from-indigo-500 to-indigo-600', type: 'create-category' },
+    { title: 'User Management', icon: User, color: 'from-teal-500 to-teal-600', type: 'user-management' },
     { title: 'Manage Approval', icon: User, color: 'from-pink-500 to-pink-600', type: 'approve-user' }
   ];
 
   const handleQuickAction = (type: string) => {
     console.log(`Quick action: ${type}`);
+    
+    // Handle user management modal directly
+    if (type === 'user-management') {
+      setUserManagementModalOpen(true);
+      return;
+    }
     
     // Use parent's quick action handler if provided, otherwise use router navigation
     if (onQuickAction) {
@@ -363,6 +373,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onQuickAction }) => {
           )}
         </div>
       </div>
+      
+      {/* User Management Modal */}
+      <UserManagementModal
+        isOpen={userManagementModalOpen}
+        onClose={() => setUserManagementModalOpen(false)}
+        initialTab="view"
+      />
     </div>
   );
 };
