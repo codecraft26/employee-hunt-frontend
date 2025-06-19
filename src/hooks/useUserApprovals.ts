@@ -11,7 +11,15 @@ export interface PendingUser {
   email: string;
   employeeCode?: string | null;
   department?: string | null;
+  gender?: string | null;
+  profileImage?: string | null;
+  idProof?: string | null;
   createdAt: string;
+  categories?: {
+    id: string;
+    name: string;
+    description?: string;
+  }[];
 }
 
 export interface ApprovedUser {
@@ -216,16 +224,22 @@ export const useUserApprovals = () => {
 
   // Get pending users statistics
   const getPendingUsersStats = useCallback(() => {
-    const departments = [...new Set(pendingUsers.map(u => u.department).filter(Boolean))];
-    const departmentCounts = departments.reduce((acc, dept) => {
-      acc[dept!] = pendingUsers.filter(u => u.department === dept).length;
+    const allCategories = pendingUsers.flatMap(user => user.categories || []);
+    const uniqueCategories = Array.from(new Set(allCategories.map(cat => cat.id)))
+      .map(id => allCategories.find(cat => cat.id === id)!)
+      .filter(Boolean);
+    
+    const categoryCounts = uniqueCategories.reduce((acc, category) => {
+      acc[category.name] = pendingUsers.filter(user => 
+        user.categories?.some(cat => cat.id === category.id)
+      ).length;
       return acc;
     }, {} as Record<string, number>);
 
     return {
       totalPending: pendingUsers.length,
-      departments: departments,
-      departmentCounts: departmentCounts,
+      categories: uniqueCategories,
+      categoryCounts: categoryCounts,
       oldestPending: pendingUsers.length > 0 
         ? new Date(Math.min(...pendingUsers.map(u => new Date(u.createdAt).getTime())))
         : null,

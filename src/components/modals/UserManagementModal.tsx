@@ -135,7 +135,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
     const matchesFilter = (() => {
       switch (filterType) {
         case 'admin': return user.role === 'admin';
-        case 'user': return user.role === 'USER';
+        case 'user': return user.role === 'user';
         case 'approved': return user.isApproved;
         case 'pending': return !user.isApproved;
         default: return true;

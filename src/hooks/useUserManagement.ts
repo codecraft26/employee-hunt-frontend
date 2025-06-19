@@ -8,7 +8,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'USER' | 'admin';
+  role: 'user' | 'admin';
   employeeCode: string;
   department: string;
   gender: 'male' | 'female' | 'other';
@@ -33,10 +33,10 @@ export interface CreateAdminRequest {
   email: string;
   password: string;
   name: string;
-  profileImage?: File;
-  idProof?: File;
   department?: string;
   gender?: 'male' | 'female' | 'other';
+  profileImage?: File;
+  idProof?: File;
 }
 
 export interface CreateAdminResponse {
@@ -256,7 +256,7 @@ export const useUserManagement = () => {
   const getUserStats = useCallback(() => {
     const totalUsers = state.users.length;
     const adminUsers = state.users.filter(user => user.role === 'admin').length;
-    const regularUsers = state.users.filter(user => user.role === 'USER').length;
+    const regularUsers = state.users.filter(user => user.role === 'user').length;
     const approvedUsers = state.users.filter(user => user.isApproved).length;
     const pendingUsers = state.users.filter(user => !user.isApproved).length;
     

@@ -11,17 +11,68 @@ export enum VoteType {
   MULTI_CHOICE = 'MULTI_CHOICE'
 }
 
+// Enhanced enum for voting option types
+export enum VotingOptionType {
+  USER_SPECIFIC = 'USER_SPECIFIC',           // Admin manually selects users as voting options
+  CATEGORY_BASED = 'CATEGORY_BASED',         // Legacy: Custom text options (kept for backward compatibility)
+  CUSTOM_OPTIONS = 'CUSTOM_OPTIONS',         // Admin writes custom text options  
+  CATEGORY_USER_BASED = 'CATEGORY_USER_BASED' // Auto-selected users from categories become voting options
+}
+
 export interface VoteOption {
   id: string;
   name: string;
   imageUrl?: string;
   voteCount: number;
+  // For user-specific options
+  targetUser?: {
+    id: string;
+    name: string;
+    email: string;
+    profileImage?: string;
+    employeeCode?: string;
+    department?: string;
+  };
 }
 
 export interface CreatedBy {
   id: string;
   name: string;
   email: string;
+}
+
+// Interface for available users when creating polls
+export interface AvailableUser {
+  id: string;
+  name: string;
+  email: string;
+  profileImage?: string;
+  employeeCode?: string;
+  department?: string;
+  categories?: Array<{
+    id: string;
+    name: string;
+  }>;
+}
+
+// Interface for category-user preview
+export interface CategoryUserPreview {
+  totalUsers: number;
+  categories: string[];
+  canCreatePoll: boolean;
+}
+
+// Request interface for previewing users by categories
+export interface UsersByCategoriesRequest {
+  categoryIds: string[];
+}
+
+// Response interface for users by categories preview
+export interface UsersByCategoriesResponse {
+  success: boolean;
+  message: string;
+  preview: CategoryUserPreview;
+  data: AvailableUser[];
 }
 
 export interface Vote {
@@ -49,6 +100,19 @@ export interface Vote {
     id: string;
     name: string;
   }>;
+  // New voting option type
+  votingOptionType: VotingOptionType;
+  // For category-user-based polls
+  optionCategories?: Array<{
+    id: string;
+    name: string;
+  }>;
+}
+
+// User option for creating user-specific polls
+export interface UserVoteOption {
+  userId: string;
+  name?: string; // Optional custom display name
 }
 
 export interface CreateVoteRequest {
@@ -60,10 +124,17 @@ export interface CreateVoteRequest {
   type: VoteType;
   categoryType: 'ALL' | 'SPECIFIC';
   allowedCategories?: string[]; // Array of category IDs
-  options: {
+  // New fields for enhanced poll creation
+  votingOptionType: VotingOptionType;
+  // For category-based polls (existing behavior)
+  options?: {
     name: string;
     imageUrl?: string;
   }[];
+  // For user-specific polls (manual selection)
+  userOptions?: UserVoteOption[];
+  // For category-user-based polls (automatic from categories)
+  optionCategories?: string[]; // Array of category IDs
 }
 
 export interface UpdateVoteRequest {
@@ -73,11 +144,17 @@ export interface UpdateVoteRequest {
   endTime?: string;
   resultDisplayTime?: string;
   type?: VoteType;
+  votingOptionType?: VotingOptionType;
+  // For category-based polls
   options?: {
     id?: string; // Include id to update existing option
     name: string;
     imageUrl?: string;
   }[];
+  // For user-specific polls
+  userOptions?: UserVoteOption[];
+  // For category-user-based polls
+  optionCategories?: string[];
 }
 
 export interface VoteResponse {
@@ -90,8 +167,10 @@ export interface VoteResponse {
   details?: {
     startTime: string;
     endTime: string;
-    totalOptions: number;
-    type: string;
+    resultDisplayTime?: string;
+    votingOptionType: string;
+    optionsCount: number;
+    optionsWithImages: number;
   };
   data: Vote;
 }
@@ -105,6 +184,13 @@ export interface VotesListResponse {
     limit: number;
     totalPages: number;
   };
+}
+
+// New response for available users
+export interface AvailableUsersResponse {
+  success: boolean;
+  message: string;
+  data: AvailableUser[];
 }
 
 export interface CastVoteRequest {

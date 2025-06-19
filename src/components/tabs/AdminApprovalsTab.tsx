@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useCallback, useState } from 'react';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, ExternalLink, FileText, Image as ImageIcon } from 'lucide-react';
 import { useUserApprovals } from '@/hooks/useUserApprovals';
 import { PendingUser } from '@/hooks/useUserApprovals';
 import RejectUserModal from '@/components/modals/RejectUserModal';
@@ -234,8 +234,8 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
             <p className="text-2xl font-bold text-blue-600">{stats.totalPending}</p>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h3 className="font-semibold text-green-900">Departments</h3>
-            <p className="text-2xl font-bold text-green-600">{stats.departments.length}</p>
+            <h3 className="font-semibold text-green-900">Categories</h3>
+            <p className="text-2xl font-bold text-green-600">{stats.categories.length}</p>
           </div>
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <h3 className="font-semibold text-yellow-900">Selected</h3>
@@ -293,10 +293,16 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
                     User
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Profile Image
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID Proof
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Employee Code
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Department
+                    Categories
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Requested On
@@ -332,13 +338,83 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
                           )}
                         </div>
                         <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-xs text-gray-400">Gender: {user.gender || 'N/A'}</div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.profileImage && user.profileImage.trim() !== '' ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                            <img
+                              src={user.profileImage}
+                              alt={`${user.name}'s profile`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                // Show fallback
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = '<div class="w-full h-full bg-gray-200 flex items-center justify-center"><svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg></div>';
+                                }
+                              }}
+                            />
+                          </div>
+                          <button
+                            onClick={() => user.profileImage && window.open(user.profileImage, '_blank')}
+                            className="text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                            title="View full image"
+                            disabled={!user.profileImage}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            <span className="text-xs">View</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2 text-gray-400">
+                          <ImageIcon className="h-4 w-4" />
+                          <span className="text-xs">No image</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.idProof && user.idProof.trim() !== '' ? (
+                        <button
+                          onClick={() => user.idProof && window.open(user.idProof, '_blank')}
+                          className="text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                          title="View ID proof document"
+                          disabled={!user.idProof}
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span className="text-xs">View Document</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </button>
+                      ) : (
+                        <div className="flex items-center space-x-2 text-gray-400">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-xs">No document</span>
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.employeeCode || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.department || 'N/A'}
+                      {user.categories && user.categories.length > 0 ? (
+                        <div className="space-y-1">
+                          {user.categories.map((category, index) => (
+                            <span
+                              key={category.id}
+                              className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1"
+                              title={category.description}
+                            >
+                              {category.name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        'N/A'
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(user.createdAt).toLocaleDateString()}

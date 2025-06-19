@@ -1,7 +1,7 @@
 // components/tabs/PollsTab.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, BarChart3, Send, Clock, Users, Eye, Edit, Trash2, Calendar, RefreshCw, Building2 } from 'lucide-react';
-import { Vote, VoteStatus, VoteType } from '../../types/votes';
+import { Plus, BarChart3, Send, Clock, Users, Eye, Edit, Trash2, Calendar, RefreshCw, Building2, UserCheck } from 'lucide-react';
+import { Vote, VoteStatus, VoteType, VotingOptionType } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 import CreatePollModal from '../modals/CreatePollModal';
 import EditPollModal from '../modals/EditPollModal';
@@ -256,6 +256,24 @@ const PollsTab: React.FC<PollsTabProps> = ({
                         <span className="text-sm text-gray-600 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           {poll.type === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}
+                        </span>
+                        <span className="text-sm text-gray-600 flex items-center">
+                          {poll.votingOptionType === VotingOptionType.USER_SPECIFIC ? (
+                            <>
+                              <UserCheck className="h-4 w-4 mr-1" />
+                              User-Specific Poll
+                            </>
+                          ) : poll.votingOptionType === VotingOptionType.CATEGORY_USER_BASED ? (
+                            <>
+                              <Building2 className="h-4 w-4 mr-1" />
+                              Category-User Poll
+                            </>
+                          ) : (
+                            <>
+                              <Building2 className="h-4 w-4 mr-1" />
+                              Category-Based Poll
+                            </>
+                          )}
                         </span>
                         <span className="text-sm text-gray-600 flex items-center">
                           <Building2 className="h-4 w-4 mr-1" />
