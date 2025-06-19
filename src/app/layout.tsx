@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from '../store';
 import AuthProvider from '../components/AuthProvider';
 import PWAInstaller from '../components/PWAInstaller';
+import PWADebugger from '../components/PWADebugger';
 import OfflineIndicator from '../components/OfflineIndicator';
 import './globals.css';
 import { useEffect } from 'react';
@@ -14,8 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   useEffect(() => {
-    // Register service worker
-    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+    // Register service worker (enable in development for testing)
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
@@ -48,15 +49,27 @@ export default function RootLayout({
         }
       });
     }
+
+    // Debug PWA capabilities
+    console.log('PWA Debug Info:', {
+      serviceWorkerSupported: 'serviceWorker' in navigator,
+      isHTTPS: location.protocol === 'https:',
+      isLocalhost: location.hostname === 'localhost',
+      userAgent: navigator.userAgent,
+      standalone: window.matchMedia('(display-mode: standalone)').matches
+    });
   }, []);
 
   return (
     <html lang="en">
       <head>
-        {/* PWA Meta Tags */}
+        {/* Viewport for PWA - improved mobile support */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover, user-scalable=yes" />
+
+        {/* Enhanced PWA Meta Tags */}
         <meta name="application-name" content="Employee Hunt" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Employee Hunt" />
         <meta name="description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
         <meta name="format-detection" content="telephone=no" />
@@ -65,9 +78,13 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#4f46e5" />
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="theme-color" content="#4f46e5" />
-
-        {/* Viewport for PWA */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover" />
+        
+        {/* Additional mobile optimization */}
+        <meta name="apple-touch-fullscreen" content="yes" />
+        <meta name="apple-mobile-web-app-orientation" content="portrait" />
+        <meta name="screen-orientation" content="portrait" />
+        <meta name="full-screen" content="yes" />
+        <meta name="browsermode" content="application" />
 
         {/* Manifest */}
         <link rel="manifest" href="/manifest.json" />
@@ -113,6 +130,7 @@ export default function RootLayout({
         <Provider store={store}>
           <AuthProvider>
             <OfflineIndicator />
+            <PWADebugger />
             {children}
             <PWAInstaller />
           </AuthProvider>

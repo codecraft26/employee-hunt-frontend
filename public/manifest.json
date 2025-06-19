@@ -3,13 +3,16 @@
   "short_name": "Employee Hunt",
   "description": "Engage in team activities, quizzes, treasure hunts, and polls with your colleagues",
   "start_url": "/",
+  "id": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en",
+  "dir": "ltr",
   "categories": ["productivity", "business", "social"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",

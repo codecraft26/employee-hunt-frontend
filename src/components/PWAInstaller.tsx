@@ -20,25 +20,40 @@ const PWAInstaller: React.FC = () => {
   useEffect(() => {
     // Check if app is already installed
     const checkIfInstalled = () => {
+      // Check for standalone mode (installed as PWA)
       if (window.matchMedia('(display-mode: standalone)').matches || 
-          (window.navigator as any).standalone === true) {
+          (window.navigator as any).standalone === true ||
+          document.referrer.includes('android-app://')) {
         setIsInstalled(true);
+        return true;
       }
+      return false;
     };
 
-    checkIfInstalled();
+    const isCurrentlyInstalled = checkIfInstalled();
+
+    // Debug logging for mobile browsers
+    console.log('PWA Installer Debug:', {
+      isInstalled: isCurrentlyInstalled,
+      userAgent: navigator.userAgent,
+      standalone: (window.navigator as any).standalone,
+      displayMode: window.matchMedia('(display-mode: standalone)').matches,
+      dismissedBefore: localStorage.getItem('pwa-install-dismissed')
+    });
 
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
+      console.log('beforeinstallprompt event fired');
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
-      // Show install prompt after a delay (better UX)
+      // Show install prompt after a shorter delay for better testing
       setTimeout(() => {
-        if (!isInstalled && !localStorage.getItem('pwa-install-dismissed')) {
+        if (!isCurrentlyInstalled && !localStorage.getItem('pwa-install-dismissed')) {
+          console.log('Showing install prompt');
           setShowInstallPrompt(true);
         }
-      }, 3000);
+      }, 2000);
     };
 
     // Listen for app installed event
@@ -49,17 +64,48 @@ const PWAInstaller: React.FC = () => {
       setDeferredPrompt(null);
     };
 
+    // For iOS Safari, show manual install instructions
+    const checkiOSSafari = () => {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      
+      if (isIOS && isSafari && !isCurrentlyInstalled && !localStorage.getItem('pwa-install-dismissed')) {
+        console.log('iOS Safari detected, showing manual install prompt');
+        setTimeout(() => {
+          setShowInstallPrompt(true);
+        }, 3000);
+      }
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+    
+    // Check for iOS Safari
+    checkiOSSafari();
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [isInstalled]);
+  }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    // Check if this is iOS Safari (no beforeinstallprompt support)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    if (isIOS && isSafari) {
+      // Show iOS install instructions
+      alert('To install this app on your iOS device:\n\n1. Tap the Share button (square with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" to confirm');
+      return;
+    }
+
+    if (!deferredPrompt) {
+      console.log('No deferred prompt available');
+      // Fallback for browsers that don't support beforeinstallprompt
+      alert('To install this app:\n\n• On Android Chrome: Use the "Add to Home Screen" option in the menu\n• On iOS Safari: Use "Add to Home Screen" from the share menu');
+      return;
+    }
 
     try {
       await deferredPrompt.prompt();
@@ -84,8 +130,16 @@ const PWAInstaller: React.FC = () => {
     localStorage.setItem('pwa-install-dismissed', 'true');
   };
 
-  // Don't show if already installed or no prompt available
-  if (isInstalled || !showInstallPrompt || !deferredPrompt) {
+  // Show install prompt if conditions are met
+  if (isInstalled) {
+    return null;
+  }
+
+  // Show for iOS Safari even without deferredPrompt
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  
+  if (!showInstallPrompt && !(isIOS && isSafari)) {
     return null;
   }
 
