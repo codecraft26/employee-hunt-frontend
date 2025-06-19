@@ -1,6 +1,7 @@
 import React, { useState, useCallback, memo, useEffect } from 'react';
 import { Trash2, AlertCircle, CheckCircle, Users } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
+import { useToast } from '../shared/ToastContainer';
 import { Team, TeamMember } from '../../types/teams';
 
 interface TeamMembersManagerProps {
@@ -13,35 +14,65 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = memo(({
   onMemberRemoved 
 }) => {
   const { removeMemberFromTeam, loading, error, clearError } = useTeams();
+  const { showSuccess, showError } = useToast();
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Clear success message after 5 seconds
+  // Clear errors when component unmounts or team changes
   useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
+    return () => {
+      clearError();
+    };
+  }, [clearError, team.id]);
 
   // Memoized handler for removing team members
   const handleRemoveMember = useCallback(async (member: TeamMember) => {
-    if (!confirm(`Are you sure you want to remove ${member.name} from the team?`)) {
+    if (!confirm(`Are you sure you want to remove ${member.name} from the team?\n\nThis action cannot be undone.`)) {
       return;
     }
 
     setRemovingUserId(member.id);
     clearError();
-    setSuccessMessage(null);
 
-    const success = await removeMemberFromTeam(team.id, member.id);
-    if (success) {
-      setSuccessMessage(`${member.name} has been removed from the team`);
-      onMemberRemoved?.();
+    try {
+      console.log('Attempting to remove member:', {
+        teamId: team.id,
+        userId: member.id,
+        memberName: member.name
+      });
+
+      const success = await removeMemberFromTeam(team.id, member.id);
+      
+      if (success) {
+        // Show success toast
+        showSuccess(
+          'Member Removed Successfully',
+          `${member.name} has been removed from ${team.name}`,
+          4000
+        );
+        
+        onMemberRemoved?.();
+      } else {
+        // This should not happen if our error handling is correct, but just in case
+        console.error('Remove member returned false without throwing an error');
+        showError(
+          'Removal Failed',
+          'Failed to remove member from team. Please try again.',
+          6000
+        );
+      }
+    } catch (err: any) {
+      console.error('Failed to remove member:', err);
+      
+      // Show error toast with specific message
+      const errorMessage = err.message || 'An unexpected error occurred';
+      showError(
+        'Failed to Remove Member',
+        `Could not remove ${member.name}: ${errorMessage}`,
+        8000
+      );
+    } finally {
+      setRemovingUserId(null);
     }
-    setRemovingUserId(null);
   }, [team.id, removeMemberFromTeam, clearError, onMemberRemoved]);
 
   // Memoized member list to prevent unnecessary re-renders
@@ -58,12 +89,7 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = memo(({
         </div>
       )}
 
-      {successMessage && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-start space-x-2">
-          <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-          <p className="text-green-700 text-sm">{successMessage}</p>
-        </div>
-      )}
+
 
       <div className="bg-white shadow-sm rounded-lg border">
         {membersList.length === 0 ? (

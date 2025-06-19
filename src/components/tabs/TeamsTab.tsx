@@ -17,6 +17,7 @@ import {
   Target
 } from 'lucide-react';
 import { useTeams, Team, User, CreateTeamRequest } from '../../hooks/useTeams';
+import { useToast } from '../shared/ToastContainer';
 
 interface TeamsTabProps {
   onCreateTeam?: () => void;
@@ -46,6 +47,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
     getTeamStats,
     clearError,
   } = useTeams();
+  
+  const { showSuccess, showError } = useToast();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -76,13 +79,28 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
 
     setIsSubmitting(true);
     try {
-      await createTeam(createTeamData);
-      setShowCreateModal(false);
-      setCreateTeamData({ name: '', description: '' });
-      // Call external handler if provided
-      externalOnCreateTeam?.();
-    } catch (err) {
+      const newTeam = await createTeam(createTeamData);
+      
+      if (newTeam) {
+        showSuccess(
+          'Team Created',
+          `${createTeamData.name} has been created successfully`,
+          4000
+        );
+        
+        setShowCreateModal(false);
+        setCreateTeamData({ name: '', description: '' });
+        // Call external handler if provided
+        externalOnCreateTeam?.();
+      }
+    } catch (err: any) {
       console.error('Failed to create team:', err);
+      
+      showError(
+        'Creation Failed',
+        `Could not create team: ${err.message || 'Unknown error occurred'}`,
+        6000
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -104,12 +122,27 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
 
     setIsSubmitting(true);
     try {
-      await updateTeam(selectedTeam.id, editTeamData);
-      setShowEditModal(false);
-      setSelectedTeam(null);
-      setEditTeamData({ name: '', description: '' });
-    } catch (err) {
+      const updatedTeam = await updateTeam(selectedTeam.id, editTeamData);
+      
+      if (updatedTeam) {
+        showSuccess(
+          'Team Updated',
+          `${editTeamData.name} has been updated successfully`,
+          4000
+        );
+        
+        setShowEditModal(false);
+        setSelectedTeam(null);
+        setEditTeamData({ name: '', description: '' });
+      }
+    } catch (err: any) {
       console.error('Failed to update team:', err);
+      
+      showError(
+        'Update Failed',
+        `Could not update team: ${err.message || 'Unknown error occurred'}`,
+        6000
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -123,13 +156,30 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
   const handleConfirmDelete = async () => {
     if (!selectedTeam) return;
 
+    const teamName = selectedTeam.name;
     setIsSubmitting(true);
+    
     try {
-      await deleteTeam(selectedTeam.id);
-      setShowDeleteModal(false);
-      setSelectedTeam(null);
-    } catch (err) {
+      const success = await deleteTeam(selectedTeam.id);
+      
+      if (success) {
+        showSuccess(
+          'Team Deleted',
+          `${teamName} has been deleted successfully`,
+          4000
+        );
+        
+        setShowDeleteModal(false);
+        setSelectedTeam(null);
+      }
+    } catch (err: any) {
       console.error('Failed to delete team:', err);
+      
+      showError(
+        'Deletion Failed',
+        `Could not delete ${teamName}: ${err.message || 'Unknown error occurred'}`,
+        6000
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -152,27 +202,59 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
   const handleAddMember = async (userId: string) => {
     if (!selectedTeam) return;
 
+    // Find the user being added for toast message
+    const userToAdd = users.find(user => user.id === userId);
+    const userName = userToAdd?.name || 'Unknown user';
+
     try {
-      await addMemberToTeam({
+      const success = await addMemberToTeam({
         teamId: selectedTeam.id,
         userId: userId
       });
-      // The hook will automatically refresh the data
-    } catch (err) {
+      
+      if (success) {
+        showSuccess(
+          'Member Added',
+          `${userName} has been added to ${selectedTeam.name}`,
+          4000
+        );
+      }
+    } catch (err: any) {
       console.error('Failed to add member:', err);
+      
+      showError(
+        'Addition Failed',
+        `Could not add ${userName}: ${err.message || 'Unknown error occurred'}`,
+        6000
+      );
     }
   };
 
   const handleRemoveMember = async (userId: string) => {
     if (!selectedTeam) return;
 
+    // Find the member being removed for toast message
+    const memberToRemove = selectedTeam.members.find(member => member.id === userId);
+    const memberName = memberToRemove?.name || 'Unknown member';
+
     try {
-      await removeMemberFromTeam(selectedTeam.id, userId);
-      // The hook will automatically refresh the data
+      const success = await removeMemberFromTeam(selectedTeam.id, userId);
+      
+      if (success) {
+        showSuccess(
+          'Member Removed',
+          `${memberName} has been removed from ${selectedTeam.name}`,
+          4000
+        );
+      }
     } catch (err: any) {
       console.error('Failed to remove member:', err);
-      // Show user-friendly error message
-      alert(`Failed to remove member: ${err.message || 'Unknown error occurred'}`);
+      
+      showError(
+        'Removal Failed', 
+        `Could not remove ${memberName}: ${err.message || 'Unknown error occurred'}`,
+        6000
+      );
     }
   };
 

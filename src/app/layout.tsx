@@ -6,6 +6,7 @@ import AuthProvider from '../components/AuthProvider';
 import PWAInstaller from '../components/PWAInstaller';
 import PWADebugger from '../components/PWADebugger';
 import OfflineIndicator from '../components/OfflineIndicator';
+import { ToastProvider } from '../components/shared/ToastContainer';
 import './globals.css';
 import { useEffect } from 'react';
 
@@ -15,11 +16,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   useEffect(() => {
-    // Register service worker (enable in development for testing)
+    // Register service worker with better error handling for development
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((registration) => {
+      // Clear any existing registrations if in development and port changed
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      
+      const registerServiceWorker = async () => {
+        try {
+          // In development, clear existing registrations to prevent port conflicts
+          if (isDevelopment) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+              // Check if registration is from a different origin/port
+              if (registration.scope !== window.location.origin + '/') {
+                console.log('Unregistering old ServiceWorker from different port:', registration.scope);
+                await registration.unregister();
+              }
+            }
+          }
+
+          const registration = await navigator.serviceWorker.register('/sw.js');
           console.log('Service Worker registered successfully:', registration);
           
           // Check for updates
@@ -37,10 +53,17 @@ export default function RootLayout({
               });
             }
           });
-        })
-        .catch((error) => {
+        } catch (error) {
           console.error('Service Worker registration failed:', error);
-        });
+          
+          // In development, provide helpful error message
+          if (isDevelopment) {
+            console.log('💡 Development tip: Clear browser cache and try again if ServiceWorker errors persist');
+          }
+        }
+      };
+
+      registerServiceWorker();
 
       // Listen for service worker messages
       navigator.serviceWorker.addEventListener('message', (event) => {
@@ -67,10 +90,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover, user-scalable=yes" />
 
         {/* Enhanced PWA Meta Tags */}
-        <meta name="application-name" content="Employee Hunt" />
+        <meta name="application-name" content="Treasure Hunt" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Employee Hunt" />
+        <meta name="apple-mobile-web-app-title" content="Treasure Hunt" />
         <meta name="description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -113,7 +136,7 @@ export default function RootLayout({
 
         {/* SEO and Social Media */}
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Employee Hunt - Team Activities & Contests" />
+        <meta property="og:title" content="Treasure Hunt - Team Activities & Contests" />
         <meta property="og:description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
         <meta property="og:site_name" content="Employee Hunt" />
         <meta property="og:url" content="https://employeehunt.com" />
@@ -129,10 +152,12 @@ export default function RootLayout({
       <body>
         <Provider store={store}>
           <AuthProvider>
-            <OfflineIndicator />
-            <PWADebugger />
-            {children}
-            <PWAInstaller />
+            <ToastProvider>
+              <OfflineIndicator />
+              <PWADebugger />
+              {children}
+              <PWAInstaller />
+            </ToastProvider>
           </AuthProvider>
         </Provider>
       </body>

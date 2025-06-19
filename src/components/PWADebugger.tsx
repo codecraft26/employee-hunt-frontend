@@ -139,6 +139,32 @@ const PWADebugger: React.FC = () => {
                 </button>
                 
                 <button
+                  onClick={async () => {
+                    if ('serviceWorker' in navigator) {
+                      try {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        for (const registration of registrations) {
+                          await registration.unregister();
+                        }
+                        
+                        // Clear caches
+                        const cacheNames = await caches.keys();
+                        for (const cacheName of cacheNames) {
+                          await caches.delete(cacheName);
+                        }
+                        
+                        alert('✅ ServiceWorkers and caches cleared! Refresh to register new ServiceWorker.');
+                      } catch (error) {
+                        alert('❌ Error clearing ServiceWorkers: ' + error);
+                      }
+                    }
+                  }}
+                  className="w-full bg-red-500 text-white py-2 px-4 rounded text-sm"
+                >
+                  🧹 Clear ServiceWorkers & Cache
+                </button>
+
+                <button
                   onClick={() => {
                     const data = JSON.stringify(debugInfo, null, 2);
                     const blob = new Blob([data], { type: 'application/json' });
