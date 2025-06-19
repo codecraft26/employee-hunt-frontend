@@ -1,9 +1,10 @@
 // components/modals/CreatePollModal.tsx
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Calendar, Clock, AlertCircle, Building2 } from 'lucide-react';
+import { X, Plus, Calendar, Clock, AlertCircle, Building2, Upload, Trash2, Eye } from 'lucide-react';
 import { VoteType, CreateVoteRequest } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 import { useCategories } from '../../hooks/useCategories';
+import S3Image from '../shared/S3Image';
 
 interface CreatePollModalProps {
   isOpen: boolean;
@@ -13,7 +14,8 @@ interface CreatePollModalProps {
 
 interface PollOption {
   name: string;
-  imageUrl: string;
+  imageFile: File | null;
+  imagePreview: string | null;
 }
 
 type CategoryType = 'ALL' | 'SPECIFIC';
@@ -34,8 +36,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
   });
 
   const [options, setOptions] = useState<PollOption[]>([
-    { name: '', imageUrl: '' },
-    { name: '', imageUrl: '' }
+    { name: '', imageFile: null, imagePreview: null },
+    { name: '', imageFile: null, imagePreview: null }
   ]);
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -47,19 +49,41 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
   }, [isOpen, fetchCategories]);
 
   const addOption = () => {
-    setOptions([...options, { name: '', imageUrl: '' }]);
+    setOptions([...options, { name: '', imageFile: null, imagePreview: null }]);
   };
 
   const removeOption = (index: number) => {
     if (options.length > 2) {
-      setOptions(options.filter((_, i) => i !== index));
+      const newOptions = options.filter((_, i) => i !== index);
+      // Clean up image preview URLs
+      if (options[index].imagePreview) {
+        URL.revokeObjectURL(options[index].imagePreview!);
+      }
+      setOptions(newOptions);
     }
   };
 
-  const updateOption = (index: number, field: keyof PollOption, value: string) => {
+  const updateOptionName = (index: number, name: string) => {
     const newOptions = [...options];
-    newOptions[index][field] = value;
+    newOptions[index].name = name;
     setOptions(newOptions);
+  };
+
+  const updateOptionImage = (index: number, file: File | null) => {
+    const newOptions = [...options];
+    
+    // Clean up previous preview URL
+    if (newOptions[index].imagePreview) {
+      URL.revokeObjectURL(newOptions[index].imagePreview!);
+    }
+    
+    newOptions[index].imageFile = file;
+    newOptions[index].imagePreview = file ? URL.createObjectURL(file) : null;
+    setOptions(newOptions);
+  };
+
+  const removeOptionImage = (index: number) => {
+    updateOptionImage(index, null);
   };
 
   const validateForm = (): boolean => {
@@ -90,6 +114,19 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
       errors.options = 'At least 2 options are required';
     }
 
+    // Validate image files (optional but if provided, should be valid images)
+    options.forEach((option, index) => {
+      if (option.imageFile) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (option.imageFile.size > maxSize) {
+          errors[`option_image_${index}`] = 'Image size should be less than 5MB';
+        }
+        if (!option.imageFile.type.startsWith('image/')) {
+          errors[`option_image_${index}`] = 'Only image files are allowed';
+        }
+      }
+    });
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -102,24 +139,40 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
     }
 
     try {
-      const voteData: CreateVoteRequest = {
-        title: formData.title,
-        description: formData.description || undefined,
-        type: formData.type,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        resultDisplayTime: formData.resultDisplayTime || undefined,
-        categoryType: formData.categoryType,
-        allowedCategories: formData.categoryType === 'SPECIFIC' ? formData.allowedCategories : undefined,
-        options: options
-          .filter(option => option.name.trim())
-          .map(option => ({
-            name: option.name.trim(),
-            imageUrl: option.imageUrl.trim() || undefined
-          }))
-      };
+      // Create FormData for multipart/form-data submission
+      const formDataToSubmit = new FormData();
+      
+      // Add basic form fields
+      formDataToSubmit.append('title', formData.title);
+      if (formData.description) {
+        formDataToSubmit.append('description', formData.description);
+      }
+      formDataToSubmit.append('type', formData.type);
+      formDataToSubmit.append('startTime', formData.startTime);
+      formDataToSubmit.append('endTime', formData.endTime);
+      if (formData.resultDisplayTime) {
+        formDataToSubmit.append('resultDisplayTime', formData.resultDisplayTime);
+      }
+      formDataToSubmit.append('categoryType', formData.categoryType);
+      
+      if (formData.categoryType === 'SPECIFIC' && formData.allowedCategories.length > 0) {
+        formDataToSubmit.append('allowedCategories', JSON.stringify(formData.allowedCategories));
+      }
 
-      await createVote(voteData);
+      // Add option names as JSON array
+      const optionNames = options
+        .filter(option => option.name.trim())
+        .map(option => option.name.trim());
+      formDataToSubmit.append('optionNames', JSON.stringify(optionNames));
+
+      // Add option images
+      options.forEach((option, index) => {
+        if (option.imageFile && option.name.trim()) {
+          formDataToSubmit.append('optionImages', option.imageFile);
+        }
+      });
+
+      await createVote(formDataToSubmit);
       onSuccess();
       handleClose();
     } catch (err) {
@@ -128,6 +181,13 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
   };
 
   const handleClose = () => {
+    // Clean up image preview URLs
+    options.forEach(option => {
+      if (option.imagePreview) {
+        URL.revokeObjectURL(option.imagePreview);
+      }
+    });
+    
     setFormData({
       title: '',
       description: '',
@@ -139,8 +199,8 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
       allowedCategories: []
     });
     setOptions([
-      { name: '', imageUrl: '' },
-      { name: '', imageUrl: '' }
+      { name: '', imageFile: null, imagePreview: null },
+      { name: '', imageFile: null, imagePreview: null }
     ]);
     setValidationErrors({});
     onClose();
@@ -150,7 +210,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">Create New Poll</h2>
@@ -337,34 +397,84 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
               {options.map((option, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      value={option.name}
-                      onChange={(e) => updateOption(index, 'name', e.target.value)}
-                      placeholder={`Option ${index + 1} name`}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                    <input
-                      type="url"
-                      value={option.imageUrl}
-                      onChange={(e) => updateOption(index, 'imageUrl', e.target.value)}
-                      placeholder="Image URL (optional)"
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-700">Option {index + 1}</h4>
+                    {options.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => removeOption(index)}
+                        className="p-1 text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
-                  {options.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => removeOption(index)}
-                      className="p-2 text-red-500 hover:text-red-700 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <input
+                        type="text"
+                        value={option.name}
+                        onChange={(e) => updateOptionName(index, e.target.value)}
+                        placeholder={`Option ${index + 1} name`}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Option Image (Optional)
+                      </label>
+                      
+                      {option.imagePreview ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={option.imagePreview}
+                            alt={`Option ${index + 1} preview`}
+                            className="w-150 h-100 rounded-lg object-cover border border-gray-200"
+                            style={{ width: '150px', height: '100px' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeOptionImage(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                          <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                updateOptionImage(index, file);
+                              }
+                            }}
+                            className="hidden"
+                            id={`option-image-${index}`}
+                          />
+                          <label
+                            htmlFor={`option-image-${index}`}
+                            className="cursor-pointer text-sm text-gray-600 hover:text-gray-800"
+                          >
+                            Click to upload image
+                          </label>
+                          <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</p>
+                        </div>
+                      )}
+                      
+                      {validationErrors[`option_image_${index}`] && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors[`option_image_${index}`]}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

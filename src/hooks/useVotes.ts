@@ -33,12 +33,25 @@ export const useVotes = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Create a new vote
-  const createVote = useCallback(async (voteData: CreateVoteRequest): Promise<Vote | null> => {
+  const createVote = useCallback(async (voteData: CreateVoteRequest | FormData): Promise<Vote | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.post<VoteResponse>('/votes', voteData);
+      let response;
+      
+      if (voteData instanceof FormData) {
+        // For FormData (with image uploads), let axios set the Content-Type automatically
+        response = await api.post<VoteResponse>('/votes', voteData, {
+          headers: {
+            // Don't set Content-Type for FormData - let browser set it with boundary
+          }
+        });
+      } else {
+        // For regular JSON requests
+        response = await api.post<VoteResponse>('/votes', voteData);
+      }
+      
       return response.data.data;
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to create vote';

@@ -87,6 +87,10 @@ const UserQuizTab: React.FC = () => {
   // Fetch quizzes on component mount
   useEffect(() => {
     fetchMyQuizzes();
+    const interval = setInterval(() => {
+      fetchMyQuizzes();
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
   }, [fetchMyQuizzes]);
 
   // Timer for current question
@@ -424,13 +428,6 @@ const UserQuizTab: React.FC = () => {
           <h2 className="text-2xl font-bold text-gray-900">My Quizzes</h2>
           <p className="text-gray-600">Test your knowledge and compete with your team</p>
         </div>
-        <button 
-          onClick={handleRefresh}
-          disabled={loading}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
       </div>
 
       {/* Error Display */}
@@ -439,12 +436,6 @@ const UserQuizTab: React.FC = () => {
           <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-red-700 text-sm">{error}</p>
-            <button
-              onClick={handleRefresh}
-              className="mt-2 text-red-600 hover:text-red-700 text-sm underline"
-            >
-              Try again
-            </button>
           </div>
         </div>
       )}

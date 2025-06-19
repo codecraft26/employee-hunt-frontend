@@ -136,6 +136,17 @@ export default function UserTreasureHuntTab() {
     return () => stopPolling();
   }, [selectedHunt?.id, progress?.pendingStages, startPolling, stopPolling]);
 
+  // Auto-refresh assigned hunts and progress every 30 seconds
+  useEffect(() => {
+    if (initialized && myTeam?.id) {
+      const interval = setInterval(() => {
+        fetchAssignedHunts(myTeam.id);
+        if (selectedHunt) fetchProgress(selectedHunt.id);
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [initialized, myTeam?.id, selectedHunt, fetchAssignedHunts, fetchProgress]);
+
   // Handle manual refresh
   const handleRefresh = useCallback(async () => {
     console.log('🔄 Manual refresh triggered');
@@ -487,14 +498,6 @@ export default function UserTreasureHuntTab() {
         <h3 className="text-lg font-medium text-gray-900 mb-2">No Treasure Hunts Available</h3>
         <p className="text-gray-600 mb-2">You don't have any treasure hunts assigned to your team yet.</p>
         <p className="text-sm text-gray-500 mb-4">Team: {myTeam.name}</p>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
       </div>
     );
   }
@@ -510,14 +513,6 @@ export default function UserTreasureHuntTab() {
             <p className="text-sm text-gray-500 mt-1">Team: {myTeam.name}</p>
           )}
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
       </div>
 
       {/* Hunt Selection */}
@@ -892,13 +887,6 @@ export default function UserTreasureHuntTab() {
                 <div className="text-center py-8">
                   <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No Progress Data</h3>
-                  <button
-                    onClick={() => fetchProgress(selectedHunt.id)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Retry
-                  </button>
                 </div>
               )}
             </div>

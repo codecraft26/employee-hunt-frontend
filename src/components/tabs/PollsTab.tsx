@@ -100,6 +100,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
 
   const filteredPolls = useMemo(() => {
     return polls.filter(poll => {
+      if (!poll) return false;
       const statusMatch = activeStatusFilter === 'ALL' || poll.status === activeStatusFilter;
       const typeMatch = activeTypeFilter === 'ALL' || poll.type === activeTypeFilter;
       return statusMatch && typeMatch;
@@ -109,9 +110,9 @@ const PollsTab: React.FC<PollsTabProps> = ({
   const pollCounts = useMemo(() => {
     return {
       total: polls.length,
-      active: polls.filter(p => p.status === VoteStatus.ACTIVE).length,
-      upcoming: polls.filter(p => p.status === VoteStatus.UPCOMING).length,
-      completed: polls.filter(p => p.status === VoteStatus.COMPLETED).length,
+      active: polls.filter(p => p && p.status === VoteStatus.ACTIVE).length,
+      upcoming: polls.filter(p => p && p.status === VoteStatus.UPCOMING).length,
+      completed: polls.filter(p => p && p.status === VoteStatus.COMPLETED).length,
     };
   }, [polls]);
 
@@ -128,31 +129,43 @@ const PollsTab: React.FC<PollsTabProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Not set';
+    
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
-  const getTimeRemaining = (endTime: string) => {
-    const now = new Date();
-    const end = new Date(endTime);
-    const diff = end.getTime() - now.getTime();
+  const getTimeRemaining = (endTime: string | null | undefined) => {
+    if (!endTime) return 'No end time set';
     
-    if (diff <= 0) return 'Ended';
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (days > 0) return `${days}d ${hours}h remaining`;
-    if (hours > 0) return `${hours}h remaining`;
-    
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${minutes}m remaining`;
+    try {
+      const now = new Date();
+      const end = new Date(endTime);
+      const diff = end.getTime() - now.getTime();
+      
+      if (diff <= 0) return 'Ended';
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      
+      if (days > 0) return `${days}d ${hours}h remaining`;
+      if (hours > 0) return `${hours}h remaining`;
+      
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${minutes}m remaining`;
+    } catch (error) {
+      return 'Invalid end time';
+    }
   };
 
   if (loading && polls.length === 0) {
@@ -238,24 +251,37 @@ const PollsTab: React.FC<PollsTabProps> = ({
               )}
             </div>
           ) : (
-            filteredPolls.map((poll) => (
+            filteredPolls.map((poll) => {
+              // Safety checks for poll properties
+              if (!poll || !poll.id) return null;
+              
+              const safeTitle = poll.title || 'Untitled Poll';
+              const safeDescription = poll.description || '';
+              const safeStatus = poll.status || VoteStatus.UPCOMING;
+              const safeType = poll.type || VoteType.SINGLE_CHOICE;
+              const safeOptions = poll.options || [];
+              const safeTotalVotes = poll.totalVotes || 0;
+              const safeTotalVoters = poll.totalVoters || 0;
+              const safeCreatedBy = poll.createdBy;
+              
+              return (
               <div key={poll.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{poll.title}</h3>
-                        <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(poll.status)}`}>
-                          {poll.status}
+                        <h3 className="text-lg font-semibold text-gray-900">{safeTitle}</h3>
+                        <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(safeStatus)}`}>
+                          {safeStatus}
                         </span>
                       </div>
-                      {poll.description && (
-                        <p className="text-sm text-gray-600 mb-3">{poll.description}</p>
+                      {safeDescription && (
+                        <p className="text-sm text-gray-600 mb-3">{safeDescription}</p>
                       )}
                       <div className="flex items-center space-x-4 flex-wrap gap-2">
                         <span className="text-sm text-gray-600 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
-                          {poll.type === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}
+                          {safeType === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}
                         </span>
                         <span className="text-sm text-gray-600 flex items-center">
                           <Building2 className="h-4 w-4 mr-1" />
@@ -263,17 +289,17 @@ const PollsTab: React.FC<PollsTabProps> = ({
                         </span>
                         <span className="text-sm text-gray-600 flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          {poll.totalVotes} votes from {poll.totalVoters} voters
+                          {safeTotalVotes} votes from {safeTotalVoters} voters
                         </span>
-                        {poll.status === VoteStatus.ACTIVE && (
+                        {safeStatus === VoteStatus.ACTIVE && (
                           <span className="text-sm text-orange-600 flex items-center">
                             <Clock className="h-4 w-4 mr-1" />
                             {getTimeRemaining(poll.endTime)}
                           </span>
                         )}
-                        {poll.createdBy && (
+                        {safeCreatedBy?.name && (
                           <span className="text-sm text-gray-500">
-                            Created by {poll.createdBy.name}
+                            Created by {safeCreatedBy.name}
                           </span>
                         )}
                       </div>
@@ -299,48 +325,108 @@ const PollsTab: React.FC<PollsTabProps> = ({
                     </div>
                   </div>
 
-                  {poll.options.length > 0 && (
+                  {safeOptions.length > 0 && (
                     <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700">Options ({poll.options.length})</p>
+                      <p className="text-sm font-medium text-gray-700 flex items-center space-x-2">
+                        <span>Options ({safeOptions.length})</span>
+                        {(() => {
+                          const optionsWithImages = safeOptions.filter(option => option?.imageUrl).length;
+                          const optionsWithoutImages = safeOptions.length - optionsWithImages;
+                          
+                          if (optionsWithImages > 0 && optionsWithoutImages === 0) {
+                            return (
+                              <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
+                                📷 All with Images
+                              </span>
+                            );
+                          } else if (optionsWithImages > 0 && optionsWithoutImages > 0) {
+                            return (
+                              <span className="inline-flex items-center px-2 py-1 bg-amber-50 text-amber-700 text-xs font-medium rounded-full">
+                                📷 Mixed Content ({optionsWithImages}/{safeOptions.length})
+                              </span>
+                            );
+                          } else if (optionsWithoutImages > 0) {
+                            return (
+                              <span className="inline-flex items-center px-2 py-1 bg-gray-50 text-gray-600 text-xs font-medium rounded-full">
+                                📝 Text Only
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {poll.options.slice(0, 4).map((option) => (
-                          <div key={option.id} className="border border-gray-200 rounded-lg p-3">
-                            <div className="flex items-center space-x-3 mb-2">
-                              {option.imageUrl && (
-                                <img 
-                                  src={option.imageUrl} 
-                                  alt={option.name} 
-                                  className="h-10 w-10 rounded-lg object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = 'none';
-                                  }}
-                                />
-                              )}
-                              <div className="flex-1">
-                                <p className="font-medium text-gray-900 text-sm">{option.name}</p>
-                                <p className="text-xs text-gray-600">{option.voteCount} votes</p>
+                        {safeOptions.slice(0, 4).map((option, index) => {
+                          // Safety checks for option properties
+                          if (!option || !option.id) return null;
+                          
+                          const optionName = option.name || 'Unnamed Option';
+                          const optionVoteCount = option.voteCount || 0;
+                          
+                          return (
+                          <div key={option.id} className="border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start space-x-3">
+                              {/* Always show image area for consistent layout */}
+                              <div className="w-16 h-12 flex-shrink-0">
+                                {option.imageUrl ? (
+                                  <img 
+                                    src={option.imageUrl} 
+                                    alt={optionName} 
+                                    className="w-full h-full rounded-lg object-cover border border-gray-200"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      const parent = target.parentElement;
+                                      if (parent) {
+                                        parent.innerHTML = `
+                                          <div class="w-full h-full bg-gray-100 rounded-lg flex flex-col items-center justify-center border border-gray-200">
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                          </div>
+                                        `;
+                                      }
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex flex-col items-center justify-center border border-gray-200">
+                                    <span className="text-gray-500 text-xs font-medium">{index + 1}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 text-sm truncate">{optionName}</p>
+                                <div className="flex items-center justify-between mt-1">
+                                  <p className="text-xs text-gray-600">{optionVoteCount} votes</p>
+                                  {safeTotalVotes > 0 && (
+                                    <span className="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded-full">
+                                      {((optionVoteCount / safeTotalVotes) * 100).toFixed(1)}%
+                                    </span>
+                                  )}
+                                </div>
+                                {safeTotalVotes > 0 && (
+                                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                                    <div 
+                                      className="bg-purple-500 h-1.5 rounded-full transition-all duration-300"
+                                      style={{ width: `${safeTotalVotes > 0 ? (optionVoteCount / safeTotalVotes) * 100 : 0}%` }}
+                                    ></div>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            {poll.totalVotes > 0 && (
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${poll.totalVotes > 0 ? (option.voteCount / poll.totalVotes) * 100 : 0}%` }}
-                                ></div>
-                              </div>
-                            )}
                           </div>
-                        ))}
-                        {poll.options.length > 4 && (
-                          <div className="border border-gray-200 rounded-lg p-3 flex items-center justify-center">
-                            <p className="text-gray-500 text-sm">+{poll.options.length - 4} more options</p>
+                          );
+                        })}
+                        {safeOptions.length > 4 && (
+                          <div className="border border-gray-200 rounded-lg p-3 flex items-center justify-center bg-gray-50">
+                            <p className="text-gray-500 text-sm">+{safeOptions.length - 4} more options</p>
                           </div>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {poll.options.length === 0 && (
+                  {safeOptions.length === 0 && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                       <p className="text-yellow-800 text-sm">⚠️ This poll has no options configured</p>
                     </div>
@@ -368,7 +454,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
                   </div>
 
                   <div className="flex space-x-2">
-                    {poll.status === VoteStatus.COMPLETED && !poll.isResultPublished && (
+                    {safeStatus === VoteStatus.COMPLETED && !poll.isResultPublished && (
                       <button 
                         onClick={() => handlePublishResults(poll.id)}
                         className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors flex items-center space-x-1"
@@ -379,7 +465,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
                       </button>
                     )}
                     
-                    {poll.status === VoteStatus.COMPLETED && poll.isResultPublished && (
+                    {safeStatus === VoteStatus.COMPLETED && poll.isResultPublished && (
                       <button 
                         onClick={() => onNotifyWinner(poll.id)}
                         className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1"
@@ -400,7 +486,8 @@ const PollsTab: React.FC<PollsTabProps> = ({
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
