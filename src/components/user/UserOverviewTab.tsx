@@ -14,7 +14,8 @@ import {
   Plus,
   Vote,
   Shield,
-  Zap
+  Zap,
+  Camera
 } from 'lucide-react';
 import { useOptimizedData } from '../../hooks/useOptimizedData';
 import { useActivities } from '../../hooks/useActivities';
@@ -37,6 +38,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { title: 'Take Quiz', icon: Shield, color: 'from-blue-500 to-blue-600', type: 'quiz' },
   { title: 'Join Treasure Hunt', icon: MapPin, color: 'from-green-500 to-green-600', type: 'treasure-hunt' },
   { title: 'Vote in Polls', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'polls' },
+  { title: 'Photo Wall', icon: Camera, color: 'from-teal-500 to-teal-600', type: 'photo-wall' },
   { title: 'View Activities', icon: Zap, color: 'from-orange-500 to-orange-600', type: 'activities' },
   { title: 'My Team', icon: Users, color: 'from-indigo-500 to-indigo-600', type: 'team' },
   { title: 'My Profile', icon: Medal, color: 'from-pink-500 to-pink-600', type: 'profile' }
@@ -86,6 +88,9 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
         break;
       case 'polls':
         router.push('/dashboard/polls');
+        break;
+      case 'photo-wall':
+        router.push('/dashboard/photo-wall');
         break;
       case 'activities':
         router.push('/dashboard/activities');

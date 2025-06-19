@@ -19,6 +19,7 @@ const CluesManagementTab = lazy(() => import('../../components/tabs/CluesManagem
 const SubmissionsManagementTab = lazy(() => import('../../components/tabs/SubmissionsManagementTab'));
 const WinnerSelectionModal = lazy(() => import('../../components/modals/WinnerSelectionModal'));
 const AdminApprovalsTab = lazy(() => import('../../components/tabs/AdminApprovalsTab'));
+const PhotoWallTab = lazy(() => import('../../components/tabs/PhotoWallTab'));
 
 import { 
   Stats, 
@@ -30,8 +31,8 @@ import {
   TabView 
 } from '../../types/admin';
 
-// Extended TabView type to include clue, submission management, and categories
-type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users';
+// Extended TabView type to include clue, submission management, categories, and photo wall
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -179,6 +180,9 @@ export default function AdminDashboard() {
         break;
       case 'approve-user':
         setActiveView('approve-users');
+        break;
+      case 'photo-wall':
+        setActiveView('photo-wall');
         break;
       
       default:
@@ -419,6 +423,13 @@ export default function AdminDashboard() {
             <AdminApprovalsTab />
           </LazyWrapper>
         );
+      
+      case 'photo-wall':
+        return (
+          <LazyWrapper>
+            <PhotoWallTab />
+          </LazyWrapper>
+        );
      
       default:
         return (
@@ -501,6 +512,16 @@ export default function AdminDashboard() {
               }`}
             >
               User Approvals
+            </button>
+            <button
+              onClick={() => setActiveView('photo-wall')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'photo-wall'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Photo Wall
             </button>
           </nav>
         </div>
