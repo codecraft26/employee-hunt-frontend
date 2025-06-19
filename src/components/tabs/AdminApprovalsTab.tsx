@@ -4,11 +4,13 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { useUserApprovals } from '@/hooks/useUserApprovals';
 import { PendingUser } from '@/hooks/useUserApprovals';
+import RejectUserModal from '@/components/modals/RejectUserModal';
 
 interface AdminApprovalsTabProps {
   onApproveUser?: (userId: string, userName: string) => void;
-  onRejectUser?: (userId: string, userName: string) => void;
+  onRejectUser?: (userId: string, userName: string, reason?: string) => void;
   onBulkApprove?: (userIds: string[]) => void;
+  onBulkReject?: (userIds: string[], reason?: string) => void;
   onRefresh?: () => void;
   onViewUserDetails?: (userId: string) => void;
 }
@@ -17,6 +19,7 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
   onApproveUser,
   onRejectUser,
   onBulkApprove,
+  onBulkReject,
   onRefresh,
   onViewUserDetails,
 }) => {
@@ -28,12 +31,20 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
     approveUser,
     rejectUser,
     bulkApproveUsers,
+    bulkRejectUsers,
     getPendingUsersStats,
     clearError,
   } = useUserApprovals();
 
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<{
+    type: 'single' | 'bulk';
+    userId?: string;
+    userName?: string;
+    userIds?: string[];
+  } | null>(null);
 
   // Fetch pending users on component mount
   useEffect(() => {
@@ -57,20 +68,36 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
 
   // Handle single user rejection
   const handleRejectUser = useCallback(async (userId: string, userName: string) => {
-    if (window.confirm(`Are you sure you want to reject ${userName}?`)) {
-      try {
-        setActionLoading(userId);
-        await rejectUser(userId);
-        console.log(`User ${userName} rejected successfully`);
-        // Call optional callback
-        onRejectUser?.(userId, userName);
-      } catch (error) {
-        console.error('Failed to reject user:', error);
-      } finally {
-        setActionLoading(null);
+    setRejectTarget({ type: 'single', userId, userName });
+    setRejectModalOpen(true);
+  }, []);
+
+  // Handle the actual rejection after modal confirmation
+  const handleConfirmReject = useCallback(async (reason?: string) => {
+    if (!rejectTarget) return;
+
+    try {
+      if (rejectTarget.type === 'single' && rejectTarget.userId && rejectTarget.userName) {
+        setActionLoading(rejectTarget.userId);
+        await rejectUser(rejectTarget.userId, reason);
+        console.log(`User ${rejectTarget.userName} rejected successfully`);
+        onRejectUser?.(rejectTarget.userId, rejectTarget.userName, reason);
+      } else if (rejectTarget.type === 'bulk' && rejectTarget.userIds) {
+        setActionLoading('bulk-reject');
+        await bulkRejectUsers(rejectTarget.userIds, reason);
+        const rejectedUserIds = [...rejectTarget.userIds];
+        setSelectedUsers([]);
+        console.log(`${rejectedUserIds.length} users rejected successfully`);
+        onBulkReject?.(rejectedUserIds, reason);
       }
+    } catch (error) {
+      console.error('Failed to reject user(s):', error);
+    } finally {
+      setActionLoading(null);
+      setRejectModalOpen(false);
+      setRejectTarget(null);
     }
-  }, [rejectUser, onRejectUser]);
+  }, [rejectTarget, rejectUser, bulkRejectUsers, onRejectUser, onBulkReject]);
 
   // Handle bulk approval
   const handleBulkApprove = useCallback(async () => {
@@ -90,6 +117,14 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
       setActionLoading(null);
     }
   }, [selectedUsers, bulkApproveUsers, onBulkApprove]);
+
+  // Handle bulk rejection
+  const handleBulkReject = useCallback(() => {
+    if (selectedUsers.length === 0) return;
+    
+    setRejectTarget({ type: 'bulk', userIds: selectedUsers });
+    setRejectModalOpen(true);
+  }, [selectedUsers]);
 
   // Handle user selection
   const handleUserSelect = useCallback((userId: string) => {
@@ -205,6 +240,13 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
           >
             {actionLoading === 'bulk' ? 'Approving...' : `Approve Selected (${selectedUsers.length})`}
           </button>
+          <button
+            onClick={handleBulkReject}
+            disabled={selectedUsers.length === 0 || actionLoading === 'bulk-reject'}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+          >
+            {actionLoading === 'bulk-reject' ? 'Rejecting...' : `Reject Selected (${selectedUsers.length})`}
+          </button>
         </div>
       )}
 
@@ -303,6 +345,20 @@ const AdminApprovalsTab: React.FC<AdminApprovalsTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* Reject User Modal */}
+      <RejectUserModal
+        isOpen={rejectModalOpen}
+        onClose={() => {
+          setRejectModalOpen(false);
+          setRejectTarget(null);
+        }}
+        onConfirm={handleConfirmReject}
+        userName={rejectTarget?.userName || 'Selected Users'}
+        isLoading={actionLoading === rejectTarget?.userId || actionLoading === 'bulk-reject'}
+        isBulk={rejectTarget?.type === 'bulk'}
+        userCount={rejectTarget?.userIds?.length || 1}
+      />
     </div>
   );
 };

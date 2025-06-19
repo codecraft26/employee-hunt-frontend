@@ -32,6 +32,34 @@ const apiService = {
     }
   },
 
+  async put(endpoint: string, data?: any) {
+    try {
+      const response = await axios.put(`${API_BASE_URL}${endpoint}`, data, {
+        headers: {
+          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API PUT Error:', error);
+      throw error;
+    }
+  },
+
+  async delete(endpoint: string) {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}${endpoint}`, {
+        headers: {
+          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API DELETE Error:', error);
+      throw error;
+    }
+  },
+
   // Dashboard methods
   getDashboardStats: () => apiService.get('/api/admin/dashboard/stats'),
   getTeams: () => apiService.get('/api/admin/teams'),

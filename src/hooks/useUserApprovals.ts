@@ -32,7 +32,16 @@ export interface ApprovalResponse {
   data: ApprovedUser;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
+export interface RejectResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface RejectUserRequest {
+  reason?: string;
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Create axios instance with interceptors
 const api = axios.create({
@@ -101,20 +110,21 @@ export const useUserApprovals = () => {
     }
   }, []);
 
-  // Reject user (optional - if you have this endpoint)
-  const rejectUser = useCallback(async (userId: string): Promise<boolean> => {
+  // Reject user with optional reason
+  const rejectUser = useCallback(async (userId: string, reason?: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.post(`/auth/users/${userId}/reject`);
+      const requestBody: RejectUserRequest = reason ? { reason } : {};
+      const response = await api.post<RejectResponse>(`/auth/users/${userId}/reject`, requestBody);
       
-      if (response.status === 200 || response.status === 201) {
+      if (response.data.success) {
         // Remove the rejected user from pending users list
         setPendingUsers(prev => prev.filter(user => user.id !== userId));
         return true;
       } else {
-        throw new Error('Failed to reject user');
+        throw new Error(response.data.message || 'Failed to reject user');
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to reject user';
@@ -164,6 +174,46 @@ export const useUserApprovals = () => {
     }
   }, []);
 
+  // Bulk reject users
+  const bulkRejectUsers = useCallback(async (userIds: string[], reason?: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const requestBody: RejectUserRequest = reason ? { reason } : {};
+      const rejectionPromises = userIds.map(userId => 
+        api.post<RejectResponse>(`/auth/users/${userId}/reject`, requestBody)
+      );
+      
+      const results = await Promise.allSettled(rejectionPromises);
+      
+      // Check if all rejections were successful
+      const failedRejections = results.filter(result => result.status === 'rejected');
+      
+      if (failedRejections.length === 0) {
+        // Remove all rejected users from pending list
+        setPendingUsers(prev => prev.filter(user => !userIds.includes(user.id)));
+        return true;
+      } else {
+        // Some rejections failed
+        const successfulIds = results
+          .map((result, index) => result.status === 'fulfilled' ? userIds[index] : null)
+          .filter(Boolean) as string[];
+        
+        // Remove only successfully rejected users
+        setPendingUsers(prev => prev.filter(user => !successfulIds.includes(user.id)));
+        
+        throw new Error(`${failedRejections.length} out of ${userIds.length} rejections failed`);
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to reject users';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Get pending users statistics
   const getPendingUsersStats = useCallback(() => {
     const departments = [...new Set(pendingUsers.map(u => u.department).filter(Boolean))];
@@ -204,6 +254,7 @@ export const useUserApprovals = () => {
     approveUser,
     rejectUser,
     bulkApproveUsers,
+    bulkRejectUsers,
     getPendingUsersStats,
     clearError,
   };
