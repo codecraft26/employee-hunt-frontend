@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { loginUser, loginWithOTP, verifyOTPLogin, clearError } from '../../store/authSlice';
 import { Eye, EyeOff, Mail, Lock, Smartphone, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
-import Image from 'next/image';
+
 import { Gamepad2 } from 'lucide-react';
 import PendingApprovalMessage from '../../components/PendingApprovalMessage';
 

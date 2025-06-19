@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { registerUser, clearError } from '../../store/authSlice';
 import { useCategories } from '../../hooks/useCategories';
 import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Building2, Upload, X, Heart } from 'lucide-react';
-import Image from 'next/image';
+
 
 // Add SVG as a React component
 const TeamPlayBanner = () => (
@@ -55,6 +55,7 @@ interface FormData {
   gender: string;
   hobbies: string;
   profileImage: File | null;
+  acceptsTerms: boolean;
 }
 
 export default function RegisterPage() {
@@ -68,6 +69,7 @@ export default function RegisterPage() {
     gender: '',
     hobbies: '',
     profileImage: null,
+    acceptsTerms: false,
   });
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -78,6 +80,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -98,8 +101,12 @@ export default function RegisterPage() {
   }, [formData.password]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    setFormData((prev) => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
     if (validationErrors.length > 0) setValidationErrors([]);
   };
 
@@ -142,6 +149,7 @@ export default function RegisterPage() {
       if (formData.password.length < 8) errors.push('Password must be at least 8 characters long');
     } else if (step === 5) {
       if (!formData.profileImage) errors.push('Profile image is required');
+      if (!formData.acceptsTerms) errors.push('You must accept the terms and conditions to continue');
     }
     setValidationErrors(errors);
     return errors.length === 0;
@@ -173,7 +181,16 @@ export default function RegisterPage() {
       submitData.append('hobbies', formData.hobbies);
       if (formData.profileImage) submitData.append('profileImage', formData.profileImage);
       const result = await dispatch(registerUser(submitData));
-      if (registerUser.fulfilled.match(result)) router.push('/login?registered=true');
+      if (registerUser.fulfilled.match(result)) {
+        // Clear any auth state to ensure user is not automatically logged in
+        dispatch(clearError());
+        // Show success message
+        setRegistrationSuccess(true);
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          router.push('/login?registered=true');
+        }, 2000);
+      }
     } catch (error) {
       setError('An error occurred during registration');
     } finally {
@@ -216,14 +233,25 @@ export default function RegisterPage() {
             ))}
           </div>
 
+          {/* Success Display */}
+          {registrationSuccess && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-2 mb-6">
+              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-green-700 font-medium">Registration Successful! 🎉</p>
+                <p className="text-sm text-green-600">Your account has been created successfully. Redirecting to login page...</p>
+              </div>
+            </div>
+          )}
+          
           {/* Error Display */}
-          {error && (
+          {error && !registrationSuccess && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-2 mb-6">
               <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
-          {validationErrors.length > 0 && (
+          {validationErrors.length > 0 && !registrationSuccess && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
               <ul className="list-disc list-inside space-y-1">
                 {validationErrors.map((error, index) => (
@@ -233,7 +261,8 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={step === 5 ? handleSubmit : handleNext} className="space-y-6">
+          {!registrationSuccess && (
+            <form onSubmit={step === 5 ? handleSubmit : handleNext} className="space-y-6">
             {/* Step 1: Name, Email */}
             {step === 1 && (
               <>
@@ -350,7 +379,7 @@ export default function RegisterPage() {
                     <div className="space-y-1 text-center">
                       {previewUrl ? (
                         <div className="relative">
-                          <Image src={previewUrl} alt="Profile preview" width={150} height={150} className="mx-auto rounded-full object-cover" />
+                          <img src={previewUrl} alt="Profile preview" className="w-150 h-150 mx-auto rounded-full object-cover" style={{ width: '150px', height: '150px' }} />
                           <button type="button" onClick={removeImage} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"><X className="h-4 w-4" /></button>
                         </div>
                       ) : (
@@ -366,6 +395,42 @@ export default function RegisterPage() {
                           <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
                         </>
                       )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Terms and Conditions Disclaimer */}
+                <div className="mt-6">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <input
+                        id="acceptsTerms"
+                        name="acceptsTerms"
+                        type="checkbox"
+                        checked={formData.acceptsTerms}
+                        onChange={handleInputChange}
+                        className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <label htmlFor="acceptsTerms" className="block text-sm font-medium text-gray-700 cursor-pointer">
+                          I agree to the Terms and Conditions<span className="text-red-500">*</span>
+                        </label>
+                        <div className="mt-2 text-xs text-gray-600 leading-relaxed">
+                          <p className="mb-2">By creating an account, I acknowledge and agree to:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li>Provide accurate and complete information during registration</li>
+                            <li>Maintain the confidentiality of my account credentials</li>
+                            <li>Use the platform responsibly and in accordance with company policies</li>
+                            <li>Allow the collection and processing of my data for platform functionality</li>
+                            <li>Participate in team activities and polls in a professional manner</li>
+                            <li>Report any suspicious activities or security concerns to administrators</li>
+                          </ul>
+                          <p className="mt-2 text-gray-500">
+                            This platform is intended for employee engagement and team building activities. 
+                            Your participation helps create a better workplace experience for everyone.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -389,6 +454,7 @@ export default function RegisterPage() {
               <p className="text-sm text-gray-600">Already have an account?{' '}<Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">Sign in</Link></p>
             </div>
           </form>
+          )}
         </div>
       </div>
     </div>

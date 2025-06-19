@@ -53,6 +53,7 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
   // Filter polls based on active filters
   const filteredPolls = useMemo(() => {
     return polls.filter(poll => {
+      if (!poll) return false;
       const statusMatch = activeStatusFilter === 'ALL' || poll.status === activeStatusFilter;
       const typeMatch = activeTypeFilter === 'ALL' || poll.type === activeTypeFilter;
       return statusMatch && typeMatch;
@@ -63,37 +64,49 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
   const pollCounts = useMemo(() => {
     return {
       total: polls.length,
-      active: polls.filter(p => p.status === VoteStatus.ACTIVE).length,
-      upcoming: polls.filter(p => p.status === VoteStatus.UPCOMING).length,
-      completed: polls.filter(p => p.status === VoteStatus.COMPLETED).length,
+      active: polls.filter(p => p && p.status === VoteStatus.ACTIVE).length,
+      upcoming: polls.filter(p => p && p.status === VoteStatus.UPCOMING).length,
+      completed: polls.filter(p => p && p.status === VoteStatus.COMPLETED).length,
     };
   }, [polls]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Not set';
+    
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
-  const getTimeRemaining = (endTime: string) => {
-    const now = new Date();
-    const end = new Date(endTime);
-    const diff = end.getTime() - now.getTime();
+  const getTimeRemaining = (endTime: string | null | undefined) => {
+    if (!endTime) return 'No end time set';
     
-    if (diff <= 0) return 'Ended';
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (days > 0) return `${days}d ${hours}h remaining`;
-    if (hours > 0) return `${hours}h remaining`;
-    
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${minutes}m remaining`;
+    try {
+      const now = new Date();
+      const end = new Date(endTime);
+      const diff = end.getTime() - now.getTime();
+      
+      if (diff <= 0) return 'Ended';
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      
+      if (days > 0) return `${days}d ${hours}h remaining`;
+      if (hours > 0) return `${hours}h remaining`;
+      
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${minutes}m remaining`;
+    } catch (error) {
+      return 'Invalid end time';
+    }
   };
 
   if (loading && polls.length === 0) {
@@ -216,8 +229,8 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
             <VotePollComponent
               key={poll.id}
               poll={poll}
-              onVoteSuccess={() => handleVoteSuccess(poll.title)}
-              showResults={poll.status === VoteStatus.COMPLETED || poll.isResultPublished}
+              onVoteSuccess={() => handleVoteSuccess(poll?.title)}
+              showResults={poll?.status === VoteStatus.COMPLETED || poll?.isResultPublished}
             />
           ))
         )}

@@ -1,6 +1,6 @@
 // components/polls/VotePollComponent.tsx
 import React, { useState, useEffect } from 'react';
-import { Clock, Users, CheckCircle, AlertCircle, Calendar, BarChart3, Send, Timer, Award } from 'lucide-react';
+import { Clock, Users, CheckCircle, AlertCircle, Calendar, BarChart3, Send, Timer, Award, Image as ImageIcon } from 'lucide-react';
 import { Vote, VoteStatus, VoteType, VoteOption } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 
@@ -30,20 +30,34 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [alreadyVotedError, setAlreadyVotedError] = useState<string | null>(null);
 
+  // Safe data extraction with null checks
+  const safeTitle = poll?.title || 'Untitled Poll';
+  const safeDescription = poll?.description || '';
+  const safeStatus = poll?.status || VoteStatus.UPCOMING;
+  const safeType = poll?.type || VoteType.SINGLE_CHOICE;
+  const safeOptions = poll?.options || [];
+  const safeTotalVotes = poll?.totalVotes || 0;
+  const safeTotalVoters = poll?.totalVoters || 0;
+  const safeCreatedBy = poll?.createdBy;
+  const safeStartTime = poll?.startTime;
+  const safeEndTime = poll?.endTime;
+  const safeResultDisplayTime = poll?.resultDisplayTime;
+  const safeIsResultPublished = poll?.isResultPublished || false;
+
   // Determine voting eligibility and result visibility
-  const canVote = poll.status === VoteStatus.ACTIVE && !hasVoted;
-  const shouldShowResults = showResults || poll.status === VoteStatus.COMPLETED || hasVoted || poll.isResultPublished;
-  const isUpcoming = poll.status === VoteStatus.UPCOMING;
+  const canVote = safeStatus === VoteStatus.ACTIVE && !hasVoted;
+  const shouldShowResults = showResults || safeStatus === VoteStatus.COMPLETED || hasVoted || safeIsResultPublished;
+  const isUpcoming = safeStatus === VoteStatus.UPCOMING;
 
   // Fetch user's voting status when component mounts
   useEffect(() => {
     const fetchUserVoteStatus = async () => {
-      if (poll.id) {
+      if (poll?.id) {
         try {
           const voteStatus = await getUserVoteStatus(poll.id);
           if (voteStatus) {
             setHasVoted(voteStatus.hasVoted);
-            setSelectedOptions(voteStatus.selectedOptions);
+            setSelectedOptions(voteStatus.selectedOptions || []);
             if (voteStatus.selectedOptionsDetails) {
               setUserVoteDetails(voteStatus.selectedOptionsDetails);
             }
@@ -55,13 +69,13 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     };
 
     fetchUserVoteStatus();
-  }, [poll.id, getUserVoteStatus]);
+  }, [poll?.id, getUserVoteStatus]);
 
   useEffect(() => {
     // Clear any previous errors when poll changes
     clearError();
     setAlreadyVotedError(null);
-  }, [poll.id, clearError]);
+  }, [poll?.id, clearError]);
 
   // Check if user has already voted based on error message
   useEffect(() => {
@@ -75,7 +89,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   const handleOptionSelect = (optionId: string) => {
     if (!canVote) return;
 
-    if (poll.type === VoteType.SINGLE_CHOICE) {
+    if (safeType === VoteType.SINGLE_CHOICE) {
       setSelectedOptions([optionId]);
     } else {
       setSelectedOptions(prev => 
@@ -87,7 +101,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   };
 
   const handleSubmitVote = async () => {
-    if (selectedOptions.length === 0 || !canVote) return;
+    if (selectedOptions.length === 0 || !canVote || !poll?.id) return;
 
     try {
       const success = await castVote({
@@ -99,7 +113,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
         setHasVoted(true);
         setAlreadyVotedError(null);
         // Update user vote details with the newly selected options
-        const newVoteDetails = poll.options.filter(option => 
+        const newVoteDetails = safeOptions.filter(option => 
           selectedOptions.includes(option.id)
         ).map(option => ({
           id: option.id,
@@ -107,7 +121,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           imageUrl: option.imageUrl
         }));
         setUserVoteDetails(newVoteDetails);
-        onVoteSuccess?.(poll.title);
+        onVoteSuccess?.(safeTitle);
       } else {
         // Handle already voted case
         setAlreadyVotedError('You have already voted in this poll. Each user can only vote once.');
@@ -119,8 +133,10 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   };
 
   const getTimeRemaining = () => {
+    if (!safeEndTime) return 'End time not set';
+    
     const now = new Date();
-    const end = new Date(poll.endTime);
+    const end = new Date(safeEndTime);
     const diff = end.getTime() - now.getTime();
     
     if (diff <= 0) return 'Poll ended';
@@ -135,8 +151,10 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   };
 
   const getTimeUntilStart = () => {
+    if (!safeStartTime) return null;
+    
     const now = new Date();
-    const start = new Date(poll.startTime);
+    const start = new Date(safeStartTime);
     const diff = start.getTime() - now.getTime();
     
     if (diff <= 0) return null;
@@ -151,29 +169,37 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     return `Starts in ${minutes}m`;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Not set';
+    
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
 
   const getVotePercentage = (option: VoteOption) => {
-    if (poll.totalVotes === 0) return 0;
-    return (option.voteCount / poll.totalVotes) * 100;
+    if (safeTotalVotes === 0 || !option?.voteCount) return 0;
+    return (option.voteCount / safeTotalVotes) * 100;
   };
 
   const getStatusBadge = () => {
-    switch (poll.status) {
+    switch (safeStatus) {
       case VoteStatus.UPCOMING:
         return <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">Upcoming</span>;
       case VoteStatus.ACTIVE:
         return <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Active</span>;
       case VoteStatus.COMPLETED:
         return <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Completed</span>;
+      default:
+        return <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">Unknown</span>;
     }
   };
 
@@ -185,9 +211,9 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     
     // Fallback to using userSelectedOptions prop
     if (userSelectedOptions.length === 0) return [];
-    return poll.options
-      .filter(option => userSelectedOptions.includes(option.id))
-      .map(option => option.name);
+    return safeOptions
+      .filter(option => option && option.id && userSelectedOptions.includes(option.id))
+      .map(option => option.name || 'Unnamed Option');
   };
 
   // Get the most recent user choice (last option they selected)
@@ -198,6 +224,18 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     }
     return null;
   };
+
+  // Return early if poll data is completely missing
+  if (!poll || !poll.id) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="text-center text-gray-500">
+          <AlertCircle className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+          <p>Poll data is not available</p>
+        </div>
+      </div>
+    );
+  }
 
   const timeUntilStart = getTimeUntilStart();
   const userChoiceNames = getUserChoiceNames();
@@ -210,14 +248,14 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              <h2 className="text-xl font-semibold text-gray-900">{poll.title}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{safeTitle}</h2>
               {getStatusBadge()}
             </div>
-            {poll.description && (
-              <p className="text-gray-600 mb-3">{poll.description}</p>
+            {safeDescription && (
+              <p className="text-gray-600 mb-3">{safeDescription}</p>
             )}
-            {poll.createdBy && (
-              <p className="text-sm text-gray-500">Created by {poll.createdBy.name}</p>
+            {safeCreatedBy?.name && (
+              <p className="text-sm text-gray-500">Created by {safeCreatedBy.name}</p>
             )}
           </div>
         </div>
@@ -225,13 +263,13 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
         <div className="flex items-center space-x-6 text-sm text-gray-600 flex-wrap gap-2">
           <div className="flex items-center space-x-1">
             <Calendar className="h-4 w-4" />
-            <span>{poll.type === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}</span>
+            <span>{safeType === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}</span>
           </div>
           <div className="flex items-center space-x-1">
             <Users className="h-4 w-4" />
-            <span>{poll.totalVoters} participants</span>
+            <span>{safeTotalVoters} participants</span>
           </div>
-          {poll.status === VoteStatus.ACTIVE && (
+          {safeStatus === VoteStatus.ACTIVE && (
             <div className="flex items-center space-x-1 text-orange-600">
               <Clock className="h-4 w-4" />
               <span>{getTimeRemaining()}</span>
@@ -258,16 +296,16 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-gray-600 font-medium">Start Time</p>
-                  <p className="text-gray-900">{formatDate(poll.startTime)}</p>
+                  <p className="text-gray-900">{formatDate(safeStartTime)}</p>
                 </div>
                 <div>
                   <p className="text-gray-600 font-medium">End Time</p>
-                  <p className="text-gray-900">{formatDate(poll.endTime)}</p>
+                  <p className="text-gray-900">{formatDate(safeEndTime)}</p>
                 </div>
-                {poll.resultDisplayTime && (
+                {safeResultDisplayTime && (
                   <div>
                     <p className="text-gray-600 font-medium">Results Display</p>
-                    <p className="text-gray-900">{formatDate(poll.resultDisplayTime)}</p>
+                    <p className="text-gray-900">{formatDate(safeResultDisplayTime)}</p>
                   </div>
                 )}
               </div>
@@ -283,7 +321,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               <div>
                 <p className="text-yellow-800 text-sm font-medium">Poll not started yet</p>
                 <p className="text-yellow-700 text-sm">
-                  This poll will start on {formatDate(poll.startTime)}
+                  This poll will start on {formatDate(safeStartTime)}
                 </p>
               </div>
             </div>
@@ -308,6 +346,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                           src={lastUserChoice.imageUrl}
                           alt={lastUserChoice.name}
                           className="h-8 w-8 rounded object-cover"
+                          style={{ width: '32px', height: '32px' }}
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                           }}
@@ -360,7 +399,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
         {/* Show options only for ACTIVE and COMPLETED polls */}
         {!isUpcoming ? (
           <>
-            {poll.options.length === 0 ? (
+            {safeOptions.length === 0 ? (
               <div className="p-4 bg-gray-50 rounded-lg text-center">
                 <p className="text-gray-600">No options available for this poll</p>
               </div>
@@ -372,12 +411,17 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                   </h3>
                   {canVote && (
                     <p className="text-sm text-gray-600">
-                      {poll.type === VoteType.SINGLE_CHOICE ? 'Select one option' : 'Select multiple options'}
+                      {safeType === VoteType.SINGLE_CHOICE ? 'Select one option' : 'Select multiple options'}
                     </p>
                   )}
                 </div>
 
-                {poll.options.map((option) => {
+                {safeOptions.map((option) => {
+                  // Safety checks for option properties
+                  if (!option || !option.id) return null;
+                  
+                  const optionName = option.name || 'Unnamed Option';
+                  const optionVoteCount = option.voteCount || 0;
                   const isSelected = selectedOptions?.includes(option.id) || false;
                   const isUserChoice = selectedOptions?.includes(option.id) && hasVoted;
                   const percentage = getVotePercentage(option);
@@ -385,54 +429,94 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                   return (
                     <div
                       key={option.id}
-                      className={`relative border rounded-lg p-4 transition-all duration-200 ${
+                      className={`relative border rounded-xl p-4 transition-all duration-200 ${
                         canVote 
-                          ? 'cursor-pointer hover:border-indigo-300 hover:bg-indigo-50' 
+                          ? 'cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md' 
                           : 'cursor-default'
                       } ${
                         isSelected && canVote
-                          ? 'border-indigo-500 bg-indigo-50' 
+                          ? 'border-indigo-500 bg-indigo-50 shadow-md' 
                           : isUserChoice
-                          ? 'border-green-500 bg-green-50'
+                          ? 'border-green-500 bg-green-50 shadow-md'
                           : 'border-gray-200'
                       }`}
                       onClick={() => handleOptionSelect(option.id)}
                     >
-                      <div className="flex items-center space-x-3">
-                        {option.imageUrl && (
-                          <img
-                            src={option.imageUrl}
-                            alt={option.name}
-                            className="h-12 w-12 rounded-lg object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                            }}
-                          />
-                        )}
+                      {/* Consistent layout for all options - always show image area */}
+                      <div className="flex flex-col sm:flex-row items-start space-x-0 sm:space-x-4 space-y-3 sm:space-y-0">
+                        {/* Image section - always present for consistent layout */}
+                        <div className="w-full sm:w-32 flex-shrink-0">
+                          <div className="relative w-full sm:w-32 h-24 sm:h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                            {option.imageUrl ? (
+                              <img
+                                src={option.imageUrl}
+                                alt={optionName}
+                                className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = `
+                                      <div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
+                                        <svg class="h-6 w-6 text-gray-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        <span class="text-xs text-gray-500">Image failed</span>
+                                      </div>
+                                    `;
+                                  }
+                                }}
+                                style={{ display: 'block' }}
+                              />
+                            ) : (
+                              /* Placeholder for options without images */
+                              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center">
+                                <ImageIcon className="h-6 w-6 text-gray-400 mb-1" />
+                                <span className="text-xs text-gray-500 font-medium">No Image</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <p className="font-medium text-gray-900">{option.name}</p>
-                              {isUserChoice && (
-                                <span className="inline-flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                                  <Award className="h-3 w-3" />
-                                  <span>Your choice</span>
-                                </span>
-                              )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                              {/* Option number indicator for better UX */}
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                                isSelected && canVote
+                                  ? 'bg-indigo-500 text-white'
+                                  : isUserChoice
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-gray-200 text-gray-600'
+                              }`}>
+                                {safeOptions.findIndex(opt => opt.id === option.id) + 1}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-semibold text-gray-900 text-base leading-tight">{optionName}</p>
+                                {isUserChoice && (
+                                  <span className="inline-flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full mt-1">
+                                    <Award className="h-3 w-3" />
+                                    <span>Your choice</span>
+                                  </span>
+                                )}
+                              </div>
                             </div>
+                            
                             {shouldShowResults && (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-600">{option.voteCount} votes</span>
-                                <span className="text-sm font-medium text-gray-900">{percentage.toFixed(1)}%</span>
+                              <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                                <span className="text-sm text-gray-600">{optionVoteCount} votes</span>
+                                <span className="text-sm font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded-full">
+                                  {percentage.toFixed(1)}%
+                                </span>
                               </div>
                             )}
                           </div>
                           
                           {shouldShowResults && (
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
                               <div 
-                                className={`h-2 rounded-full transition-all duration-500 ${
+                                className={`h-3 rounded-full transition-all duration-500 ${
                                   isUserChoice ? 'bg-green-500' : 'bg-indigo-500'
                                 }`}
                                 style={{ width: `${percentage}%` }}
@@ -441,25 +525,27 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                           )}
                         </div>
 
-                        {canVote && (
-                          <div className={`w-5 h-5 border-2 flex items-center justify-center ${
-                            poll.type === VoteType.SINGLE_CHOICE ? 'rounded-full' : 'rounded'
-                          } ${
-                            isSelected 
-                              ? 'border-indigo-500 bg-indigo-500' 
-                              : 'border-gray-300'
-                          }`}>
-                            {isSelected && (
-                              <div className={`bg-white ${
-                                poll.type === VoteType.SINGLE_CHOICE ? 'w-2 h-2 rounded-full' : 'w-2 h-2'
-                              }`} />
-                            )}
-                          </div>
-                        )}
+                        <div className="flex items-center space-x-2 flex-shrink-0">
+                          {canVote && (
+                            <div className={`w-6 h-6 border-2 flex items-center justify-center ${
+                              safeType === VoteType.SINGLE_CHOICE ? 'rounded-full' : 'rounded'
+                            } ${
+                              isSelected 
+                                ? 'border-indigo-500 bg-indigo-500' 
+                                : 'border-gray-300'
+                            }`}>
+                              {isSelected && (
+                                <div className={`bg-white ${
+                                  safeType === VoteType.SINGLE_CHOICE ? 'w-2.5 h-2.5 rounded-full' : 'w-2.5 h-2.5'
+                                }`} />
+                              )}
+                            </div>
+                          )}
 
-                        {isUserChoice && !canVote && (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        )}
+                          {isUserChoice && !canVote && (
+                            <CheckCircle className="h-6 w-6 text-green-500" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -468,7 +554,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
             )}
 
             {/* Vote Button - only show for active polls */}
-            {canVote && poll.options.length > 0 && (
+            {canVote && safeOptions.length > 0 && (
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={handleSubmitVote}
@@ -485,7 +571,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
             )}
 
             {/* Results Summary - only show for completed polls or when user has voted */}
-            {shouldShowResults && poll.totalVotes > 0 && (
+            {shouldShowResults && safeOptions.length > 0 && (
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-gray-900 flex items-center space-x-2">
@@ -493,14 +579,14 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                     <span>Poll Results</span>
                   </h3>
                   <div className="text-sm text-gray-600">
-                    Total: {poll.totalVotes} votes from {poll.totalVoters} participants
+                    Total: {safeTotalVotes} votes from {safeTotalVoters} participants
                   </div>
                 </div>
               </div>
             )}
 
             {/* No Results Yet - only show for active/completed polls */}
-            {shouldShowResults && poll.totalVotes === 0 && (
+            {shouldShowResults && safeTotalVotes === 0 && (
               <div className="mt-6 p-4 bg-gray-50 rounded-lg text-center">
                 <p className="text-gray-600">No votes yet. Be the first to vote!</p>
               </div>
@@ -520,7 +606,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               <div className="inline-flex items-center space-x-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <Calendar className="h-4 w-4 text-yellow-600" />
                 <span className="text-sm text-yellow-800">
-                  Starts: {formatDate(poll.startTime)}
+                  Starts: {formatDate(safeStartTime)}
                 </span>
               </div>
             </div>
@@ -531,12 +617,12 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                 <div className="flex items-center space-x-4">
                   <span className="text-gray-600">Poll Type:</span>
                   <span className="font-medium text-gray-900">
-                    {poll.type === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}
+                    {safeType === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}
                   </span>
                 </div>
                 <div className="flex items-center space-x-4">
                   <span className="text-gray-600">Options:</span>
-                  <span className="font-medium text-gray-900">{poll.options.length}</span>
+                  <span className="font-medium text-gray-900">{safeOptions.length}</span>
                 </div>
               </div>
             </div>
