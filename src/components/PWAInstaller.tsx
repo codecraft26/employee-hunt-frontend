@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Download, X } from 'lucide-react';
+import { getLocalStorageItem, setLocalStorageItem } from '../utils/clientStorage';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -35,10 +36,10 @@ const PWAInstaller: React.FC = () => {
     // Debug logging for mobile browsers
     console.log('PWA Installer Debug:', {
       isInstalled: isCurrentlyInstalled,
-      userAgent: navigator.userAgent,
-      standalone: (window.navigator as any).standalone,
-      displayMode: window.matchMedia('(display-mode: standalone)').matches,
-      dismissedBefore: localStorage.getItem('pwa-install-dismissed')
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'SSR',
+      standalone: typeof window !== 'undefined' ? (window.navigator as any).standalone : false,
+      displayMode: typeof window !== 'undefined' ? window.matchMedia('(display-mode: standalone)').matches : false,
+      dismissedBefore: getLocalStorageItem('pwa-install-dismissed')
     });
 
     // Listen for the beforeinstallprompt event
@@ -49,7 +50,7 @@ const PWAInstaller: React.FC = () => {
       
       // Show install prompt after a shorter delay for better testing
       setTimeout(() => {
-        if (!isCurrentlyInstalled && !localStorage.getItem('pwa-install-dismissed')) {
+        if (!isCurrentlyInstalled && !getLocalStorageItem('pwa-install-dismissed')) {
           console.log('Showing install prompt');
           setShowInstallPrompt(true);
         }
@@ -66,10 +67,12 @@ const PWAInstaller: React.FC = () => {
 
     // For iOS Safari, show manual install instructions
     const checkiOSSafari = () => {
+      if (typeof window === 'undefined') return;
+      
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       
-      if (isIOS && isSafari && !isCurrentlyInstalled && !localStorage.getItem('pwa-install-dismissed')) {
+      if (isIOS && isSafari && !isCurrentlyInstalled && !getLocalStorageItem('pwa-install-dismissed')) {
         console.log('iOS Safari detected, showing manual install prompt');
         setTimeout(() => {
           setShowInstallPrompt(true);
@@ -91,6 +94,8 @@ const PWAInstaller: React.FC = () => {
 
   const handleInstallClick = async () => {
     // Check if this is iOS Safari (no beforeinstallprompt support)
+    if (typeof window === 'undefined') return;
+    
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     
@@ -115,7 +120,7 @@ const PWAInstaller: React.FC = () => {
         console.log('User accepted the install prompt');
       } else {
         console.log('User dismissed the install prompt');
-        localStorage.setItem('pwa-install-dismissed', 'true');
+        setLocalStorageItem('pwa-install-dismissed', 'true');
       }
       
       setDeferredPrompt(null);
@@ -127,7 +132,7 @@ const PWAInstaller: React.FC = () => {
 
   const handleDismiss = () => {
     setShowInstallPrompt(false);
-    localStorage.setItem('pwa-install-dismissed', 'true');
+    setLocalStorageItem('pwa-install-dismissed', 'true');
   };
 
   // Show install prompt if conditions are met
@@ -136,10 +141,15 @@ const PWAInstaller: React.FC = () => {
   }
 
   // Show for iOS Safari even without deferredPrompt
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  
-  if (!showInstallPrompt && !(isIOS && isSafari)) {
+  if (typeof window !== 'undefined') {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    if (!showInstallPrompt && !(isIOS && isSafari)) {
+      return null;
+    }
+  } else if (!showInstallPrompt) {
+    // During SSR, don't show anything
     return null;
   }
 

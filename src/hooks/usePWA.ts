@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { getLocalStorageItem, setLocalStorageItem } from '../utils/clientStorage';
 
 interface PWAState {
   isOnline: boolean;
@@ -67,7 +68,7 @@ export const usePWA = (): UsePWAReturn => {
         return true;
       } else {
         console.log('PWA installation dismissed');
-        localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+        setLocalStorageItem('pwa-install-dismissed', Date.now().toString());
         setState(prev => ({ 
           ...prev, 
           isInstallable: false,
@@ -97,7 +98,7 @@ export const usePWA = (): UsePWAReturn => {
   // Dismiss install prompt
   const dismissInstall = useCallback(() => {
     setState(prev => ({ ...prev, isInstallable: false }));
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    setLocalStorageItem('pwa-install-dismissed', Date.now().toString());
     deferredPrompt = null;
   }, []);
 
@@ -134,7 +135,7 @@ export const usePWA = (): UsePWAReturn => {
       deferredPrompt = e;
       
       // Check if user previously dismissed the install prompt
-      const dismissed = localStorage.getItem('pwa-install-dismissed');
+      const dismissed = getLocalStorageItem('pwa-install-dismissed');
       const dismissedTime = dismissed ? parseInt(dismissed) : 0;
       const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
       

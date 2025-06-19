@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from './redux';
 import { logout } from '../store/authSlice';
+import { removeLocalStorageItem } from '../utils/clientStorage';
 import Cookies from 'js-cookie';
 
 export const useAuth = () => {
@@ -15,8 +16,10 @@ export const useAuth = () => {
       Cookies.remove('token');
       
       // Clear any other local storage items (if you have any)
-      localStorage.removeItem('deviceToken');
-      sessionStorage.clear();
+      removeLocalStorageItem('deviceToken');
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear();
+      }
       
       // Dispatch logout action to clear Redux state
       dispatch(logout());

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getLocalStorageItem } from '../utils/clientStorage';
 
 // Types for the API response
 export interface DashboardStats {
@@ -43,8 +44,8 @@ export const useAdminDashboardStats = (): UseAdminDashboardStatsReturn => {
   // Get auth token (you might want to adapt this to your auth system)
   const getAuthToken = useCallback(() => {
     // Try to get from localStorage, Redux store, or your auth context
-    return localStorage.getItem('admin-token') || 
-           sessionStorage.getItem('admin-token') || 
+    return getLocalStorageItem('admin-token') || 
+           (typeof window !== 'undefined' ? sessionStorage.getItem('admin-token') : null) || 
            'your-admin-token'; // fallback for development
   }, []);
 

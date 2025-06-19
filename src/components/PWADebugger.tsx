@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getLocalStorageItem, setLocalStorageItem, removeLocalStorageItem, isLocalStorageAvailable } from '../utils/clientStorage';
 
 const PWADebugger: React.FC = () => {
   const [debugInfo, setDebugInfo] = useState<any>({});
@@ -8,6 +9,10 @@ const PWADebugger: React.FC = () => {
 
   useEffect(() => {
     const collectDebugInfo = () => {
+      if (typeof window === 'undefined') {
+        return { ssrMode: true, timestamp: new Date().toISOString() };
+      }
+
       const info = {
         // Browser info
         userAgent: navigator.userAgent,
@@ -29,18 +34,10 @@ const PWADebugger: React.FC = () => {
         hostname: window.location.hostname,
         
         // Storage
-        localStorageAvailable: (() => {
-          try {
-            localStorage.setItem('test', 'test');
-            localStorage.removeItem('test');
-            return true;
-          } catch {
-            return false;
-          }
-        })(),
+        localStorageAvailable: isLocalStorageAvailable(),
         
         // Install state
-        pwaInstallDismissed: localStorage.getItem('pwa-install-dismissed'),
+        pwaInstallDismissed: getLocalStorageItem('pwa-install-dismissed'),
         
         // Device info
         touchSupport: 'ontouchstart' in window,
@@ -71,15 +68,19 @@ const PWADebugger: React.FC = () => {
       setDebugInfo(prev => ({ ...prev, beforeInstallPromptFired: true }));
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      }
     };
   }, []);
 
   // Only show debug in development or when explicitly enabled
-  if (process.env.NODE_ENV === 'production' && !localStorage.getItem('pwa-debug-enabled')) {
+  if (process.env.NODE_ENV === 'production' && !getLocalStorageItem('pwa-debug-enabled')) {
     return null;
   }
 
@@ -115,7 +116,11 @@ const PWADebugger: React.FC = () => {
               
               <div className="mt-4 space-y-2">
                 <button
-                  onClick={() => navigator.serviceWorker?.register('/sw.js')}
+                  onClick={() => {
+                    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                      navigator.serviceWorker.register('/sw.js');
+                    }
+                  }}
                   className="w-full bg-blue-500 text-white py-2 px-4 rounded text-sm"
                 >
                   Force Register Service Worker
@@ -123,8 +128,10 @@ const PWADebugger: React.FC = () => {
                 
                 <button
                   onClick={() => {
-                    localStorage.removeItem('pwa-install-dismissed');
-                    window.location.reload();
+                    removeLocalStorageItem('pwa-install-dismissed');
+                    if (typeof window !== 'undefined') {
+                      window.location.reload();
+                    }
                   }}
                   className="w-full bg-green-500 text-white py-2 px-4 rounded text-sm"
                 >

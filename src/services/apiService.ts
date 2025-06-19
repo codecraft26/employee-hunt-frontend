@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getLocalStorageItem } from '../utils/clientStorage';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
 
@@ -7,7 +8,7 @@ const apiService = {
     try {
       const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
         }
       });
       return response.data;
@@ -21,7 +22,7 @@ const apiService = {
     try {
       const response = await axios.post(`${API_BASE_URL}${endpoint}`, data, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('adminToken')}`
+          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
         }
       });
       return response.data;
