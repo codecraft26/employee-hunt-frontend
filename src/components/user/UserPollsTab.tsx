@@ -20,6 +20,10 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
 
   useEffect(() => {
     fetchPolls();
+    const interval = setInterval(() => {
+      fetchPolls();
+    }, 30000); // 30 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPolls = async () => {
@@ -110,14 +114,6 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
           <h2 className="text-2xl font-bold text-gray-900">Polls & Voting</h2>
           <p className="text-gray-600 mt-1">Participate in team polls and see results</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Refresh polls"
-        >
-          <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
-        </button>
       </div>
 
       {error && (
