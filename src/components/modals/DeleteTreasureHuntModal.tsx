@@ -98,7 +98,7 @@ const DeleteTreasureHuntModal: React.FC<DeleteTreasureHuntModalProps> = ({
                 <div>
                   <h4 className="text-sm font-medium text-yellow-800">Cannot Delete</h4>
                   <p className="text-sm text-yellow-700 mt-1">
-                    Active treasure hunts cannot be deleted. Please change the status to 
+                    Active or in-progress treasure hunts cannot be deleted. Please change the status to 
                     "COMPLETED" or "UPCOMING" before deleting.
                   </p>
                 </div>
@@ -134,6 +134,8 @@ const DeleteTreasureHuntModal: React.FC<DeleteTreasureHuntModalProps> = ({
                     ? 'text-orange-600' 
                     : treasureHunt.status === 'COMPLETED'
                     ? 'text-blue-600'
+                    : treasureHunt.status === 'IN_PROGRESS'
+                    ? 'text-green-600'
                     : 'text-green-600'
                 }`}>
                   {treasureHunt.status}

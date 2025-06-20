@@ -22,9 +22,20 @@ export interface Team {
   name: string;
   description: string;
   score: number;
+  leader?: TeamLeader | null;
+  leaderId?: string | null;
   createdAt: string;
   updatedAt: string;
   members: TeamMember[];
+}
+
+export interface TeamLeader {
+  id: string;
+  name: string;
+  email: string;
+  role?: string;
+  profileImage?: string | null;
+  department?: string | null;
 }
 
 export interface User {
@@ -39,6 +50,8 @@ export interface User {
 export interface CreateTeamRequest {
   name: string;
   description: string;
+  leaderId?: string;
+  memberIds?: string[];
 }
 
 export interface AddMemberRequest {
@@ -70,6 +83,14 @@ export interface TeamsResponse {
 export interface UsersResponse {
   success: boolean;
   data: User[];
+}
+
+export interface LeaderCheckResponse {
+  success: boolean;
+  data: {
+    isLeader: boolean;
+    userId: string;
+  };
 }
 
 // Get API base URL and ensure it's properly configured
@@ -633,6 +654,104 @@ export const useTeams = () => {
     return usersInTeam;
   }, [teams]);
 
+  // Create team with leader and members
+  const createTeamWithMembers = useCallback(async (teamData: CreateTeamRequest): Promise<Team | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🏗️ Creating team with leader and members:', teamData);
+      
+      const response = await api.post<{ success: boolean; data: Team }>('/teams', teamData);
+      
+      if (response.data.success && response.data.data) {
+        console.log('✅ Team created successfully with leader:', response.data.data);
+        // Refresh teams and users list after creation
+        await Promise.all([fetchTeams(), fetchUsers()]);
+        return response.data.data;
+      } else {
+        throw new Error('Invalid response format from server');
+      }
+    } catch (err: any) {
+      const errorMessage = handleApiError(err, 'Failed to create team with members');
+      console.error('❌ Create team with members error:', errorMessage);
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchTeams, fetchUsers]);
+
+  // Assign or change team leader
+  const assignTeamLeader = useCallback(async (teamId: string, leaderId: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('👑 Assigning team leader:', { teamId, leaderId });
+      
+      const response = await api.post('/teams/assign-leader', { teamId, leaderId });
+      
+      if (response.status === 200 || response.status === 201) {
+        console.log('✅ Team leader assigned successfully');
+        // Refresh teams list after leader assignment
+        await fetchTeams();
+        return true;
+      } else {
+        throw new Error('Unexpected response status');
+      }
+    } catch (err: any) {
+      const errorMessage = handleApiError(err, 'Failed to assign team leader');
+      console.error('❌ Assign team leader error:', errorMessage);
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchTeams]);
+
+  // Get available users for leadership (team members)
+  const getAvailableLeaders = useCallback((teamId: string) => {
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return [];
+    
+    return team.members.filter(member => member.id !== team.leaderId);
+  }, [teams]);
+
+  // Check if current user is a team leader using the new dedicated endpoint
+  const checkIsTeamLeader = useCallback(async (): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('👑 Checking if user is team leader...');
+      
+      const response = await api.get<LeaderCheckResponse>('/teams/check-leader');
+      
+      if (response.data.success) {
+        const isLeader = response.data.data.isLeader;
+        console.log(`✅ Leadership check result: ${isLeader ? 'IS LEADER' : 'IS MEMBER'}`);
+        return isLeader;
+      } else {
+        console.warn('⚠️ Leadership check failed');
+        return false;
+      }
+    } catch (err: any) {
+      // Handle specific error cases
+      if (err.response?.status === 401) {
+        console.error('🔒 Unauthorized - token may be invalid');
+        return false;
+      }
+      
+      const errorMessage = handleApiError(err, 'Failed to check team leadership');
+      console.error('❌ Leadership check error:', errorMessage);
+      setError(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     // State
     loading,
@@ -643,8 +762,13 @@ export const useTeams = () => {
     
     // Team operations
     createTeam,
+    createTeamWithMembers,
     updateTeam,
     deleteTeam,
+    
+    // Leader operations
+    assignTeamLeader,
+    getAvailableLeaders,
     
     // Member operations
     addMemberToTeam,
@@ -665,5 +789,8 @@ export const useTeams = () => {
     
     // Debug functions
     debugApiConnection,
+    
+    // Leadership check function
+    checkIsTeamLeader,
   };
 };

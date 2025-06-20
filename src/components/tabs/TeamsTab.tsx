@@ -14,7 +14,9 @@ import {
   Trash2,
   Calendar,
   Award,
-  Target
+  Target,
+  Crown,
+  UserCheck
 } from 'lucide-react';
 import { useTeams, Team, User, CreateTeamRequest } from '../../hooks/useTeams';
 import { useToast } from '../shared/ToastContainer';
@@ -38,6 +40,9 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
     teams,
     users,
     createTeam,
+    createTeamWithMembers,
+    assignTeamLeader,
+    getAvailableLeaders,
     fetchTeams,
     fetchUsers,
     addMemberToTeam,
@@ -55,16 +60,20 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showLeaderModal, setShowLeaderModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [createTeamData, setCreateTeamData] = useState<CreateTeamRequest>({
     name: '',
-    description: ''
+    description: '',
+    leaderId: '',
+    memberIds: []
   });
   const [editTeamData, setEditTeamData] = useState<CreateTeamRequest>({
     name: '',
     description: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedLeaderId, setSelectedLeaderId] = useState<string>('');
 
   // Fetch teams and users on component mount
   useEffect(() => {
@@ -262,6 +271,79 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
     clearError();
     fetchTeams();
     fetchUsers();
+  };
+
+  // Leader management functions
+  const handleAssignLeader = (team: Team) => {
+    setSelectedTeam(team);
+    setSelectedLeaderId(team.leaderId || '');
+    setShowLeaderModal(true);
+  };
+
+  const handleConfirmAssignLeader = async () => {
+    if (!selectedTeam || !selectedLeaderId) return;
+
+    setIsSubmitting(true);
+    try {
+      const success = await assignTeamLeader(selectedTeam.id, selectedLeaderId);
+      
+      if (success) {
+        const leaderName = selectedTeam.members.find(m => m.id === selectedLeaderId)?.name || 'Unknown';
+        showSuccess(
+          'Leader Assigned',
+          `${leaderName} has been assigned as leader of ${selectedTeam.name}`,
+          4000
+        );
+        
+        setShowLeaderModal(false);
+        setSelectedTeam(null);
+        setSelectedLeaderId('');
+      }
+    } catch (err: any) {
+      console.error('Failed to assign leader:', err);
+      
+      showError(
+        'Assignment Failed',
+        `Could not assign leader: ${err.message || 'Unknown error occurred'}`,
+        6000
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Enhanced create team function with members and leader
+  const handleCreateTeamWithMembers = async () => {
+    if (!createTeamData.name.trim() || !createTeamData.description.trim()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const newTeam = await createTeamWithMembers(createTeamData);
+      
+      if (newTeam) {
+        showSuccess(
+          'Team Created',
+          `${createTeamData.name} has been created successfully with ${createTeamData.memberIds?.length || 0} members`,
+          4000
+        );
+        
+        setShowCreateModal(false);
+        setCreateTeamData({ name: '', description: '', leaderId: '', memberIds: [] });
+        externalOnCreateTeam?.();
+      }
+    } catch (err: any) {
+      console.error('Failed to create team with members:', err);
+      
+      showError(
+        'Creation Failed',
+        `Could not create team: ${err.message || 'Unknown error occurred'}`,
+        6000
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Get available users (not in any team)
@@ -513,6 +595,37 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                 </div>
 
                 <div className="space-y-4">
+                  {/* Leader Information */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Crown className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-800">Team Leader</span>
+                      </div>
+                      <button 
+                        onClick={() => handleAssignLeader(team)}
+                        className="text-blue-600 hover:text-blue-700 text-xs flex items-center space-x-1"
+                        title="Assign/Change Leader"
+                      >
+                        <UserCheck className="h-3 w-3" />
+                        <span>Assign</span>
+                      </button>
+                    </div>
+                    {team.leader ? (
+                      <div className="mt-2 flex items-center space-x-2">
+                        <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center text-xs font-medium text-white">
+                          {team.leader.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">{team.leader.name}</p>
+                          <p className="text-xs text-blue-600">{team.leader.email}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-blue-600 mt-2">No leader assigned</p>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600">Members</p>
@@ -529,8 +642,12 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                       {team.members.slice(0, 4).map((member) => (
                         <div 
                           key={member.id} 
-                          className="h-8 w-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium"
-                          title={member.name}
+                          className={`h-8 w-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-medium ${
+                            member.id === team.leaderId 
+                              ? 'bg-blue-500 text-white ring-2 ring-blue-300' 
+                              : 'bg-gray-300 text-gray-700'
+                          }`}
+                          title={`${member.name}${member.id === team.leaderId ? ' (Leader)' : ''}`}
                         >
                           {member.name.charAt(0).toUpperCase()}
                         </div>
@@ -826,6 +943,112 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                 className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leader Assignment Modal */}
+      {showLeaderModal && selectedTeam && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Assign Team Leader - {selectedTeam.name}
+              </h3>
+              <button
+                onClick={() => setShowLeaderModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Crown className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800">Current Leader</span>
+                </div>
+                {selectedTeam.leader ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-medium text-white">
+                      {selectedTeam.leader.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">{selectedTeam.leader.name}</p>
+                      <p className="text-xs text-blue-600">{selectedTeam.leader.email}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-blue-600">No leader assigned</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select New Leader
+                </label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {selectedTeam.members.length === 0 ? (
+                    <p className="text-gray-500 text-sm p-3 bg-gray-50 rounded-lg">
+                      No team members available. Add members to the team first.
+                    </p>
+                  ) : (
+                    selectedTeam.members.map((member) => (
+                      <div 
+                        key={member.id} 
+                        className={`flex items-center space-x-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedLeaderId === member.id 
+                            ? 'border-blue-500 bg-blue-50' 
+                            : 'border-gray-200 hover:bg-gray-50'
+                        }`}
+                        onClick={() => setSelectedLeaderId(member.id)}
+                      >
+                        <input
+                          type="radio"
+                          name="leader"
+                          value={member.id}
+                          checked={selectedLeaderId === member.id}
+                          onChange={() => setSelectedLeaderId(member.id)}
+                          className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{member.name}</p>
+                          <p className="text-sm text-gray-600">{member.email}</p>
+                          {member.role && (
+                            <p className="text-xs text-gray-500 capitalize">{member.role}</p>
+                          )}
+                        </div>
+                        {member.id === selectedTeam.leaderId && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            Current
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowLeaderModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAssignLeader}
+                disabled={!selectedLeaderId || isSubmitting || selectedTeam.members.length === 0}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Assigning...' : 'Assign Leader'}
               </button>
             </div>
           </div>
