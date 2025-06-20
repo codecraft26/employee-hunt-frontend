@@ -496,41 +496,98 @@ export default function RegisterPage() {
                       Categories <span className="text-red-500">*</span>
                     </label>
                     <p className="text-sm text-gray-600 mb-3">Select all categories that apply to you:</p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                      {categories.map((category) => (
-                        <label key={category.id} className="flex items-start space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                          <input
-                            type="checkbox"
-                            value={category.id}
-                            checked={formData.categoryIds.includes(category.id)}
-                            onChange={(e) => {
-                              const categoryId = e.target.value;
-                              setFormData((prev) => ({
-                                ...prev,
-                                categoryIds: e.target.checked
-                                  ? [...prev.categoryIds, categoryId]
-                                  : prev.categoryIds.filter(id => id !== categoryId)
-                              }));
-                              if (validationErrors.length > 0) {
-                                setValidationErrors([]);
-                              }
-                            }}
-                            className="form-checkbox h-4 w-4 text-blue-600 mt-0.5"
-                          />
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-gray-900">{category.name}</span>
-                            {category.description && (
-                              <p className="text-xs text-gray-500 mt-1">{category.description}</p>
-                            )}
-                          </div>
-                        </label>
-                      ))}
+                    
+                    {/* Categories Grid */}
+                    <div className="space-y-3 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      {categoriesLoading ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                          <p className="text-sm text-gray-500 mt-2">Loading categories...</p>
+                        </div>
+                      ) : categories.length === 0 ? (
+                        <div className="text-center py-4">
+                          <p className="text-sm text-gray-500">No categories available</p>
+                        </div>
+                      ) : (
+                        categories.map((category) => (
+                          <label 
+                            key={category.id} 
+                            className="flex items-start space-x-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              value={category.id}
+                              checked={formData.categoryIds.includes(category.id)}
+                              onChange={(e) => {
+                                const { value, checked } = e.target;
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  categoryIds: checked 
+                                    ? [...prev.categoryIds, value]
+                                    : prev.categoryIds.filter(id => id !== value)
+                                }));
+                                if (validationErrors.length > 0) {
+                                  setValidationErrors([]);
+                                }
+                              }}
+                              className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 mt-0.5"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium text-gray-900 block">
+                                {category.name}
+                              </span>
+                              {category.description && (
+                                <span className="text-xs text-gray-500 block mt-1">
+                                  {category.description}
+                                </span>
+                              )}
+                            </div>
+                          </label>
+                        ))
+                      )}
                     </div>
+                    
+                    {/* Selected Categories Summary */}
                     {formData.categoryIds.length > 0 && (
-                      <p className="text-sm text-green-600 mt-2">
-                        Selected: {formData.categoryIds.length} categor{formData.categoryIds.length === 1 ? 'y' : 'ies'}
-                      </p>
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm font-medium text-blue-900 mb-2">
+                          Selected Categories ({formData.categoryIds.length}):
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.categoryIds.map((categoryId) => {
+                            const category = categories.find(c => c.id === categoryId);
+                            return category ? (
+                              <span 
+                                key={categoryId}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                              >
+                                {category.name}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      categoryIds: prev.categoryIds.filter(id => id !== categoryId)
+                                    }));
+                                  }}
+                                  className="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:bg-blue-500 focus:text-white"
+                                >
+                                  <span className="sr-only">Remove {category.name}</span>
+                                  <svg className="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8">
+                                    <path strokeLinecap="round" strokeWidth="1.5" d="m1 1 6 6m0-6-6 6" />
+                                  </svg>
+                                </button>
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
                     )}
+                    
+                    {/* Helper Text */}
+                    <p className="text-xs text-gray-500 mt-2">
+                      You can select multiple categories. Choose all that are relevant to your role or interests.
+                    </p>
                   </div>
                 </>
               )}
