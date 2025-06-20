@@ -8,7 +8,10 @@ import {
   Award, 
   Calendar, 
   Briefcase, 
-  AlertCircle
+  AlertCircle,
+  Crown,
+  Star,
+  Shield
 } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
 import { Team } from '../../types/teams';
@@ -42,18 +45,34 @@ const UserTeamTab: React.FC<UserTeamTabProps> = ({ user }) => {
     return userTeam.members;
   }, [userTeam]);
 
+  // Check if current user is team leader
+  const isCurrentUserLeader = useMemo(() => {
+    if (!userTeam || !user) return false;
+    return userTeam.leaderId === user.id || userTeam.leader?.id === user.id;
+  }, [userTeam, user]);
+
   return (
     <div className="space-y-6">
       {/* Team Header */}
       {userTeam && (
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold mb-2 text-white">{userTeam.name}</h2>
-              <p className="opacity-90 mb-3 text-indigo-100">
+            <div className="flex-1">
+              <div className="flex items-center space-x-3 mb-2">
+                <h2 className="text-2xl font-bold text-white">{userTeam.name}</h2>
+                {isCurrentUserLeader && (
+                  <div className="flex items-center space-x-1 bg-yellow-500 bg-opacity-20 px-3 py-1 rounded-full">
+                    <Crown className="h-4 w-4 text-yellow-300" />
+                    <span className="text-yellow-100 text-sm font-medium">Team Leader</span>
+                  </div>
+                )}
+              </div>
+              <p className="opacity-90 mb-4 text-indigo-100">
                 {'description' in userTeam ? userTeam.description || 'Team description' : 'Team description'}
               </p>
-              <div className="flex items-center space-x-6">
+              
+              {/* Team Stats */}
+              <div className="flex items-center space-x-6 mb-4">
                 <div className="flex items-center space-x-2">
                   <Users className="h-5 w-5 text-indigo-200" />
                   <span className="text-indigo-100">{teamMembers.length} Members</span>
@@ -71,6 +90,29 @@ const UserTeamTab: React.FC<UserTeamTabProps> = ({ user }) => {
                   </div>
                 )}
               </div>
+
+              {/* Team Leader Info */}
+              {userTeam.leader && (
+                <div className="bg-white bg-opacity-10 rounded-lg p-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-yellow-500 bg-opacity-20 p-2 rounded-full">
+                      <Crown className="h-4 w-4 text-yellow-300" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">Team Leader</p>
+                      <p className="text-indigo-100 text-sm">{userTeam.leader.name}</p>
+                      <p className="text-indigo-200 text-xs">{userTeam.leader.email}</p>
+                    </div>
+                    {isCurrentUserLeader && (
+                      <div className="ml-auto">
+                        <span className="bg-yellow-500 bg-opacity-20 text-yellow-100 text-xs px-2 py-1 rounded-full">
+                          You
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <Trophy className="h-16 w-16 opacity-20" />
           </div>
@@ -127,55 +169,81 @@ const UserTeamTab: React.FC<UserTeamTabProps> = ({ user }) => {
             </div>
           ) : (
             <ul className="divide-y divide-gray-200">
-              {teamMembers.map((member: any) => (
-                <li key={member.id} className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-medium">
-                        {member.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-gray-900">{member.name}</p>
-                          {member.id === user.id && (
-                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
-                              You
-                            </span>
+              {teamMembers.map((member: any) => {
+                const isLeader = member.id === userTeam?.leaderId || member.id === userTeam?.leader?.id;
+                const isCurrentUser = member.id === user.id;
+                
+                return (
+                  <li key={member.id} className={`px-4 py-4 sm:px-6 ${isLeader ? 'bg-blue-50 border-l-4 border-blue-400' : ''}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium relative ${
+                          isLeader 
+                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
+                            : 'bg-gradient-to-r from-indigo-500 to-purple-600'
+                        }`}>
+                          {member.name.charAt(0).toUpperCase()}
+                          {isLeader && (
+                            <Crown className="absolute -top-1 -right-1 h-4 w-4 text-yellow-300 bg-blue-600 rounded-full p-0.5" />
                           )}
                         </div>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
-                          <span>{member.email}</span>
-                          {member.role && (
-                            <>
-                              <span>•</span>
-                              <span className="capitalize">{member.role}</span>
-                            </>
-                          )}
-                        </div>
-                        {member.department && (
-                          <div className="flex items-center space-x-1 mt-1">
-                            <Briefcase className="h-3 w-3 text-gray-400" />
-                            <span className="text-xs text-gray-500">{member.department}</span>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <p className="text-sm font-medium text-gray-900">{member.name}</p>
+                            {isLeader && (
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                                <Crown className="inline h-3 w-3 mr-1" />
+                                Team Leader
+                              </span>
+                            )}
+                            {isCurrentUser && (
+                              <span className="px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
+                                You
+                              </span>
+                            )}
                           </div>
+                          <div className="flex items-center space-x-2 text-sm text-gray-500">
+                            <span>{member.email}</span>
+                            {member.role && (
+                              <>
+                                <span>•</span>
+                                <span className="capitalize">{member.role}</span>
+                              </>
+                            )}
+                          </div>
+                          {member.department && (
+                            <div className="flex items-center space-x-1 mt-1">
+                              <Briefcase className="h-3 w-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">{member.department}</span>
+                            </div>
+                          )}
+                          {isLeader && (
+                            <div className="flex items-center space-x-1 mt-1">
+                              <Shield className="h-3 w-3 text-blue-500" />
+                              <span className="text-xs text-blue-600 font-medium">Leadership Responsibilities</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {member.employeeCode && (
+                          <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {member.employeeCode}
+                          </span>
                         )}
+                        <div className="text-right">
+                          <p className="text-sm text-gray-500">
+                            {isLeader ? 'Leader since' : 'Member since'}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(member.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {member.employeeCode && (
-                        <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                          {member.employeeCode}
-                        </span>
-                      )}
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">Member since</p>
-                        <p className="text-xs text-gray-400">
-                          {new Date(member.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

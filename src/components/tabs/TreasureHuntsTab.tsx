@@ -62,6 +62,7 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE': return 'bg-green-100 text-green-800';
+      case 'IN_PROGRESS': return 'bg-green-100 text-green-800';
       case 'UPCOMING': return 'bg-orange-100 text-orange-800';
       case 'COMPLETED': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -128,9 +129,9 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
     }
   };
 
-  // Check if hunt can be deleted (only UPCOMING or COMPLETED hunts without winners)
+  // Check if hunt can be deleted (UPCOMING or COMPLETED hunts can be deleted, not ACTIVE or IN_PROGRESS)
   const canDeleteHunt = (hunt: any) => {
-    return hunt.status === 'UPCOMING' || (hunt.status === 'COMPLETED' && !hunt.winningTeam);
+    return hunt.status === 'UPCOMING' || hunt.status === 'COMPLETED';
   };
 
   if (loading && treasureHunts.length === 0) {
@@ -305,7 +306,7 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 {!canDeleteHunt(hunt)
-                                  ? 'Cannot Delete' 
+                                  ? 'Cannot Delete (Active)' 
                                   : 'Delete Hunt'
                                 }
                               </button>

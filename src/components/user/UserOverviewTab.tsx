@@ -15,7 +15,8 @@ import {
   Vote,
   Shield,
   Zap,
-  Camera
+  Camera,
+  Crown
 } from 'lucide-react';
 import { useOptimizedData } from '../../hooks/useOptimizedData';
 import { useActivities } from '../../hooks/useActivities';
@@ -117,6 +118,12 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
     return userTeam.members;
   }, [userTeam]);
 
+  // Check if current user is team leader
+  const isCurrentUserLeader = useMemo(() => {
+    if (!userTeam || !user) return false;
+    return userTeam.leaderId === user.id || userTeam.leader?.id === user.id;
+  }, [userTeam, user]);
+
   // Memoized stats data
   const statsData = useMemo(() => [
     {
@@ -184,19 +191,42 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
           {/* Team Info - Optimized rendering */}
           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-white">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg lg:text-xl font-bold mb-2 text-white">
-                  {userTeam?.name || 'No Team'}
-                </h3>
-                <p className="opacity-90 text-indigo-100 text-sm lg:text-base">
-                  {userTeam && 'description' in userTeam ? 
-                    `You're part of an amazing team! ${userTeam.description || ''}` : 
-                    userTeam ?
-                    "You're part of an amazing team!" :
-                    "You haven't been assigned to a team yet."
+              <div className="flex-1">
+                <div className="flex items-center space-x-2 mb-2">
+                  <h3 className="text-lg lg:text-xl font-bold text-white">
+                    {userTeam?.name || 'No Team'}
+                  </h3>
+                  {isCurrentUserLeader && (
+                    <div className="flex items-center space-x-1 bg-yellow-500 bg-opacity-20 px-2 py-1 rounded-full">
+                      <Crown className="h-3 w-3 lg:h-4 lg:w-4 text-yellow-300" />
+                      <span className="text-yellow-100 text-xs lg:text-sm font-medium">Leader</span>
+                    </div>
+                  )}
+                </div>
+                <p className="opacity-90 text-indigo-100 text-sm lg:text-base mb-3">
+                  {isCurrentUserLeader ? 
+                    "You're leading an amazing team!" :
+                    userTeam && 'description' in userTeam ? 
+                      `You're part of an amazing team! ${userTeam.description || ''}` : 
+                      userTeam ?
+                      "You're part of an amazing team!" :
+                      "You haven't been assigned to a team yet."
                   }
                 </p>
-                <div className="flex items-center space-x-4 mt-3 lg:mt-4">
+                
+                {/* Team Leader Info */}
+                {userTeam?.leader && !isCurrentUserLeader && (
+                  <div className="bg-white bg-opacity-10 rounded-lg p-2 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Crown className="h-3 w-3 text-yellow-300" />
+                      <span className="text-xs text-indigo-100">
+                        Led by {userTeam.leader.name}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-1">
                     <Users className="h-3 w-3 lg:h-4 lg:w-4 text-indigo-200" />
                     <span className="text-xs lg:text-sm text-indigo-100">

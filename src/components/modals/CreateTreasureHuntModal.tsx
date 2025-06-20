@@ -1,6 +1,6 @@
 // components/modals/CreateTreasureHuntModal.tsx
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Users, AlertCircle, Plus, Trash2, GripVertical } from 'lucide-react';
+import { X, Calendar, Clock, Users, AlertCircle, Target } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import { useTeams } from '../../hooks/useTeams';
 
@@ -21,12 +21,10 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    clueDescription: '', // Single clue instead of stages
     startTime: '',
     endTime: '',
     teamIds: [] as string[],
-    stages: [
-      { stageNumber: 1, description: '' }
-    ]
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -45,12 +43,10 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
       setFormData({
         title: '',
         description: '',
+        clueDescription: '',
         startTime: '',
         endTime: '',
         teamIds: [],
-        stages: [
-          { stageNumber: 1, description: '' }
-        ]
       });
       setErrors({});
       setIsSubmitting(false);
@@ -66,6 +62,10 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
 
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
+    }
+
+    if (!formData.clueDescription.trim()) {
+      newErrors.clueDescription = 'Clue description is required';
     }
 
     if (!formData.startTime) {
@@ -94,17 +94,6 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
       newErrors.teams = 'At least one team must be selected';
     }
 
-    if (formData.stages.length === 0) {
-      newErrors.stages = 'At least one stage must be added';
-    } else {
-      // Validate each stage
-      formData.stages.forEach((stage, index) => {
-        if (!stage.description.trim()) {
-          newErrors[`stage_${index}`] = `Stage ${index + 1} description is required`;
-        }
-      });
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -125,54 +114,7 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
     }
   };
 
-  const handleStageChange = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      stages: prev.stages.map((stage, i) => 
-        i === index ? { ...stage, description: value } : stage
-      )
-    }));
 
-    // Clear stage-specific error
-    if (errors[`stage_${index}`]) {
-      setErrors(prev => ({
-        ...prev,
-        [`stage_${index}`]: ''
-      }));
-    }
-  };
-
-  const addStage = () => {
-    setFormData(prev => ({
-      ...prev,
-      stages: [
-        ...prev.stages,
-        { stageNumber: prev.stages.length + 1, description: '' }
-      ]
-    }));
-  };
-
-  const removeStage = (index: number) => {
-    if (formData.stages.length <= 1) return; // Don't allow removing the last stage
-
-    setFormData(prev => ({
-      ...prev,
-      stages: prev.stages
-        .filter((_, i) => i !== index)
-        .map((stage, i) => ({ ...stage, stageNumber: i + 1 }))
-    }));
-
-    // Clear any errors for stages that were renumbered
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      formData.stages.forEach((_, i) => {
-        if (i >= index) {
-          delete newErrors[`stage_${i}`];
-        }
-      });
-      return newErrors;
-    });
-  };
 
   const handleTeamSelection = (teamId: string) => {
     setFormData(prev => ({
@@ -204,13 +146,10 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
       const treasureHunt = await createTreasureHunt({
         title: formData.title.trim(),
         description: formData.description.trim(),
+        clueDescription: formData.clueDescription.trim(),
         startTime: new Date(formData.startTime).toISOString(),
         endTime: new Date(formData.endTime).toISOString(),
         teamIds: formData.teamIds,
-        stages: formData.stages.map(stage => ({
-          stageNumber: stage.stageNumber,
-          description: stage.description.trim()
-        }))
       });
 
       if (treasureHunt) {
@@ -413,69 +352,36 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
             )}
           </div>
 
-          {/* Stages/Clues Section */}
+          {/* Clue Description Section */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <label className="block text-sm font-medium text-gray-700">
-                Stages/Clues * ({formData.stages.length} stage{formData.stages.length !== 1 ? 's' : ''})
-              </label>
-              <button
-                type="button"
-                onClick={addStage}
-                className="inline-flex items-center px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
-                disabled={isSubmitting}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Stage
-              </button>
+            <label htmlFor="clueDescription" className="block text-sm font-medium text-gray-700 mb-2">
+              <Target className="h-4 w-4 inline mr-1" />
+              Clue Description *
+            </label>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+              <p className="text-sm text-blue-800">
+                💡 <strong>Simplified Workflow:</strong> Create a single clue that all teams will work on. 
+                Team members will upload photos, leaders will select the best ones, and you'll approve them.
+              </p>
             </div>
-
-            <div className="space-y-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
-              {formData.stages.map((stage, index) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-shrink-0 mt-2">
-                    <GripVertical className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                        {stage.stageNumber}
-                      </span>
-                      <span className="text-sm font-medium text-gray-700">
-                        Stage {stage.stageNumber}
-                      </span>
-                    </div>
-                    <textarea
-                      value={stage.description}
-                      onChange={(e) => handleStageChange(index, e.target.value)}
-                      placeholder={`Describe what participants need to find or do in stage ${stage.stageNumber}...`}
-                      rows={2}
-                      className={`w-full px-3 py-2 text-sm border rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none ${
-                        errors[`stage_${index}`] ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      disabled={isSubmitting}
-                    />
-                    {errors[`stage_${index}`] && (
-                      <p className="text-red-500 text-xs mt-1">{errors[`stage_${index}`]}</p>
-                    )}
-                  </div>
-                  {formData.stages.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeStage(index)}
-                      className="flex-shrink-0 p-1 text-red-400 hover:text-red-600 transition-colors mt-2"
-                      disabled={isSubmitting}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {errors.stages && (
-              <p className="text-red-500 text-sm mt-1">{errors.stages}</p>
+            <textarea
+              id="clueDescription"
+              name="clueDescription"
+              value={formData.clueDescription}
+              onChange={handleInputChange}
+              placeholder="Describe what participants need to find or photograph (e.g., 'Find the oldest building on campus and take a photo with the founding year plaque')"
+              rows={4}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none ${
+                errors.clueDescription ? 'border-red-500' : 'border-gray-300'
+              }`}
+              disabled={isSubmitting}
+            />
+            {errors.clueDescription && (
+              <p className="text-red-500 text-sm mt-1">{errors.clueDescription}</p>
             )}
+            <p className="text-sm text-gray-500 mt-2">
+              📝 Be specific about what you want teams to photograph or accomplish. This single clue will be the focus of the entire treasure hunt.
+            </p>
           </div>
 
           {/* Form Actions */}

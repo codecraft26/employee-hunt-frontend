@@ -479,7 +479,7 @@ export const useTreasureHunt = () => {
     return stages;
   }, [progress, getStageSubmission, isStageUnlocked]);
 
-  // Format time remaining
+  // Format time remaining with enhanced display
   const getTimeRemaining = useCallback((endTime: string) => {
     const now = new Date().getTime();
     const end = new Date(endTime).getTime();
@@ -487,15 +487,67 @@ export const useTreasureHunt = () => {
     
     if (difference <= 0) return 'Ended';
     
-    const hours = Math.floor(difference / (1000 * 60 * 60));
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
     
-    if (hours > 0) {
+    if (days > 0) {
+      return `${days}d ${hours}h remaining`;
+    } else if (hours > 0) {
       return `${hours}h ${minutes}m remaining`;
     } else {
       return `${minutes}m remaining`;
     }
   }, []);
+
+  // Get time until start for upcoming hunts
+  const getTimeUntilStart = useCallback((startTime: string) => {
+    const now = new Date().getTime();
+    const start = new Date(startTime).getTime();
+    const difference = start - now;
+    
+    if (difference <= 0) return 'Starting now';
+    
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) {
+      return `Starts in ${days}d ${hours}h`;
+    } else if (hours > 0) {
+      return `Starts in ${hours}h ${minutes}m`;
+    } else {
+      return `Starts in ${minutes}m`;
+    }
+  }, []);
+
+  // Get hunt timing status
+  const getHuntTimingStatus = useCallback((hunt: TreasureHunt) => {
+    const now = new Date().getTime();
+    const start = new Date(hunt.startTime).getTime();
+    const end = new Date(hunt.endTime).getTime();
+    
+    if (now < start) {
+      return {
+        status: 'upcoming' as const,
+        timeText: getTimeUntilStart(hunt.startTime),
+        urgency: start - now < 24 * 60 * 60 * 1000 ? 'high' as const : 'normal' as const // Less than 24 hours
+      };
+    } else if (now >= start && now < end) {
+      const timeRemaining = end - now;
+      return {
+        status: 'active' as const,
+        timeText: getTimeRemaining(hunt.endTime),
+        urgency: timeRemaining < 60 * 60 * 1000 ? 'high' as const : timeRemaining < 24 * 60 * 60 * 1000 ? 'medium' as const : 'normal' as const // Less than 1h = high, less than 24h = medium
+      };
+    } else {
+      return {
+        status: 'ended' as const,
+        timeText: 'Ended',
+        urgency: 'none' as const
+      };
+    }
+  }, [getTimeRemaining, getTimeUntilStart]);
 
   // Reset all state
   const reset = useCallback(() => {
@@ -541,5 +593,7 @@ export const useTreasureHunt = () => {
     isStageUnlocked,
     getAllStagesWithStatus,
     getTimeRemaining,
+    getTimeUntilStart,
+    getHuntTimingStatus,
   };
 };
