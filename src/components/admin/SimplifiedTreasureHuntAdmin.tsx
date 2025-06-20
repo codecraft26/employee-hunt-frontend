@@ -16,7 +16,8 @@ import {
   Target,
   Crown,
   Calendar,
-  X
+  X,
+  Camera
 } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 
@@ -55,6 +56,21 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
       const submissions = await getTeamSubmissionsForAdmin(hunt.id);
       console.log('🎯 Admin Panel - Team Submissions Data:', submissions);
       console.log('🎯 First submission structure:', submissions?.[0]);
+      
+      // Log image information for debugging
+      submissions?.forEach((submission, index) => {
+        console.log(`🖼️ Submission ${index + 1}:`, {
+          id: submission.id,
+          hasImageUrls: !!submission.imageUrls,
+          imageUrlsCount: submission.imageUrls?.length || 0,
+          imageUrls: submission.imageUrls,
+          hasSingleImageUrl: !!submission.imageUrl,
+          imageUrl: submission.imageUrl,
+          hasSelectedSubmissions: !!submission.selectedSubmissions,
+          selectedSubmissionsCount: submission.selectedSubmissions?.length || 0
+        });
+      });
+      
       setTeamSubmissions(submissions || []);
     } catch (error) {
       console.error('Failed to load team submissions:', error);
@@ -262,51 +278,62 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
                 {/* Images */}
                 <div className="mb-4">
                   <p className="text-sm font-medium text-gray-700 mb-3">
-                    Selected Images ({submission.selectedSubmissions?.length || (submission.imageUrls?.length || 1)})
+                    Team Selected Images ({submission.imageUrls?.length || 1})
+                    {submission.imageUrls?.length > 1 && (
+                      <span className="ml-2 text-blue-600 font-medium">
+                        - {submission.imageUrls.length} photos submitted by team leader
+                      </span>
+                    )}
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Check for selectedSubmissions (multiple member submissions) */}
-                    {submission.selectedSubmissions?.length > 0 ? (
-                      submission.selectedSubmissions.map((memberSubmission: any, index: number) => (
-                        <div key={memberSubmission.id || index} className="relative group">
-                          <img
-                            src={memberSubmission.imageUrl}
-                            alt={`Submission by ${memberSubmission.submittedBy?.name || 'Team Member'}`}
-                            className="w-full h-48 object-cover rounded-lg border"
-                          />
-                          <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                            {memberSubmission.submittedBy?.name || `Photo ${index + 1}`}
-                          </div>
-                          <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                            {memberSubmission.description?.slice(0, 50)}{memberSubmission.description?.length > 50 ? '...' : ''}
-                          </div>
-                        </div>
-                      ))
-                    ) : submission.imageUrls?.length > 0 ? (
-                      /* Fallback to imageUrls array */
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {/* Display ALL images from imageUrls array */}
+                    {submission.imageUrls && submission.imageUrls.length > 0 ? (
                       submission.imageUrls.map((imageUrl: string, index: number) => (
-                        <div key={index} className="relative group">
+                        <div key={`${submission.id}-image-${index}`} className="relative group">
                           <img
                             src={imageUrl}
-                            alt={`Submission ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border"
+                            alt={`Team ${submission.team?.name} submission ${index + 1}`}
+                            className="w-full h-48 object-cover rounded-lg border border-blue-200 hover:border-blue-400 transition-all duration-200 hover:shadow-lg"
+                            onError={(e) => {
+                              console.error(`Failed to load image ${index + 1}:`, imageUrl);
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
                           />
-                          <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                          <div className="absolute top-2 left-2 bg-blue-600 bg-opacity-90 text-white px-2 py-1 rounded text-xs font-medium">
                             Photo {index + 1}
+                          </div>
+                          <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
+                            <CheckCircle className="h-3 w-3" />
+                          </div>
+                          {/* Image index indicator */}
+                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
+                            {index + 1} of {submission.imageUrls.length}
+                          </div>
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <Eye className="h-6 w-6 text-white" />
                           </div>
                         </div>
                       ))
-                    ) : (
-                      /* Fallback to single imageUrl */
+                    ) : submission.imageUrl ? (
+                      /* Fallback to single imageUrl if imageUrls array is empty */
                       <div className="relative group">
                         <img
                           src={submission.imageUrl}
                           alt="Team submission"
                           className="w-full h-48 object-cover rounded-lg border"
                         />
-                        <div className="absolute top-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                          Team Photo
+                        <div className="absolute top-2 left-2 bg-gray-600 bg-opacity-90 text-white px-2 py-1 rounded text-xs">
+                          Single Photo
                         </div>
+                      </div>
+                    ) : (
+                      /* No images available */
+                      <div className="col-span-full p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
+                        <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No images available for this submission</p>
                       </div>
                     )}
                   </div>

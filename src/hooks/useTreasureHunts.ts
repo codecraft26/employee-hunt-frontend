@@ -187,7 +187,7 @@ export interface AdminRejectSubmissionRequest {
   feedback: string;
 }
 
-// Enhanced team submission with multiple images
+// Enhanced interface for team submissions with detailed member submission info
 export interface TeamClueSubmissionEnhanced {
   id: string;
   imageUrl: string; // Primary image for backward compatibility
@@ -205,9 +205,14 @@ export interface TeamClueSubmissionEnhanced {
     name: string;
   };
   selectedSubmissionIds: string[];
+  selectedSubmissions?: TeamMemberSubmission[]; // Detailed member submission data
   clueId: string;
   teamId: string;
   treasureHuntId: string;
+  team?: {
+    id: string;
+    name: string;
+  };
   createdAt: string;
   approvedAt?: string;
 }
@@ -985,7 +990,7 @@ export const useTreasureHunts = () => {
     }
   }, []);
 
-  // Get team submissions for admin review
+  // Get team submissions for admin review (simplified - backend already provides complete data)
   const getTeamSubmissionsForAdmin = useCallback(async (treasureHuntId: string): Promise<TeamClueSubmissionEnhanced[]> => {
     setLoading(true);
     setError(null);
@@ -994,7 +999,22 @@ export const useTreasureHunts = () => {
       const response = await api.get<TeamSubmissionsResponse>(`/treasure-hunts/${treasureHuntId}/submissions`);
       
       if (response.data.success) {
-        return response.data.data;
+        // Backend already provides complete data with imageUrls array
+        // Just ensure the structure is consistent
+        const enhancedSubmissions = response.data.data.map((submission) => ({
+          ...submission,
+          // Ensure imageUrls array exists and fallback to single imageUrl if needed
+          imageUrls: submission.imageUrls && submission.imageUrls.length > 0 
+            ? submission.imageUrls 
+            : [submission.imageUrl].filter(Boolean),
+          // Ensure team info is available
+          team: submission.team || {
+            id: submission.teamId || '',
+            name: 'Unknown Team'
+          }
+        }));
+        
+        return enhancedSubmissions;
       } else {
         throw new Error('Failed to fetch team submissions');
       }
@@ -1044,6 +1064,35 @@ export const useTreasureHunts = () => {
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to reject submission';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Get team submission to admin with multiple images
+  const getTeamSubmissionToAdmin = useCallback(async (teamId: string, clueId: string): Promise<TeamClueSubmissionEnhanced | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.get(`/team-member-submissions/teams/${teamId}/clues/${clueId}/team-submission`);
+      
+      if (response.data.success && response.data.data) {
+        const teamSubmissionData = response.data.data;
+        
+        // Ensure imageUrls array exists
+        return {
+          ...teamSubmissionData,
+          imageUrls: teamSubmissionData.imageUrls || [teamSubmissionData.imageUrl].filter(Boolean)
+        };
+      } else {
+        // No team submission found yet
+        return null;
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch team submission';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -1110,5 +1159,6 @@ export const useTreasureHunts = () => {
     adminApproveTeamSubmission,
     adminRejectTeamSubmission,
     getMySubmissions,
+    getTeamSubmissionToAdmin,
   };
 };
