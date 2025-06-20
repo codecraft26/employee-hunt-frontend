@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '../../hooks/redux';
 import { registerUser, clearError } from '../../store/authSlice';
 import { useCategories } from '../../hooks/useCategories';
-import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Building2, Upload, X, Heart, CreditCard } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Building2, Upload, X, Heart, CreditCard, FileCheck, Shield } from 'lucide-react';
 import Image from 'next/image';
 
 // Add SVG as a React component
@@ -56,6 +56,7 @@ interface FormData {
   hobbies: string;
   profileImage: File | null;
   idProof: File | null;
+  declarationAccepted: boolean;
 }
 
 export default function RegisterPage() {
@@ -70,6 +71,7 @@ export default function RegisterPage() {
     hobbies: '',
     profileImage: null,
     idProof: null,
+    declarationAccepted: false,
   });
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -117,6 +119,18 @@ export default function RegisterPage() {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+    
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: checked,
     }));
     
     if (validationErrors.length > 0) {
@@ -238,6 +252,10 @@ export default function RegisterPage() {
       case 6:
         if (!formData.idProof) errors.push('ID proof is required');
         break;
+      
+      case 7:
+        if (!formData.declarationAccepted) errors.push('You must accept the declaration to proceed');
+        break;
     }
     
     setValidationErrors(errors);
@@ -275,6 +293,7 @@ export default function RegisterPage() {
       submitData.append('employeeCode', formData.employeeCode);
       submitData.append('gender', formData.gender);
       submitData.append('hobbies', formData.hobbies);
+      submitData.append('declarationAccepted', formData.declarationAccepted.toString());
       if (formData.profileImage) {
         submitData.append('profileImage', formData.profileImage);
       }
@@ -322,7 +341,7 @@ export default function RegisterPage() {
     }
   };
 
-  const totalSteps = 6;
+  const totalSteps = 7; // Updated to 7 steps
   const progressPercentage = (currentStep / totalSteps) * 100;
 
   return (
@@ -353,7 +372,8 @@ export default function RegisterPage() {
               {currentStep === 3 && "Personal Details"}
               {currentStep === 4 && "Secure Your Account"}
               {currentStep === 5 && "Profile Picture"}
-              {currentStep === 6 && "Almost Done!"}
+              {currentStep === 6 && "ID Verification"}
+              {currentStep === 7 && "Declaration"}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
               {currentStep === 1 && "Enter your basic information"}
@@ -362,6 +382,7 @@ export default function RegisterPage() {
               {currentStep === 4 && "Create a strong password"}
               {currentStep === 5 && "Add your profile picture"}
               {currentStep === 6 && "Upload your ID proof for verification"}
+              {currentStep === 7 && "Please read and accept our terms"}
             </p>
           </div>
 
@@ -789,6 +810,61 @@ export default function RegisterPage() {
                   <p className="mt-2 text-sm text-gray-600 text-center">
                     Upload a clear photo of your ID proof (ID card, passport, etc.) for verification
                   </p>
+                </div>
+              )}
+
+              {/* Step 7: Declaration */}
+              {currentStep === 7 && (
+                <div className="space-y-6">
+                  {/* Declaration Card */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+                    <div className="flex items-start space-x-3">
+                      <Shield className="h-6 w-6 text-amber-600 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-amber-900 mb-3">
+                          Important Declaration
+                        </h3>
+                        <div className="bg-white border border-amber-200 rounded-lg p-4 text-sm text-gray-700 leading-relaxed">
+                          <p>
+                            While every effort is made to ensure the safety and well-being of all participants during the trip, the company shall not be held liable or responsible for any loss, injury, accident, damage, or any other unforeseen incident that may occur during the course of the trip, whether on board or at any destination.
+                          </p>
+                          <br />
+                          <p>
+                            All participants are expected to exercise personal responsibility and caution throughout the trip.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Acceptance Checkbox */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="declarationAccepted"
+                        checked={formData.declarationAccepted}
+                        onChange={handleCheckboxChange}
+                        className="form-checkbox h-5 w-5 text-blue-600 mt-1 border-2 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          I acknowledge and accept the declaration
+                        </span>
+                        <p className="text-xs text-gray-600 mt-1">
+                          By checking this box, I confirm that I have read, understood, and agree to the terms stated in the declaration above.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Additional Info */}
+                  <div className="text-center">
+                    <div className="inline-flex items-center space-x-2 text-sm text-gray-600">
+                      <FileCheck className="h-4 w-4" />
+                      <span>This declaration is required to complete your registration</span>
+                    </div>
+                  </div>
                 </div>
               )}
 
