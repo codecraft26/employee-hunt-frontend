@@ -57,7 +57,7 @@ export const useAdminDashboardStats = (): UseAdminDashboardStatsReturn => {
 
       const token = getAuthToken();
       
-      const response = await fetch('/api/admin/stats/dashboard', {
+      const response = await fetch('/admin/stats/dashboard', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

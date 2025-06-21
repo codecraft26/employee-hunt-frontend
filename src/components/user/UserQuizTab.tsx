@@ -51,8 +51,8 @@ const UserQuizTab: React.FC = () => {
     currentQuiz,
     assignedQuestions,
     teamRankings,
-    fetchUserQuizzes,
-    fetchQuizById,
+    fetchMyQuizzes,
+    getQuizById,
     getAssignedQuestions,
     submitAnswer,
     getTeamRankings,
@@ -86,8 +86,8 @@ const UserQuizTab: React.FC = () => {
 
   // Fetch quizzes on component mount
   useEffect(() => {
-    fetchUserQuizzes();
-  }, [fetchUserQuizzes]);
+    fetchMyQuizzes();
+  }, [fetchMyQuizzes]);
 
   // Timer for current question
   useEffect(() => {
@@ -141,8 +141,8 @@ const UserQuizTab: React.FC = () => {
 
   const handleRefresh = useCallback(() => {
     clearError();
-    fetchUserQuizzes();
-  }, [clearError, fetchUserQuizzes]);
+    fetchMyQuizzes();
+  }, [clearError, fetchMyQuizzes]);
 
   const handleStartQuiz = async (quiz: UserQuiz) => {
     try {
@@ -150,22 +150,30 @@ const UserQuizTab: React.FC = () => {
       setQuizStartTime(new Date());
       
       // Fetch the full quiz details and assigned questions
-      await fetchQuizById(quiz.id);
+      await getQuizById(quiz.id);
       const questions = await getAssignedQuestions(quiz.id);
       
+      console.log('Fetched questions:', questions); // Debug log
+      
       if (questions && questions.length > 0) {
-        setCurrentQuestionIndex(0);
+        console.log('First question:', questions[0]); // Debug log
+        
+        // Find the first unanswered question or start from beginning for review
+        const nextUnansweredIndex = findNextUnansweredQuestion(0);
+        const startIndex = nextUnansweredIndex !== -1 ? nextUnansweredIndex : 0;
+        
+        setCurrentQuestionIndex(startIndex);
         setSelectedAnswer(null);
         setShowQuestionReview(false);
         
         // If starting with a completed question, show it in review mode
-        if (questions[0]?.isCompleted) {
+        if (questions[startIndex]?.isCompleted) {
           setShowQuestionReview(true);
-          setSelectedAnswer(questions[0].userAnswer || null);
+          setSelectedAnswer(questions[startIndex].userAnswer || null);
           setTimeRemaining(0); // No timer for completed questions
         } else {
           // Set timer for unanswered question
-          const timeLimit = questions[0]?.question?.timeLimit || 30;
+          const timeLimit = questions[startIndex]?.question?.timeLimit || 30;
           setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
         }
         
@@ -178,7 +186,7 @@ const UserQuizTab: React.FC = () => {
 
   const handleViewResults = async (quiz: UserQuiz) => {
     setSelectedQuiz(quiz);
-    await fetchQuizById(quiz.id);
+    await getQuizById(quiz.id);
     setShowResultsModal(true);
   };
 
@@ -199,15 +207,23 @@ const UserQuizTab: React.FC = () => {
     
     const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
     
+    console.log('Submitting answer with data:', {
+      quizId: selectedQuiz.id,
+      questionId: currentQuestion.question.id,
+      selectedAnswer,
+      timeTaken,
+      currentQuestion
+    }); // Debug log
+    
     try {
-      const success = await submitAnswer(selectedQuiz.id, currentQuestion.id, {
+      const success = await submitAnswer(selectedQuiz.id, currentQuestion.question.id, {
         selectedOption: selectedAnswer,
         timeTaken: timeTaken
       });
 
       if (success) {
         // Get the updated question data from the assignedQuestions state
-        const updatedQuestion = assignedQuestions.find(q => q.id === currentQuestion.id);
+        const updatedQuestion = assignedQuestions.find(q => q.question.id === currentQuestion.question.id);
         
         if (updatedQuestion) {
           // Show immediate feedback
@@ -248,7 +264,7 @@ const UserQuizTab: React.FC = () => {
       // Quiz completed
       setShowQuizModal(false);
       setShowResultsModal(true);
-      fetchUserQuizzes(); // Refresh quiz list
+      fetchMyQuizzes(); // Refresh quiz list
       return;
     }
     
@@ -276,7 +292,7 @@ const UserQuizTab: React.FC = () => {
         // All questions reviewed, finish quiz
         setShowQuizModal(false);
         setShowResultsModal(true);
-        fetchUserQuizzes();
+        fetchMyQuizzes();
       }
     }
   };
@@ -338,15 +354,23 @@ const UserQuizTab: React.FC = () => {
     
     const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
     
+    console.log('Answer selection with data:', {
+      quizId: selectedQuiz.id,
+      questionId: currentQuestion.question.id,
+      selectedOption: optionIndex,
+      timeTaken,
+      currentQuestion
+    }); // Debug log
+    
     try {
-      const success = await submitAnswer(selectedQuiz.id, currentQuestion.id, {
+      const success = await submitAnswer(selectedQuiz.id, currentQuestion.question.id, {
         selectedOption: optionIndex,
         timeTaken: timeTaken
       });
 
       if (success) {
         // Get the updated question data from the assignedQuestions state
-        const updatedQuestion = assignedQuestions.find(q => q.id === currentQuestion.id);
+        const updatedQuestion = assignedQuestions.find(q => q.question.id === currentQuestion.question.id);
         
         if (updatedQuestion) {
           // Show immediate feedback

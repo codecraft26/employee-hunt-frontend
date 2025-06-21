@@ -2,7 +2,7 @@
 import React, { memo, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Target, MapPin, Vote, Users, CheckCircle, Building2, ChevronDown, Menu, Image as ImageIcon, UserCog } from 'lucide-react';
+import { BarChart3, Target, MapPin, Vote, Users, CheckCircle, Building2, ChevronDown, Menu, Image as ImageIcon, UserCog, Activity } from 'lucide-react';
 
 interface AdminNavigationProps {
   pendingApprovals?: number;
@@ -16,6 +16,7 @@ const NAVIGATION_ITEMS = [
   { id: 'polls', label: 'Polls & Voting', icon: Vote, href: '/admin/polls' },
   { id: 'teams', label: 'Teams', icon: Users, href: '/admin/teams' },
   { id: 'categories', label: 'Categories', icon: Building2, href: '/admin/categories' },
+  { id: 'activities', label: 'Activities', icon: Activity, href: '/admin?tab=activities' },
   { id: 'photo-wall', label: 'Photo Wall', icon: ImageIcon, href: '/admin?tab=photo-wall' },
   { id: 'user-management', label: 'User Management', icon: UserCog, href: '/admin?tab=user-management' },
   { id: 'approvals', label: 'Approvals', icon: CheckCircle, href: '/admin/approveUser' },

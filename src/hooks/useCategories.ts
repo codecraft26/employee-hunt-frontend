@@ -61,7 +61,7 @@ export interface UsersResponse {
   data: User[];
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance with interceptors
 const api = axios.create({
@@ -114,13 +114,16 @@ export const useCategories = () => {
     setError(null);
     
     try {
+      console.log('Fetching categories from:', `${API_BASE_URL}/categories`);
       const response = await api.get<Category[]>('/categories');
+      console.log('Categories response:', response.data);
       
       // API returns categories array directly
       if (Array.isArray(response.data)) {
         setCategories(response.data);
         return response.data;
       } else {
+        console.error('Unexpected response format:', response.data);
         throw new Error('Failed to fetch categories');
       }
     } catch (err: any) {
@@ -163,13 +166,16 @@ export const useCategories = () => {
     setError(null);
     
     try {
-      // Assuming the users endpoint is similar to teams
-      const response = await api.get<UsersResponse>('/categories/users');
+      console.log('Fetching users from:', `${API_BASE_URL}/categories/users`);
+      const response = await api.get<User[]>('/categories/users');
+      console.log('Users response:', response.data);
       
-      if (response.data.success) {
-        setUsers(response.data.data);
-        return response.data.data;
+      // API returns users array directly
+      if (Array.isArray(response.data)) {
+        setUsers(response.data);
+        return response.data;
       } else {
+        console.error('Unexpected users response format:', response.data);
         throw new Error('Failed to fetch users');
       }
     } catch (err: any) {
@@ -188,7 +194,9 @@ export const useCategories = () => {
     setError(null);
     
     try {
+      console.log('Assigning user', userId, 'to category', categoryId);
       const response = await api.post(`/categories/${categoryId}/users/${userId}`);
+      console.log('Assign user response:', response.data);
       
       if (response.status === 200 || response.status === 201) {
         // Refresh categories and users list after assignment
@@ -200,6 +208,7 @@ export const useCategories = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to assign user to category';
       setError(errorMessage);
+      console.error('Assign user error:', err);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -212,7 +221,9 @@ export const useCategories = () => {
     setError(null);
     
     try {
+      console.log('Removing user', userId, 'from category');
       const response = await api.delete(`/categories/users/${userId}`);
+      console.log('Remove user response:', response.data);
       
       if (response.status === 200 || response.status === 204) {
         // Refresh categories and users list after removal
@@ -223,6 +234,7 @@ export const useCategories = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to remove user from category';
       setError(errorMessage);
+      console.error('Remove user error:', err);
       return false;
     } finally {
       setLoading(false);

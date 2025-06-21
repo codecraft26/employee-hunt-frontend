@@ -58,43 +58,29 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Fetch users when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Fetch all users for reference
-      fetchAllUsers();
+      console.log('🔓 CREATE POLL MODAL OPENED');
+      console.log('📊 Initial form data:', formData);
+      console.log('🎯 Voting option type:', formData.votingOptionType);
       
-      // If voting option type is USER_SPECIFIC, fetch available users
-      if (formData.votingOptionType === 'USER_SPECIFIC') {
+      fetchCategories();
+      if (formData.votingOptionType === VotingOptionType.USER_SPECIFIC) {
+        console.log('👥 Fetching users for USER_SPECIFIC poll...');
         fetchAvailableUsers();
+      } else if (formData.votingOptionType === VotingOptionType.CUSTOM_OPTIONS) {
+        console.log('📝 Fetching users for CUSTOM_OPTIONS reference...');
+        fetchAllUsersForReference();
       }
     }
-  }, [isOpen, formData.votingOptionType]);
+  }, [isOpen, fetchCategories]);
 
-  // Fetch all users for reference
-  const fetchAllUsers = async () => {
-    try {
-      const users = await getAvailableUsers();
-      setAllUsers(users);
-    } catch (error) {
-      // Handle error
+  // Fetch available users when categories change for USER_SPECIFIC polls
+  useEffect(() => {
+    if (formData.votingOptionType === VotingOptionType.USER_SPECIFIC) {
+      fetchAvailableUsers();
     }
-  };
-
-  // Fetch available users for USER_SPECIFIC voting
-  const fetchAvailableUsers = async () => {
-    try {
-      const params = {
-        categoryId: formData.categoryId || undefined,
-        excludeTeamId: formData.excludeTeamId || undefined,
-      };
-      
-      const users = await getAvailableUsers(params);
-      setAvailableUsers(users);
-    } catch (error) {
-      // Handle error
-    }
-  };
+  }, [formData.categoryType, formData.allowedCategories, formData.votingOptionType]);
 
   // Preview users when categories change for CATEGORY_USER_BASED polls
   useEffect(() => {
@@ -118,6 +104,35 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
       }
     } catch (err) {
       console.error('❌ CreatePollModal: Failed to fetch all users for reference:', err);
+    }
+  };
+
+  const fetchAvailableUsers = async () => {
+    try {
+      console.log('🔍 CreatePollModal: Fetching available users for USER_SPECIFIC voting...');
+      console.log('📊 Form data:', {
+        categoryType: formData.categoryType,
+        allowedCategories: formData.allowedCategories,
+        votingOptionType: formData.votingOptionType
+      });
+
+      const params = formData.categoryType === 'SPECIFIC' && formData.allowedCategories.length > 0
+        ? { categoryIds: formData.allowedCategories }
+        : undefined;
+      
+      console.log('📋 API params:', params);
+      
+      const users = await getAvailableUsers(params);
+      if (users) {
+        console.log('✅ CreatePollModal: Successfully fetched available users:', users.length);
+        setAvailableUsers(users);
+      } else {
+        console.warn('⚠️ CreatePollModal: getAvailableUsers returned null');
+        setAvailableUsers([]);
+      }
+    } catch (err) {
+      console.error('❌ CreatePollModal: Failed to fetch available users:', err);
+      setAvailableUsers([]);
     }
   };
 
@@ -240,13 +255,24 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 CREATE POLL: Form submitted');
+    console.log('📊 Form Data:', formData);
+    console.log('👥 Selected Users:', selectedUsers);
+    console.log('🏢 Selected Categories:', selectedOptionCategories);
+    console.log('📝 Options:', options);
+    
     const validationResult = validateForm();
+    console.log('✅ Validation Result:', validationResult);
+    console.log('❌ Validation Errors:', validationErrors);
     
     if (!validationResult) {
+      console.log('❌ CREATE POLL: Validation failed, stopping submission');
       return;
     }
 
     try {
+      console.log('📤 CREATE POLL: Preparing vote data...');
+      
       const voteData: CreateVoteRequest = {
         title: formData.title,
         description: formData.description || undefined,
@@ -265,18 +291,26 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
           .map(option => ({
             name: option.name.trim()
           }));
+        console.log('📝 Custom Options:', voteData.options);
       } else if (formData.votingOptionType === VotingOptionType.USER_SPECIFIC) {
         voteData.userOptions = selectedUsers;
+        console.log('👥 User Options:', voteData.userOptions);
       } else if (formData.votingOptionType === VotingOptionType.CATEGORY_USER_BASED) {
         // For category-user-based polls, send selected categories and the users become options
         voteData.optionCategories = selectedOptionCategories;
+        console.log('🏢 Category Options:', voteData.optionCategories);
       }
+
+      console.log('📤 Final Vote Data:', voteData);
+      console.log('🔄 CREATE POLL: Calling createVote...');
       
       const result = await createVote(voteData);
+      console.log('✅ CREATE POLL: Success!', result);
       
       onSuccess();
       handleClose();
     } catch (err) {
+      console.error('❌ CREATE POLL: Error occurred:', err);
       // Error is handled by the hook
     }
   };
@@ -921,6 +955,11 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
               type="submit"
               className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
+              onClick={() => {
+                console.log('🔘 CREATE POLL BUTTON CLICKED');
+                console.log('🔄 Loading state:', loading);
+                console.log('📊 Current form data:', formData);
+              }}
             >
               {loading ? 'Creating...' : 'Create Poll'}
             </button>

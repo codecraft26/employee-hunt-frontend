@@ -21,7 +21,8 @@ const SubmissionsManagementTab = lazy(() => import('../../components/tabs/Submis
 const WinnerSelectionModal = lazy(() => import('../../components/modals/WinnerSelectionModal'));
 const AdminApprovalsTab = lazy(() => import('../../components/tabs/AdminApprovalsTab'));
 const PhotoWallTab = lazy(() => import('../../components/tabs/PhotoWallTab'));
-const UserManagementTab = lazy(() => import('../../components/tabs/UserManagementTab'));
+const CreateQuizModal = lazy(() => import('../../components/modals/CreateQuizModal'));
+import UserManagementTab from '../../components/tabs/UserManagementTab';
 
 import { 
   Stats, 
@@ -148,6 +149,14 @@ export default function AdminDashboard() {
     isOpen: false,
     huntId: null
   });
+  const [quizModal, setQuizModal] = useState<{
+    isOpen: boolean;
+    mode: 'create' | 'edit';
+    quizId?: string;
+  }>({
+    isOpen: false,
+    mode: 'create'
+  });
 
   const { user, logout: handleLogout } = useAuth();
   const treasureHuntsHook = useTreasureHunts();
@@ -210,7 +219,11 @@ export default function AdminDashboard() {
 
   // Quiz handlers
   const handleCreateQuiz = useCallback(() => {
-    // TODO: API call to create quiz
+    console.log('handleCreateQuiz called - opening modal');
+    setQuizModal({
+      isOpen: true,
+      mode: 'create'
+    });
   }, []);
 
   const handleViewQuiz = useCallback((quizId: string) => {
@@ -218,7 +231,26 @@ export default function AdminDashboard() {
   }, []);
 
   const handleEditQuiz = useCallback((quizId: string) => {
-    // TODO: Navigate to quiz edit form
+    setQuizModal({
+      isOpen: true,
+      mode: 'edit',
+      quizId: quizId
+    });
+  }, []);
+
+  const handleQuizModalClose = useCallback(() => {
+    setQuizModal({
+      isOpen: false,
+      mode: 'create'
+    });
+  }, []);
+
+  const handleQuizModalSuccess = useCallback(() => {
+    setQuizModal({
+      isOpen: false,
+      mode: 'create'
+    });
+    // Optionally refresh quiz data or show success message
   }, []);
 
   // Treasure hunt handlers
@@ -460,9 +492,7 @@ export default function AdminDashboard() {
 
       case 'user-management':
         return (
-          <LazyWrapper>
-            <UserManagementTab />
-          </LazyWrapper>
+          <UserManagementTab />
         );
      
       default:
@@ -516,6 +546,15 @@ export default function AdminDashboard() {
           treasureHuntId={winnerSelectionModal.huntId || ''}
           onClose={handleWinnerSelectionClose}
           onSuccess={handleWinnerSelectionSuccess}
+        />
+      </LazyWrapper>
+
+      {/* Create/Edit Quiz Modal */}
+      <LazyWrapper>
+        <CreateQuizModal
+          isOpen={quizModal.isOpen}
+          onClose={handleQuizModalClose}
+          onSuccess={handleQuizModalSuccess}
         />
       </LazyWrapper>
     </>

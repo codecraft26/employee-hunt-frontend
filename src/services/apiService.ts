@@ -3,10 +3,19 @@ import Cookies from 'js-cookie';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// Helper function to get the best available token
+const getAuthToken = () => {
+  const adminTokenCookie = Cookies.get('adminToken');
+  const adminTokenLocal = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+  const regularToken = Cookies.get('token');
+  
+  return adminTokenCookie || adminTokenLocal || regularToken;
+};
+
 const apiService = {
   async get(endpoint: string) {
     try {
-      const token = Cookies.get('token');
+      const token = getAuthToken();
       const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : undefined
@@ -21,7 +30,7 @@ const apiService = {
 
   async post(endpoint: string, data?: any) {
     try {
-      const token = Cookies.get('token');
+      const token = getAuthToken();
       const headers: any = {
         Authorization: token ? `Bearer ${token}` : undefined
       };
@@ -41,7 +50,7 @@ const apiService = {
 
   async put(endpoint: string, data?: any) {
     try {
-      const token = Cookies.get('token');
+      const token = getAuthToken();
       const headers: any = {
         Authorization: token ? `Bearer ${token}` : undefined
       };
@@ -61,7 +70,7 @@ const apiService = {
 
   async delete(endpoint: string) {
     try {
-      const token = Cookies.get('token');
+      const token = getAuthToken();
       const response = await axios.delete(`${API_BASE_URL}${endpoint}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : undefined
@@ -75,16 +84,27 @@ const apiService = {
   },
 
   // Dashboard methods
-  getDashboardStats: () => apiService.get('/api/admin/dashboard/stats'),
-  getTeams: () => apiService.get('/api/admin/teams'),
-  getActiveVotes: () => apiService.get('/api/admin/votes/active'),
-  getUpcomingVotes: () => apiService.get('/api/admin/votes/upcoming'),
-  getCompletedVotes: () => apiService.get('/api/admin/votes/completed'),
-  getPendingApprovals: () => apiService.get('/api/auth/users/pending'),
-  getRecentActivities: () => apiService.get('/api/admin/activities'),
+  getDashboardStats: () => apiService.get('/admin/dashboard/stats'),
+  getTeams: () => apiService.get('/admin/teams'),
+  getActiveVotes: () => apiService.get('/admin/votes/active'),
+  getUpcomingVotes: () => apiService.get('/admin/votes/upcoming'),
+  getCompletedVotes: () => apiService.get('/admin/votes/completed'),
+  getPendingApprovals: () => apiService.get('/auth/users/pending'),
+  getRecentActivities: () => apiService.get('/admin/activities'),
   approveItem: (id: string, action: 'approve' | 'reject') => 
-    apiService.post(`/api/auth/users/${id}/${action}`),
-  createVote: (data: any) => apiService.post('/api/admin/votes', data)
+    apiService.post(`/auth/users/${id}/${action}`),
+  createVote: (data: any) => apiService.post('/admin/votes', data),
+
+  // User management methods
+  getAllUsers: () => apiService.get('/auth/users'),
+  getPendingUsers: () => apiService.get('/auth/users/pending'),
+  approveUser: (userId: string) => apiService.post(`/auth/users/approve/${userId}`),
+  getUserProfile: (userId?: string) => 
+    userId ? apiService.get(`/users/${userId}/profile`) : apiService.get('/users/profile'),
+  getApprovedUsersForPolls: () => apiService.get('/users/approved-for-polls'),
+  assignRoomToUser: (userId: string, roomNumber: string) => 
+    apiService.post(`/users/${userId}/assign-room`, { roomNumber }),
+  createAdminUser: (data: FormData) => apiService.post('/auth/register/admin', data)
 };
 
 export { apiService }; 

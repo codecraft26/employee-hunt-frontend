@@ -10,7 +10,10 @@ import {
   Trash2,
   Calendar,
   Building2,
-  Tag
+  Tag,
+  Users,
+  UserPlus,
+  UserMinus
 } from 'lucide-react';
 import { useCategories, Category, CreateCategoryRequest } from '../../hooks/useCategories';
 
@@ -27,8 +30,12 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
     loading,
     error,
     categories,
+    users,
     createCategory,
     fetchCategories,
+    fetchUsers,
+    assignUserToCategory,
+    removeUserFromCategory,
     updateCategory,
     deleteCategory,
     clearError,
@@ -38,6 +45,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [showUserManagementModal, setShowUserManagementModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [createCategoryData, setCreateCategoryData] = useState<CreateCategoryRequest>({
     name: '',
@@ -48,11 +56,18 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
     description: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
 
   // Fetch categories on component mount
   useEffect(() => {
+    console.log('CategoriesTab: Fetching categories...');
     fetchCategories();
   }, [fetchCategories]);
+
+  // Debug logging for categories
+  useEffect(() => {
+    console.log('CategoriesTab: Categories updated:', categories);
+  }, [categories]);
 
   const handleCreateCategory = async () => {
     if (!createCategoryData.name.trim() || !createCategoryData.description.trim()) {
@@ -127,10 +142,62 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
     externalOnViewStats?.(category.id);
   };
 
+  const handleManageUsers = async (category: Category) => {
+    console.log('Opening user management for category:', category.name, category.id);
+    setSelectedCategory(category);
+    setShowUserManagementModal(true);
+    // Fetch available users for assignment
+    console.log('Fetching users for assignment...');
+    await fetchUsers();
+    console.log('Users fetched, available users count:', users.length);
+  };
+
   const handleRefresh = () => {
     clearError();
     fetchCategories();
   };
+
+  const handleAssignUser = async (userId: string) => {
+    if (!selectedCategory) return;
+    
+    setIsSubmitting(true);
+    try {
+      await assignUserToCategory(selectedCategory.id, userId);
+      // Refresh categories to get updated user list
+      await fetchCategories();
+    } catch (err) {
+      console.error('Failed to assign user to category:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveUser = async (userId: string) => {
+    if (!selectedCategory) return;
+    
+    setIsSubmitting(true);
+    try {
+      await removeUserFromCategory(userId);
+      // Refresh categories to get updated user list
+      await fetchCategories();
+    } catch (err) {
+      console.error('Failed to remove user from category:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Filter users for assignment (users not already in the category)
+  const availableUsersForAssignment = users.filter(user => 
+    !selectedCategory?.users.find(categoryUser => categoryUser.id === user.id)
+  );
+
+  // Filter available users based on search term
+  const filteredAvailableUsers = availableUsersForAssignment.filter(user =>
+    user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+    user.employeeCode?.toLowerCase().includes(userSearchTerm.toLowerCase())
+  );
 
   // Sort categories by user count (highest first)
   const sortedCategories = [...categories].sort((a, b) => b.users.length - a.users.length);
@@ -270,13 +337,20 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
                 </div>
               </div>
 
-              <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-center">
+              <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-center space-x-2">
                 <button 
                   onClick={() => handleViewStats(category)}
                   className="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center space-x-1"
                 >
                   <BarChart3 className="h-4 w-4" />
                   <span>View Stats</span>
+                </button>
+                <button 
+                  onClick={() => handleManageUsers(category)}
+                  className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Manage Users</span>
                 </button>
               </div>
             </div>
@@ -566,6 +640,151 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
             <div className="mt-6">
               <button
                 onClick={() => setShowStatsModal(false)}
+                className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User Management Modal */}
+      {showUserManagementModal && selectedCategory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Manage Users - {selectedCategory.name}
+              </h3>
+              <button
+                onClick={() => setShowUserManagementModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Current Users */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-md font-medium text-gray-900 flex items-center space-x-2">
+                    <Users className="h-4 w-4" />
+                    <span>Current Users ({selectedCategory.users.length})</span>
+                  </h4>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+                  {selectedCategory.users.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Users className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p>No users assigned to this category</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedCategory.users.map((user) => (
+                        <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-600">
+                                {user.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm">{user.name}</p>
+                              <p className="text-xs text-gray-500">{user.email}</p>
+                              {user.employeeCode && (
+                                <p className="text-xs text-gray-500">ID: {user.employeeCode}</p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveUser(user.id)}
+                            disabled={isSubmitting}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Remove user from category"
+                          >
+                            <UserMinus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Available Users */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-md font-medium text-gray-900 flex items-center space-x-2">
+                    <UserPlus className="h-4 w-4" />
+                    <span>Available Users ({filteredAvailableUsers.length})</span>
+                  </h4>
+                </div>
+
+                {/* Search */}
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Search users by name, email, or employee code..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
+                  {filteredAvailableUsers.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <UserPlus className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p>
+                        {userSearchTerm 
+                          ? 'No users found matching your search'
+                          : 'No available users to assign'
+                        }
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {filteredAvailableUsers.map((user) => (
+                        <div key={user.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-green-600">
+                                {user.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm">{user.name}</p>
+                              <p className="text-xs text-gray-500">{user.email}</p>
+                              {user.employeeCode && (
+                                <p className="text-xs text-gray-500">ID: {user.employeeCode}</p>
+                              )}
+                              {user.department && (
+                                <p className="text-xs text-gray-500">Dept: {user.department}</p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleAssignUser(user.id)}
+                            disabled={isSubmitting}
+                            className="p-2 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Add user to category"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowUserManagementModal(false)}
                 className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
                 Close

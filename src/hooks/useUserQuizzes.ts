@@ -111,97 +111,28 @@ export const useUserQuizzes = () => {
   const [assignedQuestions, setAssignedQuestions] = useState<UserQuizQuestion[]>([]);
   const [teamRankings, setTeamRankings] = useState<TeamRanking[]>([]);
 
-  // Fetch user's quizzes
-  const fetchUserQuizzes = useCallback(async (): Promise<UserQuiz[] | null> => {
+  // Fetch user's assigned quizzes
+  const fetchMyQuizzes = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      // Try different endpoints in order of preference
-      let response;
-      
-      try {
-        // First try the user-specific endpoint
-        response = await api.get('/quizzes/user');
-      } catch (err: any) {
-        if (err.response?.status === 404 || err.response?.status === 400) {
-          // If that fails, try the general quizzes endpoint
-          response = await api.get('/quizzes');
-        } else {
-          throw err;
-        }
-      }
-      
+      const response = await api.get('/quizzes/my-quizzes');
       if (response.data.success) {
         setQuizzes(response.data.data);
-        return response.data.data;
       } else {
-        throw new Error('Failed to fetch user quizzes');
+        throw new Error(response.data.message || 'Failed to fetch quizzes');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch user quizzes';
-      setError(errorMessage);
-      
-      // For development, provide mock data if API is not available
-      if (process.env.NODE_ENV === 'development') {
-        const mockQuizzes: UserQuiz[] = [
-          {
-            id: '1',
-            title: 'JavaScript Fundamentals',
-            description: 'Test your knowledge of JavaScript basics',
-            status: 'ACTIVE',
-            startTime: new Date().toISOString(),
-            endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            resultDisplayTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            isResultPublished: false,
-            totalQuestions: 15,
-            questionsPerParticipant: 5,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isCompleted: false,
-            maxScore: 50,
-            totalParticipants: 25,
-            userScore: 0,
-            teamRank: 1,
-            totalTeams: 5
-          },
-          {
-            id: '2',
-            title: 'React Advanced Concepts',
-            description: 'Advanced React patterns and hooks',
-            status: 'UPCOMING',
-            startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-            endTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
-            resultDisplayTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
-            isResultPublished: false,
-            totalQuestions: 20,
-            questionsPerParticipant: 8,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            isCompleted: false,
-            maxScore: 80,
-            totalParticipants: 30,
-            userScore: 0,
-            teamRank: 2,
-            totalTeams: 6
-          }
-        ];
-        setQuizzes(mockQuizzes);
-        return mockQuizzes;
-      }
-      
-      setQuizzes([]);
-      return [];
+      setError(err.response?.data?.message || 'Failed to fetch quizzes');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Fetch quiz by ID
-  const fetchQuizById = useCallback(async (quizId: string): Promise<UserQuiz | null> => {
+  // Get quiz by ID
+  const getQuizById = useCallback(async (quizId: string) => {
     setLoading(true);
     setError(null);
-    
     try {
       const response = await api.get(`/quizzes/${quizId}`);
       if (response.data.success) {
@@ -211,37 +142,7 @@ export const useUserQuizzes = () => {
         throw new Error(response.data.message || 'Failed to fetch quiz');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch quiz';
-      setError(errorMessage);
-      console.error('Quiz fetch error:', err);
-      
-      // For development, provide mock quiz data
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock quiz data for development...');
-        const mockQuiz: UserQuiz = {
-          id: quizId,
-          title: 'Mock Quiz',
-          description: 'This is a mock quiz for development purposes.',
-          status: 'ACTIVE',
-          startTime: new Date().toISOString(),
-          endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          resultDisplayTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          isResultPublished: false,
-          totalQuestions: 5,
-          questionsPerParticipant: 3,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          isCompleted: false,
-          maxScore: 30,
-          totalParticipants: 20,
-          userScore: 0,
-          teamRank: 1,
-          totalTeams: 4
-        };
-        setCurrentQuiz(mockQuiz);
-        return mockQuiz;
-      }
-      
+      setError(err.response?.data?.message || 'Failed to fetch quiz');
       return null;
     } finally {
       setLoading(false);
@@ -253,7 +154,9 @@ export const useUserQuizzes = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('Fetching assigned questions for quiz:', quizId); // Debug log
       const response = await api.get(`/quizzes/${quizId}/assigned-questions`);
+      console.log('Assigned questions response:', response.data); // Debug log
       if (response.data.success) {
         setAssignedQuestions(response.data.data);
         return response.data.data;
@@ -261,97 +164,8 @@ export const useUserQuizzes = () => {
         throw new Error(response.data.message || 'Failed to fetch questions');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch questions';
-      setError(errorMessage);
-      console.error('Questions fetch error:', err);
-      
-      // For development, provide mock questions data
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock questions data for development...');
-        const mockQuestions: UserQuizQuestion[] = [
-          {
-            id: 'q1',
-            isCompleted: false,
-            score: 0,
-            timeTaken: 0,
-            answer: null,
-            isCorrect: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            question: {
-              id: 'question1',
-              question: 'What is the capital of France?',
-              options: ['London', 'Berlin', 'Paris', 'Madrid'],
-              correctAnswer: 2,
-              points: 10,
-              timeLimit: 30,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-            quiz: {
-              id: quizId,
-              title: 'Mock Quiz',
-              description: 'Mock quiz for development',
-              status: 'ACTIVE',
-              questionDistributionType: 'RANDOM',
-              startTime: new Date().toISOString(),
-              endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              resultDisplayTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              isResultPublished: false,
-              totalTeams: 4,
-              totalParticipants: 20,
-              totalQuestions: 5,
-              questionsPerParticipant: 3,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-            status: 'PENDING',
-            message: 'Question ready to answer'
-          },
-          {
-            id: 'q2',
-            isCompleted: false,
-            score: 0,
-            timeTaken: 0,
-            answer: null,
-            isCorrect: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            question: {
-              id: 'question2',
-              question: 'Which programming language is this app built with?',
-              options: ['JavaScript', 'Python', 'Java', 'C++'],
-              correctAnswer: 0,
-              points: 10,
-              timeLimit: 30,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-            quiz: {
-              id: quizId,
-              title: 'Mock Quiz',
-              description: 'Mock quiz for development',
-              status: 'ACTIVE',
-              questionDistributionType: 'RANDOM',
-              startTime: new Date().toISOString(),
-              endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              resultDisplayTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-              isResultPublished: false,
-              totalTeams: 4,
-              totalParticipants: 20,
-              totalQuestions: 5,
-              questionsPerParticipant: 3,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-            status: 'PENDING',
-            message: 'Question ready to answer'
-          }
-        ];
-        setAssignedQuestions(mockQuestions);
-        return mockQuestions;
-      }
-      
+      console.error('Get assigned questions error:', err); // Debug log
+      setError(err.response?.data?.message || 'Failed to fetch questions');
       return [];
     } finally {
       setLoading(false);
@@ -359,20 +173,30 @@ export const useUserQuizzes = () => {
   }, []);
 
   // Submit answer for a question
-  const submitAnswer = useCallback(async (quizId: string, questionId: string, answer: { selectedOption: number; timeTaken: number }) => {
+  const submitAnswer = useCallback(async (quizId: string, questionId: string, answerData: { selectedOption: number; timeTaken: number }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.post(`/quizzes/${quizId}/questions/${questionId}/answer`, answer);
+      console.log('Submitting answer:', { quizId, questionId, answerData }); // Debug log
+      
+      // Transform the data to match API expectations
+      const requestBody = {
+        answer: answerData.selectedOption,
+        timeTaken: answerData.timeTaken
+      };
+      
+      console.log('Request body:', requestBody); // Debug log
+      
+      const response = await api.post(`/quizzes/${quizId}/questions/${questionId}/answer`, requestBody);
       if (response.data.success) {
         // Update the question in assignedQuestions
         setAssignedQuestions(prev => 
-          prev.map(q => q.id === questionId ? { 
+          prev.map(q => q.question.id === questionId ? { 
             ...q, 
             isCompleted: true,
-            answer: answer.selectedOption,
-            userAnswer: answer.selectedOption,
-            timeTaken: answer.timeTaken,
+            answer: answerData.selectedOption,
+            userAnswer: answerData.selectedOption,
+            timeTaken: answerData.timeTaken,
             isCorrect: response.data.data.isCorrect || false,
             score: response.data.data.score || 0
           } : q)
@@ -382,6 +206,8 @@ export const useUserQuizzes = () => {
         throw new Error(response.data.message || 'Failed to submit answer');
       }
     } catch (err: any) {
+      console.error('Submit answer error:', err); // Debug log
+      console.error('Error response:', err.response?.data); // Debug log
       setError(err.response?.data?.message || 'Failed to submit answer');
       return false;
     } finally {
@@ -497,8 +323,8 @@ export const useUserQuizzes = () => {
     currentQuiz,
     assignedQuestions,
     teamRankings,
-    fetchUserQuizzes,
-    fetchQuizById,
+    fetchMyQuizzes,
+    getQuizById,
     getAssignedQuestions,
     submitAnswer,
     getTeamRankings,

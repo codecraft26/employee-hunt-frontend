@@ -103,7 +103,7 @@ export const useUserManagement = () => {
         formData.append('idProof', adminData.idProof);
       }
 
-      const response = await apiService.post('/api/auth/register/admin', formData);
+      const response = await apiService.createAdminUser(formData);
       
       if (response.success) {
         setState(prev => ({ 
@@ -133,7 +133,7 @@ export const useUserManagement = () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const response = await apiService.get('/api/auth/users');
+      const response = await apiService.getAllUsers();
       
       if (response.success) {
         setState(prev => ({ 
@@ -147,6 +147,90 @@ export const useUserManagement = () => {
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to fetch users';
+      
+      // For development, provide mock data if API is not available
+      if (process.env.NODE_ENV === 'development' && error.response?.status === 404) {
+        const mockUsers: User[] = [
+          {
+            id: '1',
+            name: 'John Doe',
+            email: 'john.doe@company.com',
+            role: 'user',
+            employeeCode: 'EMP001',
+            department: 'Engineering',
+            gender: 'male',
+            profileImage: '/uploads/profiles/default.jpg',
+            idProof: '/uploads/proofs/default.jpg',
+            isApproved: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            team: {
+              id: 'team1',
+              name: 'Team Alpha',
+              description: 'Frontend Development Team'
+            },
+            category: {
+              id: 'cat1',
+              name: 'Developer'
+            },
+            hobbies: ['Coding', 'Reading', 'Gaming']
+          },
+          {
+            id: '2',
+            name: 'Jane Smith',
+            email: 'jane.smith@company.com',
+            role: 'admin',
+            employeeCode: 'EMP002',
+            department: 'Management',
+            gender: 'female',
+            profileImage: '/uploads/profiles/default.jpg',
+            idProof: '/uploads/proofs/default.jpg',
+            isApproved: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            team: {
+              id: 'team2',
+              name: 'Team Beta',
+              description: 'Backend Development Team'
+            },
+            category: {
+              id: 'cat2',
+              name: 'Manager'
+            },
+            hobbies: ['Leadership', 'Strategy', 'Team Building']
+          },
+          {
+            id: '3',
+            name: 'Mike Johnson',
+            email: 'mike.johnson@company.com',
+            role: 'user',
+            employeeCode: 'EMP003',
+            department: 'Design',
+            gender: 'male',
+            profileImage: '/uploads/profiles/default.jpg',
+            idProof: '/uploads/proofs/default.jpg',
+            isApproved: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            category: {
+              id: 'cat3',
+              name: 'Designer'
+            },
+            hobbies: ['Design', 'Art', 'Photography']
+          }
+        ];
+        
+        setState(prev => ({ 
+          ...prev, 
+          loading: false,
+          users: mockUsers
+        }));
+        
+        return {
+          success: true,
+          data: mockUsers
+        };
+      }
       
       setState(prev => ({ 
         ...prev, 
