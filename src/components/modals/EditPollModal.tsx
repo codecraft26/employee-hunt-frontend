@@ -4,6 +4,7 @@ import { X, Plus, Calendar, Clock, AlertCircle, Save, Users, Search, UserCheck }
 import { VoteType, UpdateVoteRequest, Vote, VotingOptionType, UserVoteOption, AvailableUser, UsersByCategoriesResponse } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 import { useCategories } from '../../hooks/useCategories';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface EditPollModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface EditablePollOption {
 }
 
 const EditPollModal: React.FC<EditPollModalProps> = ({ isOpen, onClose, onSuccess, poll }) => {
+  useModalBodyLock(isOpen);
   const { updateVote, getAvailableUsers, getUsersByCategories, loading, error } = useVotes();
   const { categories, fetchCategories } = useCategories();
   

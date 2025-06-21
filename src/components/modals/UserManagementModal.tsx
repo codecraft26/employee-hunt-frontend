@@ -23,11 +23,13 @@ import {
 } from 'lucide-react';
 import { useUserManagement, CreateAdminRequest, User as UserType } from '../../hooks/useUserManagement';
 import { useToast } from '../shared/ToastContainer';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface UserManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: 'create' | 'view';
+  user: UserType | null;
 }
 
 type TabType = 'create' | 'view';
@@ -36,8 +38,10 @@ type FilterType = 'all' | 'admin' | 'user' | 'approved' | 'pending';
 const UserManagementModal: React.FC<UserManagementModalProps> = ({
   isOpen,
   onClose,
-  initialTab = 'view'
+  initialTab = 'view',
+  user
 }) => {
+  useModalBodyLock(isOpen);
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [showPassword, setShowPassword] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('all');

@@ -147,6 +147,11 @@ body {
   display: none; /* Chrome, Safari, Opera */
 }
 
+/* Class to lock body scroll when a modal is open */
+.modal-open {
+  overflow: hidden;
+}
+
 /* PWA Offline Indicator */
 .offline-indicator {
   position: fixed;

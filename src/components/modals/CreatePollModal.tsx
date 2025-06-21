@@ -4,6 +4,7 @@ import { X, Plus, Calendar, Clock, AlertCircle, Building2, Users, Search, UserCh
 import { VoteType, CreateVoteRequest, VotingOptionType, UserVoteOption, AvailableUser, UsersByCategoriesResponse } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 import { useCategories } from '../../hooks/useCategories';
+import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface CreatePollModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface PollOption {
 type CategoryType = 'ALL' | 'SPECIFIC';
 
 const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  useModalBodyLock(isOpen);
   const { createVote, getAvailableUsers, getUsersByCategories, getAllUsers, loading, error } = useVotes();
   const { categories, fetchCategories } = useCategories();
   
