@@ -270,13 +270,6 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                                 Edit Hunt
                               </button>
                               <button
-                                onClick={() => onViewClues(hunt.id)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Manage Clues
-                              </button>
-                              <button
                                 onClick={() => {
                                   onViewSubmissions(hunt.id);
                                   setDropdownOpen(null);
@@ -396,13 +389,6 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
 
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
                   <div className="flex space-x-3">
-                    <button 
-                      onClick={() => onViewClues(hunt.id)}
-                      className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>Clues</span>
-                    </button>
                     <button 
                       onClick={() => onViewSubmissions(hunt.id)}
                       className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"

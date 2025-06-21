@@ -32,16 +32,22 @@ export interface ActivitiesResponse {
   data: Activity[];
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance with interceptors
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Add token to requests
+// Add token to requests with admin priority
 api.interceptors.request.use((config) => {
-  const token = Cookies.get('token');
+  // Get authentication token with priority: adminToken > localStorage adminToken > regular token
+  const adminTokenCookie = Cookies.get('adminToken');
+  const adminTokenLocal = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+  const regularToken = Cookies.get('token');
+  
+  const token = adminTokenCookie || adminTokenLocal || regularToken;
+  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -53,7 +59,7 @@ export const useActivities = () => {
   const [error, setError] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // Fetch all activities
+  // Fetch all activities (admin view)
   const fetchActivities = useCallback(async (): Promise<Activity[] | null> => {
     setLoading(true);
     setError(null);
@@ -71,6 +77,30 @@ export const useActivities = () => {
       const errorMessage = err.response?.data?.message || 'Failed to fetch activities';
       setError(errorMessage);
       console.error('Activities fetch error:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch user's activities (user view)
+  const fetchUserActivities = useCallback(async (): Promise<Activity[] | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.get<ActivitiesResponse>('/activities/my-activities');
+      
+      if (response.data.success) {
+        setActivities(response.data.data);
+        return response.data.data;
+      } else {
+        throw new Error('Failed to fetch user activities');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch user activities';
+      setError(errorMessage);
+      console.error('User activities fetch error:', err);
       return null;
     } finally {
       setLoading(false);
@@ -163,6 +193,7 @@ export const useActivities = () => {
     error,
     activities,
     fetchActivities,
+    fetchUserActivities,
     clearError,
     getActivityTypeIcon,
     getActivityTypeDisplay,

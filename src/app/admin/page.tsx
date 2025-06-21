@@ -15,6 +15,7 @@ const PollsTab = lazy(() => import('../../components/tabs/PollsTab'));
 const TeamsTab = lazy(() => import('../../components/tabs/TeamsTab'));
 const CategoriesTab = lazy(() => import('../../components/tabs/CategoriesTab'));
 const QuizzesTab = lazy(() => import('../../components/tabs/QuizzesTab'));
+const ActivitiesTab = lazy(() => import('../../components/tabs/ActivitiesTab'));
 const CluesManagementTab = lazy(() => import('../../components/tabs/CluesManagementTab'));
 const SubmissionsManagementTab = lazy(() => import('../../components/tabs/SubmissionsManagementTab'));
 const WinnerSelectionModal = lazy(() => import('../../components/modals/WinnerSelectionModal'));
@@ -32,7 +33,7 @@ import {
 } from '../../types/admin';
 
 // Extended TabView type to include clue, submission management, categories, and photo wall
-type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall';
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall' | 'activities';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -188,6 +189,10 @@ export default function AdminDashboard() {
         break;
       case 'photo-wall':
         setActiveView('photo-wall');
+        break;
+      case 'activity':
+      case 'create-activity':
+        setActiveView('activities');
         break;
       
       default:
@@ -443,6 +448,13 @@ export default function AdminDashboard() {
           </LazyWrapper>
         );
 
+      case 'activities':
+        return (
+          <LazyWrapper>
+            <ActivitiesTab />
+          </LazyWrapper>
+        );
+
       case 'approve-users':
         return (
           <LazyWrapper>
@@ -528,6 +540,16 @@ export default function AdminDashboard() {
               }`}
             >
               Categories
+            </button>
+            <button
+              onClick={() => setActiveView('activities')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeView === 'activities'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Activities
             </button>
             <button
               onClick={() => setActiveView('approve-users')}
