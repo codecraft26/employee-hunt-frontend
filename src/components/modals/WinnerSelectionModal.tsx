@@ -1,204 +1,166 @@
 // components/modals/WinnerSelectionModal.tsx
 import React, { useState, useEffect } from 'react';
-import { X, Trophy, Users, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { useTreasureHunts } from '../../hooks/useTreasureHunts';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import { X, Trophy, Users, CheckCircle, AlertCircle, Clock, Award } from 'lucide-react';
+import { useTreasureHunts, TeamForWinner } from '../../hooks/useTreasureHunts';
 
 interface WinnerSelectionModalProps {
   isOpen: boolean;
-  huntId: string | null;
+  treasureHuntId: string;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-interface AssignedTeam {
-  id: string;
-  name: string;
-  description?: string;
-  members: any[];
-}
-
-// Create axios instance matching useTreasureHunts pattern
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = Cookies.get('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
   isOpen,
-  huntId,
+  treasureHuntId,
   onClose,
   onSuccess
 }) => {
   const { 
-    currentTreasureHunt, 
-    fetchTreasureHuntById, 
+    fetchTeamsForWinner,
+    fetchTreasureHuntById,
     declareWinner,
-    loading: huntLoading,
-    error: huntError,
-    clearError: clearHuntError
+    loading, 
+    error, 
+    clearError 
   } = useTreasureHunts();
 
-  const [assignedTeams, setAssignedTeams] = useState<AssignedTeam[]>([]);
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [teamsForWinner, setTeamsForWinner] = useState<TeamForWinner[]>([]);
+  const [treasureHunt, setTreasureHunt] = useState<any>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [loadingTeams, setLoadingTeams] = useState(false);
-  const [teamsError, setTeamsError] = useState<string | null>(null);
 
-  // Update the canAccessHunt function to allow completed hunts
-  const canAccessHunt = (hunt: any) => {
-    return hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS' || hunt.status === 'COMPLETED';
+  // Fetch treasure hunt details and teams for winner when modal opens
+  useEffect(() => {
+    if (isOpen && treasureHuntId) {
+      loadTreasureHuntDetails();
+      loadTeamsForWinner();
+    }
+  }, [isOpen, treasureHuntId]);
+
+  // Clear success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const loadTreasureHuntDetails = async () => {
+    try {
+      console.log('🔄 Loading treasure hunt details:', treasureHuntId);
+      const data = await fetchTreasureHuntById(treasureHuntId);
+      console.log('📊 Treasure hunt details:', data);
+      if (data) {
+        setTreasureHunt(data);
+        console.log('✅ Treasure hunt loaded with assigned teams:', data.assignedTeams);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load treasure hunt details:', error);
+    }
   };
 
-  // Update the useEffect to check status
-  useEffect(() => {
-    if (isOpen && huntId) {
-      clearHuntError();
-      setSubmitError(null);
-      setTeamsError(null);
-      
-      // Fetch hunt data
-      fetchTreasureHuntById(huntId).then((hunt) => {
-        if (hunt && !canAccessHunt(hunt)) {
-          setTeamsError(`This treasure hunt is ${hunt.status.toLowerCase()}. Actions are only available during active hunts.`);
-        }
-      });
-      
-      // Fetch teams using the same pattern as useTreasureHunts
-      const fetchAssignedTeams = async () => {
-        setLoadingTeams(true);
-        setTeamsError(null);
-        try {
-          console.log('Fetching assigned teams for hunt:', huntId);
-          console.log('API Base URL:', API_BASE_URL);
-          console.log('Full URL:', `${API_BASE_URL}/treasure-hunts/${huntId}/assigned-teams`);
-          
-          const response = await api.get(`/treasure-hunts/${huntId}/assigned-teams`);
-          
-          console.log('API Response:', response);
-          
-          if (response.data.success) {
-            console.log('Assigned teams fetched successfully:', response.data.data);
-            setAssignedTeams(response.data.data);
-          } else {
-            throw new Error(response.data.message || 'Failed to fetch assigned teams');
-          }
-        } catch (err: any) {
-          console.error('Failed to fetch assigned teams:', err);
-          console.error('Error details:', {
-            message: err.message,
-            status: err.response?.status,
-            statusText: err.response?.statusText,
-            data: err.response?.data,
-            config: err.config
-          });
-          
-          // Provide more specific error messages
-          let errorMessage = 'Failed to fetch assigned teams';
-          if (err.response?.status === 404) {
-            errorMessage = 'Treasure hunt not found or no teams assigned';
-          } else if (err.response?.status === 401) {
-            errorMessage = 'Authentication required. Please login again.';
-          } else if (err.response?.status === 500) {
-            errorMessage = 'Server error. Please try again later.';
-          } else if (err.code === 'ECONNREFUSED' || err.code === 'ERR_NETWORK') {
-            errorMessage = 'Cannot connect to server. Please check if the server is running.';
-          } else if (err.response?.data?.message) {
-            errorMessage = err.response.data.message;
-          }
-          
-          setTeamsError(errorMessage);
-        } finally {
-          setLoadingTeams(false);
-        }
-      };
-
-      fetchAssignedTeams();
+  const loadTeamsForWinner = async () => {
+    try {
+      console.log('🏆 Loading teams for winner declaration:', treasureHuntId);
+      const data = await fetchTeamsForWinner(treasureHuntId);
+      console.log('📊 Teams for winner data:', data);
+      if (data) {
+        setTeamsForWinner(data);
+        console.log('✅ Teams for winner loaded:', data.length, 'teams');
+        data.forEach(team => {
+          console.log(`  - Team: ${team.teamName} (ID: ${team.teamId}) - ${team.completionPercentage}% complete`);
+          console.log(`    Members: ${team.teamMembers.length}, Last submission: ${team.lastSubmissionTime}`);
+        });
+      } else {
+        console.log('❌ No teams data returned from fetchTeamsForWinner');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load teams for winner:', error);
     }
-  }, [isOpen, huntId, fetchTreasureHuntById, clearHuntError]);
+  };
 
-  // Reset form when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedTeamId('');
-      setIsSubmitting(false);
-      setSubmitError(null);
-      clearHuntError();
-      setTeamsError(null);
-      setAssignedTeams([]);
-    }
-  }, [isOpen, clearHuntError]);
-
-  // Update the handleSubmit function
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!selectedTeamId || !huntId) {
-      setSubmitError('Please select a team to declare as winner');
+  const handleDeclareWinner = async () => {
+    if (!selectedTeamId) {
+      console.error('No team selected for winner declaration');
       return;
     }
 
-    if (!hunt || !canAccessHunt(hunt)) {
-      setSubmitError(`Cannot declare winner for ${hunt?.status.toLowerCase()} treasure hunt`);
+    // Verify that the selected team exists in the teams for winner data
+    const selectedTeam = teamsForWinner.find(team => team.teamId === selectedTeamId);
+    if (!selectedTeam) {
+      console.error('Selected team not found in teams for winner data:', selectedTeamId);
       return;
     }
+
+    console.log('🏆 Declaring winner:', {
+      treasureHuntId,
+      selectedTeamId,
+      selectedTeam
+    });
 
     setIsSubmitting(true);
-    setSubmitError(null);
-
     try {
-      console.log('Declaring winner from modal:', { huntId, selectedTeamId });
-      
-      const success = await declareWinner(huntId, selectedTeamId);
-      
-      if (success) {
-        console.log('Winner declared successfully from modal');
-        onSuccess?.();
+      const result = await declareWinner(treasureHuntId, selectedTeamId);
+      console.log('✅ Winner declared successfully:', result);
+      setSuccessMessage('Winner declared successfully!');
+      onSuccess?.();
+      setTimeout(() => {
         onClose();
-      }
-    } catch (error: any) {
-      console.error('Failed to declare winner from modal:', error);
-      setSubmitError(error.message || 'Failed to declare winner. Please try again.');
-    } finally {
+        setSelectedTeamId(null);
+        setIsSubmitting(false);
+      }, 2000);
+    } catch (error) {
+      console.error('❌ Failed to declare winner:', error);
       setIsSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    if (!isSubmitting) {
-      onClose();
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'APPROVED': return 'bg-green-100 text-green-800';
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+      case 'REJECTED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  if (!isOpen || !huntId) return null;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'APPROVED': return <CheckCircle className="h-4 w-4" />;
+      case 'PENDING': return <AlertCircle className="h-4 w-4" />;
+      case 'REJECTED': return <AlertCircle className="h-4 w-4" />;
+      default: return <AlertCircle className="h-4 w-4" />;
+    }
+  };
 
-  const hunt = currentTreasureHunt;
-  const loading = huntLoading || loadingTeams;
-  const error = huntError || teamsError || submitError;
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const getCompletionColor = (percentage: number) => {
+    if (percentage === 100) return 'text-green-600';
+    if (percentage >= 80) return 'text-blue-600';
+    if (percentage >= 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <Trophy className="h-6 w-6 text-yellow-500" />
-            <h2 className="text-xl font-bold text-gray-900">Declare Winner</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Declare Winner</h2>
           </div>
           <button
-            onClick={handleClose}
+            onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
             disabled={isSubmitting}
           >
@@ -206,201 +168,259 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
           </button>
         </div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mx-6 mt-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <Trophy className="h-5 w-5 text-green-500" />
+            </div>
+            <div>
+              <p className="text-green-800 font-medium">Success!</p>
+              <p className="text-green-700 text-sm">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mx-6 mt-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+            <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+            <button
+              onClick={clearError}
+              className="flex-shrink-0 text-red-400 hover:text-red-600"
+            >
+              <span className="sr-only">Close</span>
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         {/* Content */}
         <div className="p-6">
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-              <p className="text-gray-500 mt-2">Loading treasure hunt details...</p>
+          <div className="mb-6">
+            <p className="text-gray-700 mb-4">
+              Select the winning team for this treasure hunt. Consider factors such as:
+            </p>
+            <ul className="list-disc list-inside text-gray-600 space-y-1">
+              <li>Completion rate of all stages</li>
+              <li>Quality and creativity of submissions</li>
+              <li>Speed of completion</li>
+              <li>Team collaboration and effort</li>
+            </ul>
+          </div>
+
+          {/* Teams Progress */}
+          {(loading || teamsForWinner.length === 0 || !treasureHunt) && (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+                <p className="text-gray-500 mt-4">Loading treasure hunt details and teams...</p>
+              </div>
             </div>
-          ) : !hunt ? (
-            <div className="text-center py-8">
-              <AlertCircle className="h-12 w-12 text-red-300 mx-auto mb-4" />
-              <p className="text-gray-500">Failed to load treasure hunt details</p>
-              <button
-                onClick={() => {
-                  if (huntId) {
-                    fetchTreasureHuntById(huntId);
-                  }
-                }}
-                className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Retry
-              </button>
+          )}
+
+          {teamsForWinner.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No teams found</h3>
+              <p className="text-gray-500">No teams have been assigned to this treasure hunt.</p>
             </div>
           ) : (
-            <>
-              {/* Hunt Info */}
-              <div className="mb-6">
-                <h3 className="font-semibold text-gray-900 mb-2">{hunt.title}</h3>
-                <p className="text-sm text-gray-600 mb-3">{hunt.description}</p>
+            <div className="space-y-4">
+              {teamsForWinner.map((team) => {
+                const isSelected = selectedTeamId === team.teamId;
                 
-                {/* Hunt Status Info */}
-                <div className={`border rounded-lg p-3 ${
-                  hunt.status === 'ACTIVE' 
-                    ? 'bg-green-50 border-green-200' 
-                    : hunt.status === 'COMPLETED'
-                    ? 'bg-blue-50 border-blue-200'
-                    : 'bg-orange-50 border-orange-200'
-                }`}>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${
-                      hunt.status === 'ACTIVE' ? 'bg-green-500' : 
-                      hunt.status === 'COMPLETED' ? 'bg-blue-500' : 'bg-orange-500'
-                    }`}></div>
-                    <span className="text-sm font-medium text-gray-700">
-                      Status: {hunt.status}
-                    </span>
-                  </div>
-                  {!canAccessHunt(hunt) && (
-                    <p className="text-sm mt-2 text-red-600">
-                      {hunt.status === 'UPCOMING' 
-                        ? 'This hunt has not started yet. Actions will be available when the hunt becomes active.'
-                        : 'This hunt has ended. Actions are no longer available.'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Error Display */}
-              {error && (
-                <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-red-800">Error</h4>
-                    <p className="text-sm text-red-700 mt-1">{error}</p>
-                  </div>
-                  <button
+                return (
+                  <div
+                    key={team.teamId}
+                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      isSelected 
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
                     onClick={() => {
-                      setSubmitError(null);
-                      clearHuntError();
-                      setTeamsError(null);
+                      console.log('👆 Team selected:', {
+                        teamId: team.teamId,
+                        teamName: team.teamName,
+                        completionPercentage: team.completionPercentage
+                      });
+                      setSelectedTeamId(team.teamId);
                     }}
-                    className="text-red-400 hover:text-red-600"
                   >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-
-              {/* Team Selection Form */}
-              <form onSubmit={handleSubmit}>
-                <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-gray-900">Select Winning Team</h4>
-                    {hunt.status === 'COMPLETED' && (
-                      <span className="text-sm text-green-600 flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" />
-                        Hunt Completed
-                      </span>
-                    )}
-                  </div>
-                  {loadingTeams ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
-                      <span className="ml-2 text-gray-600">Loading teams...</span>
-                    </div>
-                  ) : teamsError ? (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <div className="flex items-center space-x-2 text-red-800">
-                        <AlertCircle className="h-5 w-5" />
-                        <span className="font-medium">{teamsError}</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          isSelected 
+                            ? 'border-green-500 bg-green-500' 
+                            : 'border-gray-300'
+                        }`}>
+                          {isSelected && (
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">{team.teamName}</h3>
+                        {isSelected && (
+                          <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                            <Trophy className="h-3 w-3 mr-1" />
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-gray-900">{team.completionPercentage}%</div>
+                        <div className="text-sm text-gray-500">
+                          {team.completedStages}/{team.totalStages} stages
+                        </div>
                       </div>
                     </div>
-                  ) : assignedTeams.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No teams assigned to this treasure hunt.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {assignedTeams.map((team) => (
-                        <div
-                          key={team.id}
-                          className={`border rounded-lg p-4 cursor-pointer transition-all ${
-                            selectedTeamId === team.id
-                              ? 'border-indigo-500 bg-indigo-50'
-                              : 'border-gray-200 hover:border-indigo-300'
-                          }`}
-                          onClick={() => setSelectedTeamId(team.id)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h5 className="font-medium text-gray-900">{team.name}</h5>
-                              <p className="text-sm text-gray-600">
-                                {team.members?.length || 0} members
-                              </p>
-                            </div>
-                            {selectedTeamId === team.id && (
-                              <CheckCircle className="h-5 w-5 text-indigo-600" />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
-                {/* Warning */}
-                {!hunt.winningTeam && assignedTeams.length > 0 && canAccessHunt(hunt) && (
-                  <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div>
-                        <h4 className="text-sm font-medium text-yellow-800">Important</h4>
-                        <p className="text-sm text-yellow-700 mt-1">
-                          Once a winner is declared, the treasure hunt will be marked as completed 
-                          and results will be published. This action cannot be undone.
+                    {/* Progress Bar */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+                        <span>Progress</span>
+                        <span>{team.completedStages} completed, {team.pendingStages} pending</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`bg-green-600 h-2 rounded-full transition-all duration-300 ${getCompletionColor(team.completionPercentage)}`}
+                          style={{ width: `${team.completionPercentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Stage Breakdown */}
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="bg-green-50 p-2 rounded text-center">
+                        <div className="text-green-600 font-medium">{team.completedStages}</div>
+                        <div className="text-green-600">Completed</div>
+                      </div>
+                      <div className="bg-yellow-50 p-2 rounded text-center">
+                        <div className="text-yellow-600 font-medium">{team.pendingStages}</div>
+                        <div className="text-yellow-600">Pending</div>
+                      </div>
+                      <div className="bg-red-50 p-2 rounded text-center">
+                        <div className="text-red-600 font-medium">{team.rejectedStages}</div>
+                        <div className="text-red-600">Rejected</div>
+                      </div>
+                    </div>
+
+                    {/* Team Members */}
+                    {team.teamMembers && team.teamMembers.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                          <Users className="h-4 w-4 mr-1" />
+                          Team Members ({team.teamMembers.length})
+                        </h4>
+                        <div className="flex flex-wrap gap-1">
+                          {team.teamMembers.map((member) => (
+                            <span
+                              key={member.id}
+                              className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                                member.role === 'Leader' 
+                                  ? 'bg-blue-100 text-blue-800' 
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {member.name}
+                              {member.role === 'Leader' && (
+                                <Award className="h-3 w-3 ml-1" />
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Last Submission Time */}
+                    {team.lastSubmissionTime && (
+                      <div className="mt-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          Last Submission
+                        </h4>
+                        <p className="text-xs text-gray-600">
+                          {formatDate(team.lastSubmissionTime)}
                         </p>
                       </div>
-                    </div>
-                  </div>
-                )}
+                    )}
 
-                {/* Form Actions */}
-                <div className="flex justify-end space-x-4">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </button>
-                  
-                  {!hunt.winningTeam && assignedTeams.length > 0 && canAccessHunt(hunt) && (
-                    <button
-                      type="submit"
-                      disabled={!selectedTeamId || isSubmitting}
-                      className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Declaring Winner...
-                        </>
-                      ) : (
-                        <>
-                          <Trophy className="h-4 w-4" />
-                          Declare Winner
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-              </form>
-
-              {/* Additional Info */}
-              {assignedTeams.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>Assigned Teams: {assignedTeams.length}</span>
-                    <span>Hunt Status: {hunt.status}</span>
+                    {/* Recent Submissions */}
+                    {team.submissions && team.submissions.length > 0 && (
+                      <div className="mt-3">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Submissions</h4>
+                        <div className="flex space-x-2 overflow-x-auto">
+                          {team.submissions.slice(0, 5).map((submission: any) => (
+                            <div key={submission.id} className="flex-shrink-0">
+                              <img
+                                src={submission.imageUrl}
+                                alt="Submission"
+                                className="w-12 h-12 object-cover rounded border"
+                              />
+                              <div className="mt-1">
+                                <span className={`inline-flex items-center px-1 py-0.5 text-xs font-medium rounded ${getStatusColor(submission.status)}`}>
+                                  {getStatusIcon(submission.status)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          {team.submissions.length > 5 && (
+                            <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded border flex items-center justify-center">
+                              <span className="text-xs text-gray-500">+{team.submissions.length - 5}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </>
+                );
+              })}
+            </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between p-6 border-t border-gray-200">
+          <div>
+            <p className="text-sm text-gray-500">
+              {selectedTeamId 
+                ? `Selected: ${teamsForWinner.find(t => t.teamId === selectedTeamId)?.teamName}`
+                : 'Please select a winning team'
+              }
+            </p>
+            {selectedTeamId && (
+              <>
+                <p className="text-xs text-gray-400 mt-1">
+                  Team ID: {selectedTeamId}
+                </p>
+              </>
+            )}
+          </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeclareWinner}
+              disabled={
+                !selectedTeamId || 
+                isSubmitting
+              }
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              <Trophy className="h-4 w-4" />
+              <span>{isSubmitting ? 'Declaring...' : 'Declare Winner'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

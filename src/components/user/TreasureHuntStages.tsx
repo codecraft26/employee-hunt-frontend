@@ -3,243 +3,40 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Trophy, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+  Camera, 
   Upload, 
-  AlertCircle, 
-  Eye,
-  Camera,
-  FileText,
+  RefreshCw, 
+  Target,
+  Users,
+  Crown,
+  ImageIcon,
+  Send,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Trophy,
+  ArrowRight,
+  ArrowLeft,
   Lock,
-  Unlock,
-  RefreshCw
+  Play,
+  Award
 } from 'lucide-react';
-import { useTreasureHunt, TreasureHunt, TeamProgress, Submission, TreasureHuntClue } from '../../hooks/useUserTreasureHunt';
-
-interface SubmissionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (file: File) => void;
-  submitting: boolean;
-  clue: TreasureHuntClue | null;
-}
+import { useTreasureHunt } from '../../hooks/useUserTreasureHunt';
+import { useTreasureHunts } from '../../hooks/useTreasureHunts';
+import { useTeams } from '../../hooks/useTeams';
+import { useTeamLeadership } from '../../hooks/useTeamLeadership';
+import { useAuth } from '../../hooks/useAuth';
+import { TeamMemberSubmission } from '../../types/teams';
+import TimerDisplay from '../shared/TimerDisplay';
 
 interface TreasureHuntStagesProps {
-  hunt: TreasureHunt;
-  teamId?: string;
+  hunt: any;
+  teamId: string;
 }
 
-const MAX_FILE_SIZE_MB = 5;
-
-const SubmissionModal: React.FC<SubmissionModalProps> = ({
-  isOpen,
-  clue,
-  onClose,
-  onSubmit,
-  submitting
-}) => {
-  const [file, setFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setFile(null);
-      setImagePreview(null);
-      setError(null);
-    }
-  }, [isOpen]);
-
-  const validateFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      return 'Only image files are allowed.';
-    }
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      return `File size must be less than ${MAX_FILE_SIZE_MB}MB.`;
-    }
-    return null;
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files && e.target.files[0];
-    if (selected) {
-      const validationError = validateFile(selected);
-      if (validationError) {
-        setError(validationError);
-        setFile(null);
-        setImagePreview(null);
-        return;
-      }
-      setFile(selected);
-      setImagePreview(URL.createObjectURL(selected));
-      setError(null);
-    } else {
-      setFile(null);
-      setImagePreview(null);
-      setError(null);
-    }
-  };
-
-  const handleRemove = () => {
-    setFile(null);
-    setImagePreview(null);
-    setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (file && !error) {
-      onSubmit(file);
-    }
-  };
-
-  if (!isOpen || !clue) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-lg mx-4">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Submit Solution - Stage {clue.stageNumber}
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-              disabled={submitting}
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="mb-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-blue-800 mb-1">Clue Description:</p>
-              <p className="text-blue-700">{clue.description}</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Solution Photo
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  type="button"
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center space-x-2 disabled:opacity-50"
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.accept = 'image/*';
-                      fileInputRef.current.capture = 'environment';
-                      fileInputRef.current.click();
-                    }
-                  }}
-                  disabled={submitting}
-                >
-                  <Camera className="h-5 w-5 mr-2" />
-                  <span>Take Photo</span>
-                </button>
-                <button
-                  type="button"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center space-x-2 disabled:opacity-50"
-                  onClick={() => {
-                    if (fileInputRef.current) {
-                      fileInputRef.current.accept = 'image/*';
-                      fileInputRef.current.removeAttribute('capture');
-                      fileInputRef.current.click();
-                    }
-                  }}
-                  disabled={submitting}
-                >
-                  <Upload className="h-5 w-5 mr-2" />
-                  <span>Choose from Gallery</span>
-                </button>
-                <input
-                  ref={fileInputRef}
-                  id="fileInput"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  disabled={submitting}
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Upload a photo from your device or take a new one with your camera. Max size: {MAX_FILE_SIZE_MB}MB.
-              </p>
-              {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-            </div>
-
-            {/* File Info and Preview */}
-            {file && (
-              <div className="mt-2 flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex-1">
-                  <div className="text-xs text-gray-700 font-medium">Selected file:</div>
-                  <div className="text-xs text-gray-600 truncate">{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</div>
-                  <button
-                    type="button"
-                    onClick={handleRemove}
-                    className="text-xs text-red-500 hover:underline mt-1"
-                    disabled={submitting}
-                  >
-                    Remove
-                  </button>
-                </div>
-                {imagePreview && (
-                  <div className="border border-gray-300 rounded-lg p-2 bg-gray-50">
-                    <img
-                      src={imagePreview}
-                      alt="Solution preview"
-                      className="max-w-[120px] h-24 object-contain mx-auto rounded"
-                      onError={() => setImagePreview(null)}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!file || !!error || submitting}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center space-x-2"
-              >
-                {submitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Submitting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4" />
-                    <span>Submit Solution</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId }) => {
+  const { user } = useAuth();
   const {
     progress,
     submitting,
@@ -248,219 +45,223 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
     submitStage,
     fetchProgress,
     getTimeRemaining,
-    clearError
+    clearError,
+    isStageUnlocked,
+    getStageSubmission,
+    getAllStagesWithStatus,
+    getHuntTimingStatus
   } = useTreasureHunt();
 
-  const [submissionModal, setSubmissionModal] = useState<{
-    isOpen: boolean;
-    clue: TreasureHuntClue | null;
-  }>({
-    isOpen: false,
-    clue: null
-  });
+  const {
+    submitMemberClue,
+    getMemberSubmissionsForReview,
+    leaderSubmitToAdmin,
+    getMySubmissions,
+    loading: huntLoading
+  } = useTreasureHunts();
+  
+  const { fetchMyTeam } = useTeams();
+  const { 
+    isLeader: isTeamLeader, 
+    loading: leadershipLoading, 
+    error: leadershipError,
+    lastChecked,
+    refresh: refreshLeadership,
+    clearError: clearLeadershipError
+  } = useTeamLeadership();
 
-  const [selectedSubmission, setSelectedSubmission] = useState<{
-    isOpen: boolean;
-    submission: Submission | null;
-  }>({
-    isOpen: false,
-    submission: null
-  });
+  // State
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
+  const [submittingMember, setSubmittingMember] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [mySubmissions, setMySubmissions] = useState<TeamMemberSubmission[]>([]);
+  const [memberSubmissions, setMemberSubmissions] = useState<TeamMemberSubmission[]>([]);
+  const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
+  const [leaderNotes, setLeaderNotes] = useState('');
+  const [autoRefresh, setAutoRefresh] = useState<NodeJS.Timeout | null>(null);
+
+  // Check if hunt is accessible
+  const canAccessHunt = hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS';
+
+  // Get all stages with their status
+  const stages = getAllStagesWithStatus();
+  const currentStage = progress?.currentStage;
+
+  // Check if all stages are completed
+  const allStagesCompleted = progress && progress.completedStages === progress.totalStages && progress.totalStages > 0;
+  
+  // Check if this is the last stage and team has submitted
+  const isLastStage = currentStage && progress && currentStage.stageNumber === progress.totalStages;
+  const hasSubmittedToLastStage = isLastStage && stages.some(stage => 
+    stage.stageNumber === progress.totalStages && stage.submission?.status === 'PENDING'
+  );
+
+  // Load my submissions for current stage
+  const loadMySubmissions = async () => {
+    if (!teamId || !currentStage?.id) return;
+    try {
+      const submissions = await getMySubmissions(teamId, currentStage.id, user?.id || '');
+      setMySubmissions(submissions || []);
+    } catch (error) {
+      console.error('Failed to load my submissions:', error);
+    }
+  };
+
+  // Load member submissions (for leaders)
+  const loadMemberSubmissions = async () => {
+    if (!teamId || !currentStage?.id) return;
+    
+    setRefreshing(true);
+    try {
+      const submissions = await getMemberSubmissionsForReview(teamId, currentStage.id);
+      setMemberSubmissions(submissions || []);
+    } catch (error) {
+      console.error('Failed to load member submissions:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Refresh all data
+  const refreshAllData = async () => {
+    await Promise.all([
+      fetchProgress(hunt.id),
+      loadMySubmissions(),
+      isTeamLeader ? loadMemberSubmissions() : Promise.resolve()
+    ]);
+  };
+
+  // Initialize data
+  useEffect(() => {
+    fetchProgress(hunt.id);
+  }, [hunt.id, teamId]);
+
+  useEffect(() => {
+    if (currentStage) {
+      loadMySubmissions();
+      if (isTeamLeader) {
+        loadMemberSubmissions();
+      }
+    }
+  }, [currentStage, isTeamLeader]);
 
   // Auto-refresh progress every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (hunt.id) {
-        fetchProgress(hunt.id);
-      }
-    }, 30000);
+    if (canAccessHunt && progress?.currentStage) {
+      const interval = setInterval(() => {
+        refreshAllData();
+      }, 30000);
+      setAutoRefresh(interval);
+      
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    }
+  }, [canAccessHunt, progress?.currentStage]);
 
-    return () => clearInterval(interval);
-  }, [hunt.id, fetchProgress]);
-
-  // Add helper function to check if hunt is accessible
-  const canAccessHunt = (hunt: any) => {
-    return hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS';
+  // Handle image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
-  // Update the handleSubmitClue function
-  const handleSubmitClue = async (file: File) => {
-    if (!submissionModal.clue) return;
+  // Handle member submission
+  const handleMemberSubmit = async () => {
+    if (!selectedImage || !description.trim() || !teamId || !currentStage?.id) return;
 
-    if (!canAccessHunt(hunt)) {
-      console.error('Cannot submit: Hunt is not active');
-      return;
-    }
-
+    setSubmittingMember(true);
     try {
-      const success = await submitStage(
-        hunt.id,
-        submissionModal.clue.id,
-        file
-      );
-
-      if (success) {
-        setSubmissionModal({ isOpen: false, clue: null });
+      await submitMemberClue(currentStage.id, {
+        teamId: teamId,
+        description: description.trim(),
+        image: selectedImage
+      });
+      setSelectedImage(null);
+      setImagePreview(null);
+      setDescription('');
+      await loadMySubmissions();
+      
+      // If user is a leader, also refresh the team submissions view
+      if (isTeamLeader) {
+        await loadMemberSubmissions();
       }
     } catch (error) {
-      console.error('Failed to submit stage:', error);
+      console.error('Failed to submit:', error);
+    } finally {
+      setSubmittingMember(false);
+    }
+  };
+
+  // Handle leader submission to admin
+  const handleLeaderSubmit = async () => {
+    if (selectedSubmissions.size === 0 || !teamId || !currentStage?.id) return;
+
+    setSubmittingMember(true);
+    try {
+      await leaderSubmitToAdmin(teamId, currentStage.id, {
+        selectedSubmissionIds: Array.from(selectedSubmissions),
+        leaderNotes: leaderNotes.trim()
+      });
+      
+      setSelectedSubmissions(new Set());
+      setLeaderNotes('');
+      await loadMemberSubmissions();
+    } catch (error) {
+      console.error('Failed to submit to admin:', error);
+    } finally {
+      setSubmittingMember(false);
+    }
+  };
+
+  // Toggle submission selection
+  const toggleSubmissionSelection = (submissionId: string) => {
+    const newSelected = new Set(selectedSubmissions);
+    if (newSelected.has(submissionId)) {
+      newSelected.delete(submissionId);
+    } else {
+      newSelected.add(submissionId);
+    }
+    setSelectedSubmissions(newSelected);
+  };
+
+  // Helper functions for status display
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return 'bg-green-100 text-green-800';
+      case 'PENDING':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'APPROVED':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'REJECTED':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <CheckCircle className="h-3 w-3" />;
       case 'PENDING':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
+        return <Clock className="h-3 w-3" />;
+      case 'REJECTED':
+        return <XCircle className="h-3 w-3" />;
       default:
-        return <AlertCircle className="h-5 w-5 text-gray-400" />;
+        return <Target className="h-3 w-3" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'APPROVED':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-600 border-gray-200';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Add null checks for progress
-  const totalStages = progress?.totalStages ?? 0;
-  const completedStages = progress?.completedStages ?? 0;
-  const pendingStages = progress?.pendingStages ?? 0;
-  const rejectedStages = progress?.rejectedStages ?? 0;
-
-  // Get clues with status from progress
-  const cluesWithStatus = progress?.submissions ?? [];
-
-  // Add type for map callback parameters
-  const renderSubmission = (submission: Submission, clue: TreasureHuntClue, index: number) => {
-    const isLocked = false; // Submissions are always unlocked
-    const canSubmit = submission.status === 'REJECTED';
-    
-    return (
-      <div
-        key={submission.id}
-        className={`border rounded-lg p-4 transition-all ${
-          isLocked 
-            ? 'bg-gray-50 border-gray-200' 
-            : 'bg-white border-gray-300 hover:border-gray-400'
-        }`}
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="flex items-center space-x-2">
-                <Unlock className="h-5 w-5 text-green-500" />
-                <span className="font-semibold text-gray-900">
-                  Stage {clue.stageNumber}
-                </span>
-              </div>
-              
-              <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${getStatusColor(submission.status)}`}>
-                {getStatusIcon(submission.status)}
-                <span className="ml-1">{submission.status}</span>
-              </span>
-            </div>
-
-            <p className="text-sm mb-3 text-gray-700">
-              {clue.description}
-            </p>
-
-            {/* Submission Image */}
-            {submission.imageUrl && (
-              <div className="mb-3 relative group">
-                <img
-                  src={submission.imageUrl}
-                  alt={`Submission for stage ${clue.stageNumber}`}
-                  className="max-w-full h-32 object-contain border border-gray-200 rounded cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => window.open(submission.imageUrl, '_blank')}
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <button
-                  onClick={() => window.open(submission.imageUrl, '_blank')}
-                  className="absolute top-1 right-1 bg-black bg-opacity-50 text-white p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Open in new tab"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {/* Admin Feedback */}
-            {submission.adminFeedback && (
-              <div className="bg-gray-50 rounded-lg p-3 mt-3">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium text-gray-700">Admin Feedback</p>
-                  <span className="text-xs text-gray-500">
-                    {formatDate(submission.createdAt)}
-                  </span>
-                </div>
-                <div className="bg-white rounded p-2 border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-1 flex items-center">
-                    <FileText className="h-3 w-3 mr-1" />
-                    Feedback:
-                  </p>
-                  <p className="text-xs text-gray-600">{submission.adminFeedback}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Action Button */}
-          <div className="ml-4">
-            {canSubmit && (
-              <button
-                onClick={() => setSubmissionModal({ isOpen: true, clue })}
-                className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2"
-                disabled={submitting}
-              >
-                <RefreshCw className="h-4 w-4" />
-                <span>Resubmit</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setSelectedSubmission({ isOpen: true, submission })}
-              className="px-3 py-2 text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors flex items-center space-x-1"
-            >
-              <Eye className="h-4 w-4" />
-              <span>View</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  if (progressLoading && !progress) {
+  if (progressLoading || huntLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-          <p className="text-gray-500 mt-4">Loading treasure hunt progress...</p>
+          <p className="text-gray-500 mt-4">Loading treasure hunt stages...</p>
         </div>
       </div>
     );
@@ -468,66 +269,63 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
 
   return (
     <div className="space-y-6">
-      {/* Hunt Header */}
-      <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-lg p-6 text-white">
-        <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="bg-white rounded-2xl shadow-sm border p-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold mb-2">{hunt.title}</h2>
-            <p className="text-green-100 mb-4">{hunt.description}</p>
-            <div className="flex items-center space-x-4 text-sm">
-              <span className="flex items-center">
-                <Trophy className="h-4 w-4 mr-1" />
-                {completedStages} / {totalStages} Completed
-              </span>
-              <span className="flex items-center">
-                <Clock className="h-4 w-4 mr-1" />
-                {getTimeRemaining(hunt.endTime)}
-              </span>
-            </div>
+            <h2 className="text-2xl font-bold text-gray-900">{hunt.title}</h2>
+            <p className="text-gray-600">{hunt.description}</p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold">
-              {totalStages > 0 
-                ? Math.round(((completedStages / totalStages) * 100))
-                : 0}%
+            <div className="flex items-center space-x-2 mb-2">
+              <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-gray-100 text-gray-800'
+              }`}>
+                {hunt.status}
+              </span>
+              {hunt.winningTeam && (
+                <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                  <Trophy className="h-3 w-3 mr-1" />
+                  Winner: {hunt.winningTeam.name}
+                </span>
+              )}
             </div>
-            <div className="text-sm text-green-100">Complete</div>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mt-4">
-          <div className="bg-white bg-opacity-20 rounded-full h-2">
-            <div 
-              className="bg-white rounded-full h-2 transition-all duration-300"
-              style={{ 
-                width: `${totalStages > 0 
-                  ? (completedStages / totalStages) * 100
-                  : 0}%` 
-              }}
+            <TimerDisplay 
+              {...getHuntTimingStatus(hunt)}
+              variant="compact"
             />
           </div>
         </div>
 
-        {/* Status Warning */}
-        {!canAccessHunt(hunt) && (
-          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center space-x-2 text-red-800">
-              <AlertCircle className="h-5 w-5" />
-              <span className="font-medium">
-                {hunt.status === 'UPCOMING' 
-                  ? 'This hunt has not started yet. Actions will be available when the hunt becomes active.'
-                  : 'This hunt has ended. Actions are no longer available.'}
-              </span>
+        {/* Progress Overview */}
+        {progress && (
+          <div className="grid grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900">{progress.totalStages}</div>
+              <div className="text-sm text-gray-500">Total Stages</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{progress.completedStages}</div>
+              <div className="text-sm text-gray-500">Completed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{progress.pendingStages}</div>
+              <div className="text-sm text-gray-500">Pending</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">{progress.rejectedStages}</div>
+              <div className="text-sm text-gray-500">Rejected</div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Error Message */}
+      {/* Error Display */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-          <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+          <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
           <div className="flex-1">
             <h3 className="text-sm font-medium text-red-800">Error</h3>
             <p className="text-sm text-red-700 mt-1">{error}</p>
@@ -536,148 +334,353 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
             onClick={clearError}
             className="flex-shrink-0 text-red-400 hover:text-red-600"
           >
-            <span className="sr-only">Close</span>
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
+            ×
           </button>
         </div>
       )}
 
-      {/* Stages List */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Treasure Hunt Stages</h3>
-          <button
-            onClick={() => fetchProgress(hunt.id)}
-            className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900"
-            disabled={progressLoading}
-          >
-            <RefreshCw className={`h-4 w-4 ${progressLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-        </div>
-
-        {!canAccessHunt(hunt) ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <Lock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {hunt.status === 'UPCOMING' ? 'Hunt Not Started' : 'Hunt Ended'}
-            </h3>
-            <p className="text-gray-500">
-              {hunt.status === 'UPCOMING'
-                ? 'This treasure hunt has not started yet. You will be able to access the stages when the hunt becomes active.'
-                : 'This treasure hunt has ended. You can view your submissions but cannot make new ones.'}
+      {/* Completion Message */}
+      {allStagesCompleted && (
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <Trophy className="h-12 w-12 text-green-500" />
+            </div>
+            <h3 className="text-xl font-bold text-green-800 mb-2">🎉 All Stages Completed!</h3>
+            <p className="text-green-700 mb-4">
+              Congratulations! Your team has successfully completed all stages of the treasure hunt.
             </p>
-          </div>
-        ) : cluesWithStatus.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No stages available</h3>
-            <p className="text-gray-500">This treasure hunt doesn't have any stages set up yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {cluesWithStatus.map((submission, index) => {
-              const clue: TreasureHuntClue = {
-                id: submission.clue.id,
-                stageNumber: submission.clue.stageNumber,
-                description: submission.clue.description,
-                status: submission.status,
-                createdAt: submission.createdAt,
-                updatedAt: submission.createdAt,
-                adminFeedback: submission.adminFeedback
-              };
-              return renderSubmission(submission, clue, index);
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Submission Modal */}
-      <SubmissionModal
-        isOpen={submissionModal.isOpen}
-        clue={submissionModal.clue}
-        onClose={() => setSubmissionModal({ isOpen: false, clue: null })}
-        onSubmit={handleSubmitClue}
-        submitting={submitting}
-      />
-
-      {/* Submission View Modal */}
-      {selectedSubmission.isOpen && selectedSubmission.submission && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl mx-4">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Submission Details - Stage {selectedSubmission.submission.clue.stageNumber}
-                </h3>
-                <button
-                  onClick={() => setSelectedSubmission({ isOpen: false, submission: null })}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Status:</p>
-                  <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(selectedSubmission.submission.status)}`}>
-                    {getStatusIcon(selectedSubmission.submission.status)}
-                    <span className="ml-2">{selectedSubmission.submission.status}</span>
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Submitted Image:</p>
-                  <div className="relative group">
-                    <img
-                      src={selectedSubmission.submission.imageUrl}
-                      alt="Submission"
-                      className="max-w-full h-64 object-contain border border-gray-200 rounded cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => window.open(selectedSubmission.submission.imageUrl, '_blank')}
-                    />
-                    <button
-                      onClick={() => window.open(selectedSubmission.submission.imageUrl, '_blank')}
-                      className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Open in new tab"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-gray-700 mb-1">Submitted:</p>
-                  <p className="text-sm text-gray-600">
-                    {formatDate(selectedSubmission.submission.createdAt)}
-                  </p>
-                </div>
-
-                {selectedSubmission.submission.adminFeedback && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">Admin Feedback:</p>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-sm text-gray-700">{selectedSubmission.submission.adminFeedback}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setSelectedSubmission({ isOpen: false, submission: null })}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                >
-                  Close
-                </button>
+            <div className="bg-white rounded-lg p-4 border border-green-200">
+              <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
+                <Clock className="h-4 w-4" />
+                <span>Waiting for admin to review and declare results...</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Last Stage Submission Message */}
+      {hasSubmittedToLastStage && !allStagesCompleted && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <Send className="h-12 w-12 text-blue-500" />
+            </div>
+            <h3 className="text-xl font-bold text-blue-800 mb-2">📤 Final Stage Submitted!</h3>
+            <p className="text-blue-700 mb-4">
+              Your team has submitted the final stage. All stages are now complete!
+            </p>
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <div className="flex items-center justify-center space-x-2 text-sm text-blue-600">
+                <Clock className="h-4 w-4" />
+                <span>Waiting for admin approval and results...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Winner Announcement */}
+      {hunt.winningTeam && (
+        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <Trophy className="h-12 w-12 text-yellow-500" />
+            </div>
+            <h3 className="text-xl font-bold text-yellow-800 mb-2">🏆 Results Announced!</h3>
+            <p className="text-yellow-700 mb-4">
+              The treasure hunt has concluded and the results are in!
+            </p>
+            <div className="bg-white rounded-lg p-4 border border-yellow-200">
+              <div className="flex items-center justify-center space-x-2 text-sm">
+                <Crown className="h-4 w-4 text-yellow-600" />
+                <span className="text-yellow-800 font-medium">
+                  Winner: {hunt.winningTeam.name}
+                </span>
+              </div>
+              {hunt.winningTeam.id === teamId && (
+                <div className="mt-2 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
+                  🎉 Congratulations! Your team won!
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stage Progression Timeline */}
+      <div className="bg-white rounded-2xl shadow-sm border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Target className="h-5 w-5 mr-2" />
+          Stage Progression
+        </h3>
+        
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={refreshAllData}
+            disabled={refreshing}
+            className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>{refreshing ? 'Refreshing...' : 'Refresh Progress'}</span>
+          </button>
+          
+          {currentStage && (
+            <div className="text-sm text-gray-600">
+              Current Stage: <span className="font-medium text-blue-600">Stage {currentStage.stageNumber}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Stages Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {stages.map((stage) => {
+            const progressIndicator = stage.isUnlocked 
+              ? stage.submission?.status === 'APPROVED'
+                ? { icon: <Award className="h-4 w-4" />, color: 'text-green-600', bgColor: 'bg-green-100' }
+                : stage.isCurrent
+                ? { icon: <Play className="h-4 w-4" />, color: 'text-blue-600', bgColor: 'bg-blue-100' }
+                : { icon: <Target className="h-4 w-4" />, color: 'text-gray-600', bgColor: 'bg-gray-100' }
+              : { icon: <Lock className="h-4 w-4" />, color: 'text-gray-400', bgColor: 'bg-gray-50' };
+
+            return (
+              <div
+                key={stage.id}
+                className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all ${
+                  stage.isCurrent ? 'ring-2 ring-blue-500 shadow-lg' : ''
+                } ${stage.submission?.status === 'APPROVED' ? 'ring-2 ring-green-500 shadow-lg' : ''}
+                ${!stage.isUnlocked ? 'opacity-60' : ''}`}
+              >
+                <div className="p-6">
+                  {/* Stage Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full ${progressIndicator.bgColor} ${progressIndicator.color}`}>
+                        {progressIndicator.icon}
+                        <span className="ml-1">Stage {stage.stageNumber}</span>
+                      </span>
+                      {stage.isCurrent && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                          Current
+                        </span>
+                      )}
+                      {stage.submission?.status === 'APPROVED' && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Completed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <h3 className="font-semibold text-gray-900 mb-2">{stage.description}</h3>
+
+                  {/* Stage Status */}
+                  {stage.submission && (
+                    <div className="mb-4">
+                      <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(stage.submission.status)}`}>
+                        {getStatusIcon(stage.submission.status)}
+                        <span className="ml-1">{stage.submission.status}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Stage Progress Message */}
+                  {stage.submission?.status === 'APPROVED' && (
+                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center text-green-800">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <span className="text-sm font-medium">
+                          {stage.stageNumber === progress?.totalStages 
+                            ? 'Final stage completed! Waiting for results...' 
+                            : 'Stage completed! Ready for next stage.'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {stage.isCurrent && stage.submission?.status !== 'APPROVED' && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center text-blue-800">
+                        <Play className="h-4 w-4 mr-2" />
+                        <span className="text-sm font-medium">
+                          {stage.stageNumber === progress?.totalStages 
+                            ? 'Final stage - Submit your photo!' 
+                            : 'Current stage - Submit your photo!'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  {stage.isCurrent && stage.isUnlocked && canAccessHunt && stage.submission?.status !== 'APPROVED' && (
+                    <div className="space-y-3">
+                      {/* Member Submission */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 mb-3">Submit Your Photo</h4>
+                        
+                        {imagePreview ? (
+                          <div className="mb-3">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-3">
+                            <Camera className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">No image selected</p>
+                          </div>
+                        )}
+
+                        <div className="space-y-3">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageSelect}
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                          />
+                          
+                          <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Describe your submission..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          />
+
+                          <button
+                            onClick={handleMemberSubmit}
+                            disabled={!selectedImage || !description.trim() || submittingMember}
+                            className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                          >
+                            <Upload className="h-4 w-4" />
+                            <span>{submittingMember ? 'Submitting...' : 'Submit Photo'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Leader Review Section */}
+                      {isTeamLeader && (
+                        <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                          <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+                            <Crown className="h-4 w-4 mr-2" />
+                            Team Leader Review
+                          </h4>
+                          
+                          {memberSubmissions.length > 0 ? (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-2">
+                                {memberSubmissions.map((submission) => (
+                                  <div
+                                    key={submission.id}
+                                    className={`border rounded-lg p-2 cursor-pointer transition-colors ${
+                                      selectedSubmissions.has(submission.id)
+                                        ? 'border-blue-500 bg-blue-100'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                    onClick={() => toggleSubmissionSelection(submission.id)}
+                                  >
+                                    <img
+                                      src={submission.imageUrl}
+                                      alt="Submission"
+                                      className="w-full h-20 object-cover rounded mb-2"
+                                    />
+                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                      {submission.description}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      By: {submission.submittedBy?.name}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <textarea
+                                value={leaderNotes}
+                                onChange={(e) => setLeaderNotes(e.target.value)}
+                                placeholder="Add notes about the selected submission..."
+                                rows={2}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+
+                              <button
+                                onClick={handleLeaderSubmit}
+                                disabled={selectedSubmissions.size === 0 || submittingMember}
+                                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                              >
+                                <Send className="h-4 w-4" />
+                                <span>{submittingMember ? 'Submitting...' : 'Submit to Admin'}</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-blue-700">
+                              Waiting for team members to submit photos...
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Completed Stage */}
+                  {stage.submission?.status === 'APPROVED' && (
+                    <div className="text-center py-4">
+                      <div className="flex items-center justify-center mb-2">
+                        <Award className="h-8 w-8 text-green-500" />
+                      </div>
+                      <p className="text-sm text-green-600 font-medium">
+                        {stage.stageNumber === progress?.totalStages 
+                          ? 'Final Stage Completed!' 
+                          : 'Stage Completed!'
+                        }
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {stage.stageNumber === progress?.totalStages 
+                          ? 'Waiting for results...' 
+                          : 'Ready for next stage'
+                        }
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Locked Stage */}
+                  {!stage.isUnlocked && (
+                    <div className="text-center py-4">
+                      <Lock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Complete previous stage to unlock</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* My Submissions */}
+      {mySubmissions.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">My Submissions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {mySubmissions.map((submission) => (
+              <div key={submission.id} className="border border-gray-200 rounded-lg p-4">
+                <img
+                  src={submission.imageUrl}
+                  alt="My submission"
+                  className="w-full h-32 object-cover rounded-lg mb-3"
+                />
+                <p className="text-sm text-gray-700 mb-2">{submission.description}</p>
+                <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(submission.status)}`}>
+                  {getStatusIcon(submission.status)}
+                  <span className="ml-1">{submission.status}</span>
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}

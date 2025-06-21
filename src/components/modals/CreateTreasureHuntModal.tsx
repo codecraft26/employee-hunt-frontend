@@ -1,6 +1,6 @@
 // components/modals/CreateTreasureHuntModal.tsx
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Users, AlertCircle, Target } from 'lucide-react';
+import { X, Calendar, Clock, Users, AlertCircle, Target, Plus, Trash2 } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import { useTeams } from '../../hooks/useTeams';
 
@@ -21,10 +21,15 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    clueDescription: '', // Single clue instead of stages
     startTime: '',
     endTime: '',
     teamIds: [] as string[],
+    stages: [
+      {
+        stageNumber: 1,
+        description: ''
+      }
+    ] as Array<{ stageNumber: number; description: string }>,
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -43,10 +48,15 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
       setFormData({
         title: '',
         description: '',
-        clueDescription: '',
         startTime: '',
         endTime: '',
         teamIds: [],
+        stages: [
+          {
+            stageNumber: 1,
+            description: ''
+          }
+        ],
       });
       setErrors({});
       setIsSubmitting(false);
@@ -62,10 +72,6 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
 
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
-    }
-
-    if (!formData.clueDescription.trim()) {
-      newErrors.clueDescription = 'Clue description is required';
     }
 
     if (!formData.startTime) {
@@ -94,6 +100,17 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
       newErrors.teams = 'At least one team must be selected';
     }
 
+    // Validate stages
+    if (formData.stages.length === 0) {
+      newErrors.stages = 'At least one stage is required';
+    } else {
+      formData.stages.forEach((stage, index) => {
+        if (!stage.description.trim()) {
+          newErrors[`stage-${index}`] = 'Stage description is required';
+        }
+      });
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -114,8 +131,6 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
     }
   };
 
-
-
   const handleTeamSelection = (teamId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -133,6 +148,48 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
     }
   };
 
+  const handleStageChange = (index: number, field: 'stageNumber' | 'description', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      stages: prev.stages.map((stage, i) => 
+        i === index ? { ...stage, [field]: value } : stage
+      )
+    }));
+
+    // Clear stage error when user starts typing
+    if (errors[`stage-${index}`]) {
+      setErrors(prev => ({
+        ...prev,
+        [`stage-${index}`]: ''
+      }));
+    }
+  };
+
+  const addStage = () => {
+    setFormData(prev => ({
+      ...prev,
+      stages: [
+        ...prev.stages,
+        {
+          stageNumber: prev.stages.length + 1,
+          description: ''
+        }
+      ]
+    }));
+  };
+
+  const removeStage = (index: number) => {
+    if (formData.stages.length <= 1) return; // Keep at least one stage
+    
+    setFormData(prev => ({
+      ...prev,
+      stages: prev.stages.filter((_, i) => i !== index).map((stage, i) => ({
+        ...stage,
+        stageNumber: i + 1
+      }))
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -146,10 +203,13 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
       const treasureHunt = await createTreasureHunt({
         title: formData.title.trim(),
         description: formData.description.trim(),
-        clueDescription: formData.clueDescription.trim(),
         startTime: new Date(formData.startTime).toISOString(),
         endTime: new Date(formData.endTime).toISOString(),
         teamIds: formData.teamIds,
+        stages: formData.stages.map(stage => ({
+          stageNumber: stage.stageNumber,
+          description: stage.description.trim()
+        }))
       });
 
       if (treasureHunt) {
@@ -180,7 +240,7 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">Create Treasure Hunt</h2>
@@ -199,189 +259,226 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
           {huntError && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-red-800">Error Creating Treasure Hunt</h3>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
                 <p className="text-sm text-red-700 mt-1">{huntError}</p>
               </div>
             </div>
           )}
 
-          {/* Title */}
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Title *
-            </label>
-            <input
-              type="text"
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                errors.title ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="Enter treasure hunt title..."
-              disabled={isSubmitting}
-            />
-            {errors.title && (
-              <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-            )}
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Hunt Title *
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  errors.title ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter treasure hunt title"
+                required
+              />
+              {errors.title && (
+                <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Start Time *
+              </label>
+              <input
+                type="datetime-local"
+                name="startTime"
+                value={formData.startTime}
+                onChange={handleInputChange}
+                min={getMinDateTime()}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  errors.startTime ? 'border-red-300' : 'border-gray-300'
+                }`}
+                required
+              />
+              {errors.startTime && (
+                <p className="text-red-500 text-sm mt-1">{errors.startTime}</p>
+              )}
+            </div>
           </div>
 
-          {/* Description */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Description *
             </label>
             <textarea
-              id="description"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              rows={4}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
+              rows={3}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                errors.description ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Describe the treasure hunt..."
-              disabled={isSubmitting}
+              required
             />
             {errors.description && (
               <p className="text-red-500 text-sm mt-1">{errors.description}</p>
             )}
           </div>
 
-          {/* Date and Time */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
-                <Calendar className="h-4 w-4 inline mr-1" />
-                Start Date & Time *
-              </label>
-              <input
-                type="datetime-local"
-                id="startTime"
-                name="startTime"
-                value={formData.startTime}
-                onChange={handleInputChange}
-                min={getMinDateTime()}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  errors.startTime ? 'border-red-500' : 'border-gray-300'
-                }`}
-                disabled={isSubmitting}
-              />
-              {errors.startTime && (
-                <p className="text-red-500 text-sm mt-1">{errors.startTime}</p>
-              )}
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              End Time *
+            </label>
+            <input
+              type="datetime-local"
+              name="endTime"
+              value={formData.endTime}
+              onChange={handleInputChange}
+              min={formData.startTime || getMinDateTime()}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                errors.endTime ? 'border-red-300' : 'border-gray-300'
+              }`}
+              required
+            />
+            {errors.endTime && (
+              <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>
+            )}
+          </div>
 
-            <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="h-4 w-4 inline mr-1" />
-                End Date & Time *
+          {/* Stages Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Stages *
               </label>
-              <input
-                type="datetime-local"
-                id="endTime"
-                name="endTime"
-                value={formData.endTime}
-                onChange={handleInputChange}
-                min={formData.startTime || getMinDateTime()}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  errors.endTime ? 'border-red-500' : 'border-gray-300'
-                }`}
-                disabled={isSubmitting}
-              />
-              {errors.endTime && (
-                <p className="text-red-500 text-sm mt-1">{errors.endTime}</p>
-              )}
+              <button
+                type="button"
+                onClick={addStage}
+                className="flex items-center space-x-2 text-green-600 hover:text-green-700 text-sm font-medium"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Stage</span>
+              </button>
+            </div>
+            
+            {errors.stages && (
+              <p className="text-red-500 text-sm mb-3">{errors.stages}</p>
+            )}
+
+            <div className="space-y-4">
+              {formData.stages.map((stage, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-900">Stage {stage.stageNumber}</h4>
+                    {formData.stages.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeStage(index)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Stage Number
+                      </label>
+                      <input
+                        type="number"
+                        value={stage.stageNumber}
+                        onChange={(e) => handleStageChange(index, 'stageNumber', parseInt(e.target.value) || 1)}
+                        min="1"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description *
+                      </label>
+                      <textarea
+                        value={stage.description}
+                        onChange={(e) => handleStageChange(index, 'description', e.target.value)}
+                        rows={2}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                          errors[`stage-${index}`] ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        placeholder="Describe what teams need to find or do for this stage..."
+                        required
+                      />
+                      {errors[`stage-${index}`] && (
+                        <p className="text-red-500 text-sm mt-1">{errors[`stage-${index}`]}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Team Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              <Users className="h-4 w-4 inline mr-1" />
-              Assign Teams * ({formData.teamIds.length} selected)
+              Assign Teams *
             </label>
             
             {teamsLoading ? (
-              <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+              <div className="text-center py-4">
+                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
                 <p className="text-gray-500 mt-2">Loading teams...</p>
               </div>
             ) : teams.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <div className="text-center py-4">
+                <Users className="h-12 w-12 text-gray-300 mx-auto mb-2" />
                 <p className="text-gray-500">No teams available</p>
-                <p className="text-sm text-gray-400">Create teams first to assign them to treasure hunts</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {teams.map((team) => (
-                  <div
+                  <label
                     key={team.id}
-                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                    className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                       formData.teamIds.includes(team.id)
                         ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-green-300'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
-                    onClick={() => handleTeamSelection(team.id)}
                   >
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={formData.teamIds.includes(team.id)}
-                        onChange={() => handleTeamSelection(team.id)}
-                        className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                        disabled={isSubmitting}
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{team.name}</h4>
-                        <p className="text-sm text-gray-500">
-                          {team.members.length} member{team.members.length !== 1 ? 's' : ''}
-                        </p>
-                      </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.teamIds.includes(team.id)}
+                      onChange={() => handleTeamSelection(team.id)}
+                      className="sr-only"
+                    />
+                    <div className={`w-4 h-4 border-2 rounded mr-3 flex items-center justify-center ${
+                      formData.teamIds.includes(team.id)
+                        ? 'border-green-500 bg-green-500'
+                        : 'border-gray-300'
+                    }`}>
+                      {formData.teamIds.includes(team.id) && (
+                        <div className="w-2 h-2 bg-white rounded"></div>
+                      )}
                     </div>
-                  </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{team.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {team.members?.length || 0} members
+                      </p>
+                    </div>
+                  </label>
                 ))}
               </div>
             )}
             
             {errors.teams && (
-              <p className="text-red-500 text-sm mt-1">{errors.teams}</p>
+              <p className="text-red-500 text-sm mt-2">{errors.teams}</p>
             )}
-          </div>
-
-          {/* Clue Description Section */}
-          <div>
-            <label htmlFor="clueDescription" className="block text-sm font-medium text-gray-700 mb-2">
-              <Target className="h-4 w-4 inline mr-1" />
-              Clue Description *
-            </label>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-              <p className="text-sm text-blue-800">
-                💡 <strong>Simplified Workflow:</strong> Create a single clue that all teams will work on. 
-                Team members will upload photos, leaders will select the best ones, and you'll approve them.
-              </p>
-            </div>
-            <textarea
-              id="clueDescription"
-              name="clueDescription"
-              value={formData.clueDescription}
-              onChange={handleInputChange}
-              placeholder="Describe what participants need to find or photograph (e.g., 'Find the oldest building on campus and take a photo with the founding year plaque')"
-              rows={4}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors resize-none ${
-                errors.clueDescription ? 'border-red-500' : 'border-gray-300'
-              }`}
-              disabled={isSubmitting}
-            />
-            {errors.clueDescription && (
-              <p className="text-red-500 text-sm mt-1">{errors.clueDescription}</p>
-            )}
-            <p className="text-sm text-gray-500 mt-2">
-              📝 Be specific about what you want teams to photograph or accomplish. This single clue will be the focus of the entire treasure hunt.
-            </p>
           </div>
 
           {/* Form Actions */}
@@ -389,19 +486,17 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || teamsLoading}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              disabled={isSubmitting || huntLoading}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
-              {isSubmitting && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              )}
+              <Target className="h-4 w-4" />
               <span>{isSubmitting ? 'Creating...' : 'Create Treasure Hunt'}</span>
             </button>
           </div>

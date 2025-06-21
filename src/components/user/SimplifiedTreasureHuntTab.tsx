@@ -61,8 +61,9 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
   const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
   const [leaderNotes, setLeaderNotes] = useState('');
 
-
-
+  // Check if all team submissions are complete (sent to admin)
+  const allSubmissionsComplete = memberSubmissions.length > 0 && 
+    memberSubmissions.every(sub => sub.status === 'SENT_TO_ADMIN' || sub.status === 'APPROVED_BY_LEADER' || sub.status === 'REJECTED_BY_LEADER');
 
   // Extract clue from hunt (simplified workflow has one clue)
   const clue = hunt?.clues?.[0] || { 
@@ -277,6 +278,128 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Winner Announcement */}
+      {hunt.winningTeam && (
+        <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="bg-yellow-500 bg-opacity-30 p-3 rounded-full">
+                <Crown className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1">🏆 Winner Announced!</h3>
+                <p className="text-yellow-100">
+                  Congratulations to <span className="font-semibold">{hunt.winningTeam.name}</span> for winning this treasure hunt!
+                </p>
+                {hunt.winningTeam.description && (
+                  <p className="text-yellow-100 text-sm mt-1">{hunt.winningTeam.description}</p>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="bg-yellow-500 bg-opacity-30 px-4 py-2 rounded-lg">
+                <div className="text-sm text-yellow-100">Winner</div>
+                <div className="text-lg font-bold">{hunt.winningTeam.name}</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Show if current user's team won */}
+          {myTeam?.id === hunt.winningTeam.id && (
+            <div className="mt-4 bg-yellow-500 bg-opacity-30 border border-yellow-300 border-opacity-50 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <Crown className="h-5 w-5 text-yellow-200" />
+                <span className="font-semibold text-yellow-200">🎉 Your team won!</span>
+              </div>
+              <p className="text-yellow-100 text-sm mt-1">
+                Great job! Your team's submissions were selected as the best for this treasure hunt.
+              </p>
+            </div>
+          )}
+          
+          {/* Show if current user's team didn't win */}
+          {myTeam?.id && myTeam.id !== hunt.winningTeam.id && (
+            <div className="mt-4 bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-white" />
+                <span className="font-semibold text-white">Thanks for participating!</span>
+              </div>
+              <p className="text-yellow-100 text-sm mt-1">
+                Your team did great! Keep participating in future treasure hunts.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hunt Completed - Waiting for Results */}
+      {hunt.status === 'COMPLETED' && !hunt.winningTeam && (
+        <div className="bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-purple-500 bg-opacity-30 p-3 rounded-full">
+                <Clock className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1">⏳ Results Pending</h3>
+                <p className="text-purple-100">
+                  The treasure hunt has ended and all submissions are being reviewed.
+                </p>
+                <p className="text-purple-100 text-sm mt-1">
+                  The winner will be announced soon!
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="bg-purple-500 bg-opacity-30 px-4 py-2 rounded-lg">
+                <div className="text-sm text-purple-100">Status</div>
+                <div className="text-lg font-bold">Reviewing</div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={() => {
+                // Trigger a refresh of hunt data
+                window.location.reload();
+              }}
+              className="bg-purple-500 bg-opacity-30 hover:bg-purple-500 bg-opacity-50 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Check for Updates</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* All Submissions Complete - Waiting for Admin Review */}
+      {allSubmissionsComplete && hunt.status !== 'COMPLETED' && !hunt.winningTeam && (
+        <div className="bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-blue-500 bg-opacity-30 p-3 rounded-full">
+                <Send className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-1">📤 All Submissions Sent!</h3>
+                <p className="text-blue-100">
+                  Your team has completed all submissions and sent them to the admin for review.
+                </p>
+                <p className="text-blue-100 text-sm mt-1">
+                  Waiting for admin approval and winner announcement.
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="bg-blue-500 bg-opacity-30 px-4 py-2 rounded-lg">
+                <div className="text-sm text-blue-100">Status</div>
+                <div className="text-lg font-bold">Submitted</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Clue Description */}
       <div className="bg-white rounded-lg border p-6">

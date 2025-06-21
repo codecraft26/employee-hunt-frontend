@@ -148,7 +148,12 @@ export default function AdminDashboard() {
   });
 
   const { user, logout: handleLogout } = useAuth();
-  const { resetCurrentTreasureHunt, fetchTreasureHuntWithClues } = useTreasureHunts();
+  const treasureHuntsHook = useTreasureHunts();
+  const { resetCurrentTreasureHunt, fetchTreasureHuntWithClues } = treasureHuntsHook;
+
+  // Debug: Log available functions from the hook
+  console.log('🔍 Available functions from useTreasureHunts:', Object.keys(treasureHuntsHook));
+  console.log('🔍 resetCurrentTreasureHunt function:', typeof resetCurrentTreasureHunt, resetCurrentTreasureHunt);
 
   // Handler functions for API calls - These will be implemented when connecting to backend
   const handleQuickAction = useCallback((type: string) => {
@@ -240,7 +245,11 @@ export default function AdminDashboard() {
       isOpen: false,
       huntId: null
     });
-    resetCurrentTreasureHunt();
+    if (resetCurrentTreasureHunt && typeof resetCurrentTreasureHunt === 'function') {
+      resetCurrentTreasureHunt();
+    } else {
+      console.warn('⚠️ resetCurrentTreasureHunt function is not available');
+    }
   }, [resetCurrentTreasureHunt]);
 
   const handleWinnerSelectionSuccess = useCallback(() => {
@@ -252,7 +261,11 @@ export default function AdminDashboard() {
   const handleBackFromManagement = useCallback(() => {
     setActiveView('treasure-hunts');
     setSelectedTreasureHuntId(null);
-    resetCurrentTreasureHunt();
+    if (resetCurrentTreasureHunt && typeof resetCurrentTreasureHunt === 'function') {
+      resetCurrentTreasureHunt();
+    } else {
+      console.warn('⚠️ resetCurrentTreasureHunt function is not available');
+    }
   }, [resetCurrentTreasureHunt]);
 
   // Poll handlers
@@ -372,19 +385,32 @@ export default function AdminDashboard() {
       case 'clues-management':
         return (
           <LazyWrapper>
-            <CluesManagementTab
-              treasureHuntId={selectedTreasureHuntId}
-              onBack={handleBackFromManagement}
-            />
+            {selectedTreasureHuntId ? (
+              <CluesManagementTab
+                treasureHuntId={selectedTreasureHuntId}
+                onBack={handleBackFromManagement}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No treasure hunt selected</p>
+              </div>
+            )}
           </LazyWrapper>
         );
       case 'submissions-management':
         return (
           <LazyWrapper>
-            <SubmissionsManagementTab
-              treasureHuntId={selectedTreasureHuntId}
-              onBack={handleBackFromManagement}
-            />
+            {selectedTreasureHuntId ? (
+              <SubmissionsManagementTab
+                treasureHuntId={selectedTreasureHuntId}
+                onBack={handleBackFromManagement}
+                onDeclareWinner={handleDeclareWinner}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No treasure hunt selected</p>
+              </div>
+            )}
           </LazyWrapper>
         );
       case 'polls':
@@ -565,7 +591,7 @@ export default function AdminDashboard() {
       <LazyWrapper>
         <WinnerSelectionModal
           isOpen={winnerSelectionModal.isOpen}
-          huntId={winnerSelectionModal.huntId}
+          treasureHuntId={winnerSelectionModal.huntId || ''}
           onClose={handleWinnerSelectionClose}
           onSuccess={handleWinnerSelectionSuccess}
         />

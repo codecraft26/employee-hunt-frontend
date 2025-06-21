@@ -15,6 +15,7 @@ import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import { useTeams } from '../../hooks/useTeams';
 import { useAuth } from '../../hooks/useAuth';
 import SimplifiedTreasureHuntTab from './SimplifiedTreasureHuntTab';
+import TreasureHuntStages from './TreasureHuntStages';
 import TimerDisplay from '../shared/TimerDisplay';
 
 export default function UserTreasureHuntTab() {
@@ -65,6 +66,26 @@ export default function UserTreasureHuntTab() {
       setRefreshing(false);
     }
   }, [loadTreasureHunts]);
+
+  // Helper function to determine if hunt is multi-stage
+  const isMultiStageHunt = (hunt: any) => {
+    // Check if hunt has stages array with multiple stages
+    if (hunt.stages && hunt.stages.length > 1) {
+      return true;
+    }
+    
+    // Check if hunt has clues array with multiple clues
+    if (hunt.clues && hunt.clues.length > 1) {
+      return true;
+    }
+    
+    // Check if hunt has a totalStages property greater than 1
+    if (hunt.totalStages && hunt.totalStages > 1) {
+      return true;
+    }
+    
+    return false;
+  };
 
   // Get status badge color
   const getStatusColor = (status: string) => {
@@ -190,6 +211,7 @@ export default function UserTreasureHuntTab() {
             {treasureHunts.map((hunt) => {
               const timingStatus = getHuntTimingStatus(hunt);
               const isSelected = selectedHunt?.id === hunt.id;
+              const isMultiStage = isMultiStageHunt(hunt);
               
               return (
                 <div
@@ -210,6 +232,10 @@ export default function UserTreasureHuntTab() {
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {formatDate(hunt.startTime)} - {formatDate(hunt.endTime)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Target className="h-3 w-3" />
+                          {isMultiStage ? 'Multi-Stage' : 'Single Stage'}
                         </span>
                       </div>
                     </div>
@@ -246,11 +272,18 @@ export default function UserTreasureHuntTab() {
           {/* Selected Hunt Details */}
           {selectedHunt && (
             <div className="mt-6">
-              <SimplifiedTreasureHuntTab 
-                treasureHunt={selectedHunt}
-                team={myTeam}
-                user={user}
-              />
+              {isMultiStageHunt(selectedHunt) ? (
+                <TreasureHuntStages 
+                  hunt={selectedHunt}
+                  teamId={myTeam.id}
+                />
+              ) : (
+                <SimplifiedTreasureHuntTab 
+                  treasureHunt={selectedHunt}
+                  team={myTeam}
+                  user={user}
+                />
+              )}
             </div>
           )}
         </>
