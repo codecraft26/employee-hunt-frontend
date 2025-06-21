@@ -123,6 +123,121 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
     }
   };
 
+  // Handle camera capture
+  const handleCameraCapture = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment', // Use back camera on mobile
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } 
+      });
+      
+      // Create video element
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.autoplay = true;
+      video.style.position = 'fixed';
+      video.style.top = '0';
+      video.style.left = '0';
+      video.style.width = '100%';
+      video.style.height = '100%';
+      video.style.zIndex = '9999';
+      video.style.objectFit = 'cover';
+      
+      // Create camera overlay
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100%';
+      overlay.style.height = '100%';
+      overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      overlay.style.zIndex = '9998';
+      overlay.style.display = 'flex';
+      overlay.style.flexDirection = 'column';
+      overlay.style.alignItems = 'center';
+      overlay.style.justifyContent = 'center';
+      
+      // Create camera controls
+      const controls = document.createElement('div');
+      controls.style.position = 'fixed';
+      controls.style.bottom = '50px';
+      controls.style.left = '50%';
+      controls.style.transform = 'translateX(-50%)';
+      controls.style.zIndex = '10000';
+      controls.style.display = 'flex';
+      controls.style.gap = '20px';
+      
+      // Capture button
+      const captureBtn = document.createElement('button');
+      captureBtn.innerHTML = '📸';
+      captureBtn.style.width = '80px';
+      captureBtn.style.height = '80px';
+      captureBtn.style.borderRadius = '50%';
+      captureBtn.style.border = 'none';
+      captureBtn.style.backgroundColor = 'white';
+      captureBtn.style.fontSize = '32px';
+      captureBtn.style.cursor = 'pointer';
+      captureBtn.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+      
+      // Cancel button
+      const cancelBtn = document.createElement('button');
+      cancelBtn.innerHTML = '❌';
+      cancelBtn.style.width = '60px';
+      cancelBtn.style.height = '60px';
+      cancelBtn.style.borderRadius = '50%';
+      cancelBtn.style.border = 'none';
+      cancelBtn.style.backgroundColor = 'red';
+      cancelBtn.style.color = 'white';
+      cancelBtn.style.fontSize = '24px';
+      cancelBtn.style.cursor = 'pointer';
+      
+      // Add elements to page
+      document.body.appendChild(overlay);
+      document.body.appendChild(video);
+      document.body.appendChild(controls);
+      controls.appendChild(cancelBtn);
+      controls.appendChild(captureBtn);
+      
+      // Handle capture
+      captureBtn.onclick = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(video, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+            setSelectedImage(file);
+            setImagePreview(URL.createObjectURL(file));
+          }
+        }, 'image/jpeg', 0.8);
+        
+        // Cleanup
+        stream.getTracks().forEach(track => track.stop());
+        document.body.removeChild(overlay);
+        document.body.removeChild(video);
+        document.body.removeChild(controls);
+      };
+      
+      // Handle cancel
+      cancelBtn.onclick = () => {
+        stream.getTracks().forEach(track => track.stop());
+        document.body.removeChild(overlay);
+        document.body.removeChild(video);
+        document.body.removeChild(controls);
+      };
+      
+    } catch (error) {
+      console.error('Camera access error:', error);
+      alert('Unable to access camera. Please check camera permissions and try again.');
+    }
+  };
+
   // Handle member submission
   const handleMemberSubmit = async () => {
     if (!selectedImage || !description.trim() || !myTeam?.id || !clue?.id) return;
@@ -466,20 +581,38 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
                           ) : (
                             <>
                               <Camera className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                              <p className="text-gray-600 mb-2">Click to upload an image</p>
-                              <p className="text-sm text-gray-400">PNG, JPG up to 5MB</p>
+                              <p className="text-gray-600 mb-2">Choose how to add your photo</p>
+                              <p className="text-sm text-gray-400">Take a photo or select from gallery</p>
                             </>
                           )}
                         </div>
                       )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageSelect}
-                        disabled={!canAccessHunt}
-                        className={`absolute inset-0 w-full h-full opacity-0 ${canAccessHunt ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                      />
                     </div>
+                    
+                    {/* Photo Upload Options */}
+                    {canAccessHunt && !imagePreview && (
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <button
+                          onClick={handleCameraCapture}
+                          className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <Camera className="h-5 w-5 text-blue-600" />
+                          <span className="text-sm font-medium text-gray-700">Take Photo</span>
+                        </button>
+                        
+                        <label className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                          <Upload className="h-5 w-5 text-green-600" />
+                          <span className="text-sm font-medium text-gray-700">Choose from Gallery</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageSelect}
+                            disabled={!canAccessHunt}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   <div>

@@ -52,9 +52,9 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       }
 
       if (days > 0) {
-        return `Starts in ${days}d ${hours}h`;
+        return `Starts in ${days}d ${hours}h ${minutes}m ${seconds}s`;
       } else if (hours > 0) {
-        return `Starts in ${hours}h ${minutes}m`;
+        return `Starts in ${hours}h ${minutes}m ${seconds}s`;
       } else if (minutes > 0) {
         return `Starts in ${minutes}m ${seconds}s`;
       } else {
@@ -77,9 +77,9 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       }
 
       if (days > 0) {
-        return `${days}d ${hours}h remaining`;
+        return `${days}d ${hours}h ${minutes}m ${seconds}s remaining`;
       } else if (hours > 0) {
-        return `${hours}h ${minutes}m remaining`;
+        return `${hours}h ${minutes}m ${seconds}s remaining`;
       } else if (minutes > 0) {
         return `${minutes}m ${seconds}s remaining`;
       } else {
