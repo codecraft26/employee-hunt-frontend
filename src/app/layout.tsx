@@ -91,10 +91,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover, user-scalable=yes" />
 
         {/* Enhanced PWA Meta Tags */}
-        <meta name="application-name" content="Treasure Hunt" />
+        <meta name="application-name" content="Bann Dhann" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Treasure Hunt" />
+        <meta name="apple-mobile-web-app-title" content="Bann Dhann" />
         <meta name="description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -114,22 +114,22 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
 
         {/* Favicon and Icons */}
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
-        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/app-icon.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/app-icon.png" />
+        <link rel="shortcut icon" href="/icons/app-icon.png" />
 
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
-        <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167x167.png" />
+        <link rel="apple-touch-icon" href="/icons/app-icon.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/app-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/icons/app-icon.png" />
 
         {/* Splash Screens for iOS */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
+        <link rel="apple-touch-startup-image" href="/icons/app-icon.png" />
 
         {/* Microsoft Tiles */}
-        <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+        <meta name="msapplication-TileImage" content="/icons/app-icon.png" />
 
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -137,18 +137,18 @@ export default function RootLayout({
 
         {/* SEO and Social Media */}
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Treasure Hunt - Team Activities & Contests" />
+        <meta property="og:title" content="Bann Dhann - Team Activities & Contests" />
         <meta property="og:description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
-        <meta property="og:site_name" content="Employee Hunt" />
+        <meta property="og:site_name" content="Bann Dhann" />
         <meta property="og:url" content="https://employeehunt.com" />
-        <meta property="og:image" content="/icons/icon-512x512.png" />
+        <meta property="og:image" content="/icons/app-icon.png" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Employee Hunt - Team Activities & Contests" />
+        <meta name="twitter:title" content="Bann Dhann - Team Activities & Contests" />
         <meta name="twitter:description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
-        <meta name="twitter:image" content="/icons/icon-512x512.png" />
+        <meta name="twitter:image" content="/icons/app-icon.png" />
 
-        <title>Employee Hunt - Team Activities & Contests</title>
+        <title>Bann Dhann - Team Activities & Contests</title>
       </head>
       <body>
         <Provider store={store}>

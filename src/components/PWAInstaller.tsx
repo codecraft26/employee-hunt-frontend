@@ -134,13 +134,10 @@ const PWAInstaller: React.FC = () => {
     setShowInstallGuide(true);
   };
 
-  // Show install prompt if conditions are met
-  if (isInstalled) {
-    return null;
-  }
+  // Determine if the install banner should be shown.
+  const canShowInstallPrompt = !isInstalled && (typeof window !== 'undefined' && !getLocalStorageItem('pwa-install-dismissed'));
 
-  // Show for mobile devices or if explicitly triggered
-  if (!showInstallPrompt && !isMobile) {
+  if (!canShowInstallPrompt) {
     return null;
   }
 
