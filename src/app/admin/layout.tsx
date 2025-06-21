@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppSelector } from '../../hooks/redux';
 import ProtectedRoute from '../../components/ProtectedRoute';
-import TeamDebugPanel from '../../components/admin/TeamDebugPanel';
+
 
 export default function AdminLayout({
   children,
@@ -35,7 +35,7 @@ export default function AdminLayout({
   return (
     <ProtectedRoute>
       {children}
-      <TeamDebugPanel />
+     
     </ProtectedRoute>
   );
 } 

@@ -2,34 +2,27 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trophy, Users, CheckCircle, AlertCircle, Clock, Award } from 'lucide-react';
 import { useTreasureHunts, TeamForWinner } from '../../hooks/useTreasureHunts';
-import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface WinnerSelectionModalProps {
   isOpen: boolean;
   treasureHuntId: string;
   onClose: () => void;
   onSuccess?: () => void;
-  huntId: string;
 }
 
 const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
   isOpen,
   treasureHuntId,
   onClose,
-  onSuccess,
-  huntId
+  onSuccess
 }) => {
-  useModalBodyLock(isOpen);
   const { 
     fetchTeamsForWinner,
     fetchTreasureHuntById,
     declareWinner,
     loading, 
     error, 
-    clearError,
-    submissions,
-    fetchSubmissions,
-    selectWinner
+    clearError 
   } = useTreasureHunts();
 
   const [teamsForWinner, setTeamsForWinner] = useState<TeamForWinner[]>([]);

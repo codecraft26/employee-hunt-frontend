@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Users, Activity, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useActivities } from '../../hooks/useActivities';
-import { useCategories } from '../../hooks/useCategories';
 import Cookies from 'js-cookie';
 import axios from 'axios';
-import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
@@ -26,7 +24,6 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  useModalBodyLock(isOpen);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -38,10 +35,8 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
-  const { fetchActivities, createActivity } = useActivities();
-  const { categories, fetchCategories } = useCategories();
+  const { fetchActivities } = useActivities();
 
   // Fetch users when modal opens
   useEffect(() => {

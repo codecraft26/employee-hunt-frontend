@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, AlertCircle, Save } from 'lucide-react';
 import { useTreasureHunts, TreasureHunt, UpdateTreasureHuntRequest } from '../../hooks/useTreasureHunts';
-import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface EditTreasureHuntModalProps {
   isOpen: boolean;
@@ -17,7 +16,6 @@ const EditTreasureHuntModal: React.FC<EditTreasureHuntModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  useModalBodyLock(isOpen);
   const { updateTreasureHunt, loading, error } = useTreasureHunts();
 
   const [formData, setFormData] = useState({

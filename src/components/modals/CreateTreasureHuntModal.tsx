@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Users, AlertCircle, Target, Plus, Trash2 } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import { useTeams } from '../../hooks/useTeams';
-import { useCategories } from '../../hooks/useCategories';
-import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface CreateTreasureHuntModalProps {
   isOpen: boolean;
@@ -17,11 +15,8 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  useModalBodyLock(isOpen);
   const { createTreasureHunt, loading: huntLoading, error: huntError } = useTreasureHunts();
   const { teams, fetchTeams, loading: teamsLoading } = useTeams();
-  const { categories, fetchCategories } = useCategories();
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',

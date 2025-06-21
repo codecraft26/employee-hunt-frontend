@@ -3,7 +3,7 @@
 import { Provider } from 'react-redux';
 import { store } from '../store';
 import AuthProvider from '../components/AuthProvider';
-import PWADebugger from '../components/PWADebugger';
+
 import PWAStatus from '../components/PWAStatus';
 import PWAInstaller from '../components/PWAInstaller';
 import OfflineIndicator from '../components/OfflineIndicator';
@@ -155,7 +155,7 @@ export default function RootLayout({
           <AuthProvider>
             <ToastProvider>
               <OfflineIndicator />
-              <PWADebugger />
+            
               <PWAStatus />
               {children}
               <PWAInstaller />

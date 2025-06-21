@@ -2,8 +2,6 @@
 
 import React, { useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
-import { useUserApprovals } from '../../hooks/useUserApprovals';
-import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface RejectUserModalProps {
   isOpen: boolean;
@@ -13,7 +11,6 @@ interface RejectUserModalProps {
   isLoading?: boolean;
   isBulk?: boolean;
   userCount?: number;
-  userId: string;
 }
 
 const RejectUserModal: React.FC<RejectUserModalProps> = ({
@@ -24,10 +21,7 @@ const RejectUserModal: React.FC<RejectUserModalProps> = ({
   isLoading = false,
   isBulk = false,
   userCount = 1,
-  userId,
 }) => {
-  useModalBodyLock(isOpen);
-  const { rejectUser, loading, error } = useUserApprovals();
   const [reason, setReason] = useState('');
   const [includeReason, setIncludeReason] = useState(false);
 

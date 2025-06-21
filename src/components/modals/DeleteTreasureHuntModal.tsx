@@ -2,24 +2,20 @@
 import React, { useState } from 'react';
 import { X, Trash2, AlertTriangle } from 'lucide-react';
 import { useTreasureHunts, TreasureHunt } from '../../hooks/useTreasureHunts';
-import { useModalBodyLock } from '../../hooks/useModalBodyLock';
 
 interface DeleteTreasureHuntModalProps {
   isOpen: boolean;
   treasureHunt: TreasureHunt | null;
   onClose: () => void;
   onSuccess?: () => void;
-  huntId: string;
 }
 
 const DeleteTreasureHuntModal: React.FC<DeleteTreasureHuntModalProps> = ({
   isOpen,
   treasureHunt,
   onClose,
-  onSuccess,
-  huntId
+  onSuccess
 }) => {
-  useModalBodyLock(isOpen);
   const { deleteTreasureHunt, loading, error } = useTreasureHunts();
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
