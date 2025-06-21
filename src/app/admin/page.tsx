@@ -4,7 +4,6 @@
 import React, { useState, useCallback, lazy, useMemo } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
-import AdminHeader from '../../components/admin/AdminHeader';
 
 import LazyWrapper from '../../components/shared/LazyWrapper';
 
@@ -480,134 +479,38 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminHeader 
-        pendingApprovals={mockStats.pendingApprovals}
-        onLogout={handleLogout}
-        userName={user?.name || user?.email || 'Admin'}
-      />
-      
-      {/* Navigation Tabs */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8" aria-label="Tabs">
-            <button
-              onClick={() => setActiveView('overview')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveView('treasure-hunts')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'treasure-hunts' || activeView === 'clues-management' || activeView === 'submissions-management'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Treasure Hunts
-            </button>
-            <button
-              onClick={() => setActiveView('polls')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'polls'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Polls
-            </button>
-            <button
-              onClick={() => setActiveView('teams')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'teams'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Teams
-            </button>
-            <button
-              onClick={() => setActiveView('categories')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'categories'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Categories
-            </button>
-            <button
-              onClick={() => setActiveView('activities')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'activities'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Activities
-            </button>
-            <button
-              onClick={() => setActiveView('approve-users')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'approve-users'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              User Approvals
-            </button>
-            <button
-              onClick={() => setActiveView('photo-wall')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeView === 'photo-wall'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Photo Wall
-            </button>
+    <>
+      {/* Breadcrumb for management views */}
+      {(activeView === 'clues-management' || activeView === 'submissions-management') && (
+        <div className="mb-6">
+          <nav className="flex" aria-label="Breadcrumb">
+            <ol role="list" className="flex items-center space-x-4">
+              <li>
+                <div>
+                  <button
+                    onClick={() => setActiveView('treasure-hunts')}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    Treasure Hunts
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div className="flex items-center">
+                  <svg className="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="ml-4 text-sm font-medium text-gray-500">
+                    {activeView === 'clues-management' ? 'Manage Clues' : 'View Submissions'}
+                  </span>
+                </div>
+              </li>
+            </ol>
           </nav>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb for management views */}
-        {(activeView === 'clues-management' || activeView === 'submissions-management') && (
-          <div className="mb-6">
-            <nav className="flex" aria-label="Breadcrumb">
-              <ol role="list" className="flex items-center space-x-4">
-                <li>
-                  <div>
-                    <button
-                      onClick={() => setActiveView('treasure-hunts')}
-                      className="text-gray-400 hover:text-gray-500"
-                    >
-                      Treasure Hunts
-                    </button>
-                  </div>
-                </li>
-                <li>
-                  <div className="flex items-center">
-                    <svg className="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="ml-4 text-sm font-medium text-gray-500">
-                      {activeView === 'clues-management' ? 'Manage Clues' : 'View Submissions'}
-                    </span>
-                  </div>
-                </li>
-              </ol>
-            </nav>
-          </div>
-        )}
-        
-        {renderActiveTab()}
-      </div>
+      )}
+      
+      {renderActiveTab()}
 
       {/* Winner Selection Modal */}
       <LazyWrapper>
@@ -618,6 +521,6 @@ export default function AdminDashboard() {
           onSuccess={handleWinnerSelectionSuccess}
         />
       </LazyWrapper>
-    </div>
+    </>
   );
 }

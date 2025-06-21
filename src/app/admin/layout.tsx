@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppSelector } from '../../hooks/redux';
+import { useAuth } from '../../hooks/useAuth';
 import ProtectedRoute from '../../components/ProtectedRoute';
-
+import AdminHeader from '../../components/admin/AdminHeader';
+import AdminNavigation from '../../components/admin/AdminNavigation';
 
 export default function AdminLayout({
   children,
@@ -13,6 +15,7 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const { user, isLoading } = useAppSelector((state) => state.auth);
+  const { logout: handleLogout } = useAuth();
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== 'admin')) {
@@ -34,8 +37,17 @@ export default function AdminLayout({
 
   return (
     <ProtectedRoute>
-      {children}
-     
+      <div className="min-h-screen bg-gray-50">
+        <AdminHeader 
+          pendingApprovals={0}
+          onLogout={handleLogout}
+          userName={user?.name || user?.email || 'Admin'}
+        />
+        <AdminNavigation pendingApprovals={0} />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {children}
+        </main>
+      </div>
     </ProtectedRoute>
   );
 } 

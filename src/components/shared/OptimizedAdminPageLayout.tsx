@@ -2,7 +2,6 @@ import React, { memo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import AdminHeader from '../admin/AdminHeader';
 import LazyWrapper from './LazyWrapper';
 
 interface OptimizedAdminPageLayoutProps {
@@ -39,7 +38,7 @@ const OptimizedAdminPageLayout: React.FC<OptimizedAdminPageLayoutProps> = memo((
   children,
   fallback = <DefaultFallback />
 }) => {
-  const { user, logout: handleLogout } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
   // Memoized handlers
@@ -57,33 +56,23 @@ const OptimizedAdminPageLayout: React.FC<OptimizedAdminPageLayoutProps> = memo((
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Optimized Admin Header */}
-      <AdminHeader 
-        pendingApprovals={MOCK_STATS.pendingApprovals}
-        onLogout={handleLogout}
-        userName={user?.name || user?.email || 'Admin'}
-      />
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <div className="mb-6">
-          <button
-            onClick={handleBack}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to {backPath === '/admin' ? 'Dashboard' : 'Previous Page'}</span>
-          </button>
-        </div>
-        
-        {/* Page Content with Lazy Loading */}
-        <LazyWrapper fallback={fallback}>
-          {children}
-        </LazyWrapper>
+    <>
+      {/* Back Button */}
+      <div className="mb-6">
+        <button
+          onClick={handleBack}
+          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to {backPath === '/admin' ? 'Dashboard' : 'Previous Page'}</span>
+        </button>
       </div>
-    </div>
+      
+      {/* Page Content with Lazy Loading */}
+      <LazyWrapper fallback={fallback}>
+        {children}
+      </LazyWrapper>
+    </>
   );
 });
 
