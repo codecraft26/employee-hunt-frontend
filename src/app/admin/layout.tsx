@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import AdminHeader from '../../components/admin/AdminHeader';
 import AdminNavigation from '../../components/admin/AdminNavigation';
+import AdminSidebar from '../../components/admin/AdminSidebar';
 
 export default function AdminLayout({
   children,
@@ -38,15 +39,23 @@ export default function AdminLayout({
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        <AdminHeader 
-          pendingApprovals={0}
-          onLogout={handleLogout}
-          userName={user?.name || user?.email || 'Admin'}
-        />
-        <AdminNavigation pendingApprovals={0} />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {children}
-        </main>
+        {/* Sidebar for desktop */}
+        <AdminSidebar pendingApprovals={0} />
+        
+        {/* Header and mobile navigation */}
+        <div className="lg:pl-64">
+          <AdminHeader 
+            pendingApprovals={0}
+            onLogout={handleLogout}
+            userName={user?.name || user?.email || 'Admin'}
+          />
+          <AdminNavigation pendingApprovals={0} />
+          
+          {/* Main content */}
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {children}
+          </main>
+        </div>
       </div>
     </ProtectedRoute>
   );

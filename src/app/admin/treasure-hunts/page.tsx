@@ -37,24 +37,16 @@ export default function TreasureHuntsPage() {
   }, []);
 
   // Memoized treasure hunt handlers
-  const handleViewClues = useCallback(async (huntId: string) => {
-    console.log(`View clues: ${huntId}`);
-    setSelectedHuntId(huntId);
-    setCurrentView('clues');
+  const handleViewClues = useCallback((huntId: string) => {
+    // TODO: Navigate to clues management
   }, []);
 
-  const handleViewSubmissions = useCallback(async (huntId: string) => {
-    console.log(`View submissions: ${huntId}`);
-    setSelectedHuntId(huntId);
-    setCurrentView('submissions');
+  const handleViewSubmissions = useCallback((huntId: string) => {
+    // TODO: Navigate to submissions management
   }, []);
 
   const handleDeclareWinner = useCallback((huntId: string) => {
-    console.log(`Declare winner: ${huntId}`);
-    setWinnerModal({
-      isOpen: true,
-      huntId
-    });
+    // TODO: Open winner declaration modal
   }, []);
 
   const handleBackToList = useCallback(() => {

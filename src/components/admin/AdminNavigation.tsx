@@ -2,7 +2,7 @@
 import React, { memo, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Target, MapPin, Vote, Users, CheckCircle, Building2, ChevronDown, Menu } from 'lucide-react';
+import { BarChart3, Target, MapPin, Vote, Users, CheckCircle, Building2, ChevronDown, Menu, Image as ImageIcon, UserCog } from 'lucide-react';
 
 interface AdminNavigationProps {
   pendingApprovals?: number;
@@ -16,6 +16,8 @@ const NAVIGATION_ITEMS = [
   { id: 'polls', label: 'Polls & Voting', icon: Vote, href: '/admin/polls' },
   { id: 'teams', label: 'Teams', icon: Users, href: '/admin/teams' },
   { id: 'categories', label: 'Categories', icon: Building2, href: '/admin/categories' },
+  { id: 'photo-wall', label: 'Photo Wall', icon: ImageIcon, href: '/admin?tab=photo-wall' },
+  { id: 'user-management', label: 'User Management', icon: UserCog, href: '/admin?tab=user-management' },
   { id: 'approvals', label: 'Approvals', icon: CheckCircle, href: '/admin/approveUser' },
 ];
 
@@ -46,7 +48,7 @@ const AdminNavigation: React.FC<AdminNavigationProps> = memo(({
         setVisibleItems(NAVIGATION_ITEMS.slice(0, 3));
         setHiddenItems(NAVIGATION_ITEMS.slice(3));
       } else {
-        // On desktop, calculate based on available space
+        // On tablet, calculate based on available space
         const availableWidth = containerWidth - 120; // Account for dropdown button
         
         for (let i = 0; i < navElements.length; i++) {
@@ -83,10 +85,10 @@ const AdminNavigation: React.FC<AdminNavigationProps> = memo(({
   };
 
   return (
-    <div className="bg-white border-b sticky top-16 z-30">
+    <div className="lg:hidden bg-white border-b sticky top-16 z-30">
       <div className="max-w-7xl mx-auto">
         <div className="relative">
-          {/* Desktop Navigation */}
+          {/* Tablet Navigation */}
           <div className="hidden md:flex items-center justify-between px-4 sm:px-6 lg:px-8">
             <div ref={containerRef} className="flex items-center space-x-1">
               {visibleItems.map((item) => (

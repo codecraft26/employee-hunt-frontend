@@ -98,7 +98,6 @@ export const useActivities = () => {
       } catch (err: any) {
         if (err.response?.status === 404 || err.response?.status === 400) {
           // If that fails, try the general activities endpoint
-          console.log('User-specific activities endpoint not found, trying general endpoint...');
           response = await api.get<ActivitiesResponse>('/activities');
         } else {
           throw err;
@@ -114,17 +113,9 @@ export const useActivities = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch user activities';
       setError(errorMessage);
-      console.error('User activities fetch error:', err);
-      console.error('Error details:', {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        url: err.config?.url
-      });
       
       // For development, provide mock data if API is not available
       if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock activities data for development...');
         const mockActivities: Activity[] = [
           {
             id: '1',

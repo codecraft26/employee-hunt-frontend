@@ -1,20 +1,18 @@
 'use client';
 
-import React, { lazy, useCallback } from 'react';
+import React from 'react';
+import { Building2 } from 'lucide-react';
 import OptimizedAdminPageLayout from '../../../components/shared/OptimizedAdminPageLayout';
+import CategoriesTab from '../../../components/tabs/CategoriesTab';
 
-// Lazy load the CategoriesTab component
-const CategoriesTab = lazy(() => import('../../../components/tabs/CategoriesTab'));
+export default function AdminCategoriesPage() {
+  const handleCreateCategory = () => {
+    // TODO: Implement create category functionality
+  };
 
-export default function CategoriesPage() {
-  // Memoized category handlers
-  const handleCreateCategory = useCallback(() => {
-    console.log('Create category - handled by CategoriesTab component');
-  }, []);
-
-  const handleViewCategoryStats = useCallback((categoryId: string) => {
-    console.log(`View stats for category: ${categoryId}`);
-  }, []);
+  const handleViewCategoryStats = (categoryId: string) => {
+    // TODO: Implement view category stats functionality
+  };
 
   return (
     <OptimizedAdminPageLayout title="Categories Management">

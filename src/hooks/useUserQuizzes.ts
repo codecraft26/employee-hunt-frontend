@@ -111,21 +111,21 @@ export const useUserQuizzes = () => {
   const [assignedQuestions, setAssignedQuestions] = useState<UserQuizQuestion[]>([]);
   const [teamRankings, setTeamRankings] = useState<TeamRanking[]>([]);
 
-  // Fetch user's assigned quizzes
-  const fetchMyQuizzes = useCallback(async () => {
+  // Fetch user's quizzes
+  const fetchUserQuizzes = useCallback(async (): Promise<UserQuiz[] | null> => {
     setLoading(true);
     setError(null);
+    
     try {
       // Try different endpoints in order of preference
       let response;
       
       try {
         // First try the user-specific endpoint
-        response = await api.get('/quizzes/my-quizzes');
+        response = await api.get('/quizzes/user');
       } catch (err: any) {
         if (err.response?.status === 404 || err.response?.status === 400) {
           // If that fails, try the general quizzes endpoint
-          console.log('User-specific quizzes endpoint not found, trying general endpoint...');
           response = await api.get('/quizzes');
         } else {
           throw err;
@@ -134,34 +134,27 @@ export const useUserQuizzes = () => {
       
       if (response.data.success) {
         setQuizzes(response.data.data);
+        return response.data.data;
       } else {
-        throw new Error(response.data.message || 'Failed to fetch quizzes');
+        throw new Error('Failed to fetch user quizzes');
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch quizzes';
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch user quizzes';
       setError(errorMessage);
-      console.error('Quizzes fetch error:', err);
-      console.error('Error details:', {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        url: err.config?.url
-      });
       
       // For development, provide mock data if API is not available
       if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock quizzes data for development...');
         const mockQuizzes: UserQuiz[] = [
           {
             id: '1',
-            title: 'Weekly Knowledge Quiz',
-            description: 'Test your knowledge about company policies and procedures.',
+            title: 'JavaScript Fundamentals',
+            description: 'Test your knowledge of JavaScript basics',
             status: 'ACTIVE',
             startTime: new Date().toISOString(),
-            endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+            endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             resultDisplayTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             isResultPublished: false,
-            totalQuestions: 10,
+            totalQuestions: 15,
             questionsPerParticipant: 5,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -174,14 +167,14 @@ export const useUserQuizzes = () => {
           },
           {
             id: '2',
-            title: 'Team Building Quiz',
-            description: 'Fun quiz to test team collaboration and communication.',
+            title: 'React Advanced Concepts',
+            description: 'Advanced React patterns and hooks',
             status: 'UPCOMING',
-            startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-            endTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(), // 9 days from now
+            startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+            endTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
             resultDisplayTime: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString(),
             isResultPublished: false,
-            totalQuestions: 15,
+            totalQuestions: 20,
             questionsPerParticipant: 8,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -194,20 +187,21 @@ export const useUserQuizzes = () => {
           }
         ];
         setQuizzes(mockQuizzes);
-        return;
+        return mockQuizzes;
       }
       
-      // Return empty array as fallback to prevent UI from breaking
       setQuizzes([]);
+      return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Get quiz by ID
-  const getQuizById = useCallback(async (quizId: string) => {
+  // Fetch quiz by ID
+  const fetchQuizById = useCallback(async (quizId: string): Promise<UserQuiz | null> => {
     setLoading(true);
     setError(null);
+    
     try {
       const response = await api.get(`/quizzes/${quizId}`);
       if (response.data.success) {
@@ -503,8 +497,8 @@ export const useUserQuizzes = () => {
     currentQuiz,
     assignedQuestions,
     teamRankings,
-    fetchMyQuizzes,
-    getQuizById,
+    fetchUserQuizzes,
+    fetchQuizById,
     getAssignedQuestions,
     submitAnswer,
     getTeamRankings,

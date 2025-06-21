@@ -130,20 +130,6 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-         // Enhanced logging for debugging
-     try {
-       console.log('🚀 API Request:', {
-         method: config.method?.toUpperCase() || 'UNKNOWN',
-         url: `${config.baseURL || ''}${config.url || ''}`,
-         hasToken: !!token,
-         tokenType: (adminTokenCookie || adminTokenLocal) ? 'admin' : 'regular',
-         data: config.data || null,
-         timestamp: new Date().toISOString()
-       });
-     } catch (logError) {
-       console.warn('Failed to log API request:', logError);
-     }
-    
     return config;
   },
   (error) => {
@@ -155,36 +141,9 @@ api.interceptors.request.use(
 // Enhanced response interceptor
 api.interceptors.response.use(
   (response) => {
-         try {
-       console.log('✅ API Response Success:', {
-         method: response.config?.method?.toUpperCase() || 'UNKNOWN',
-         url: response.config?.url || 'UNKNOWN',
-         status: response.status || 0,
-         statusText: response.statusText || 'UNKNOWN',
-         success: response.data?.success || false,
-         dataType: Array.isArray(response.data?.data) ? 'array' : typeof response.data?.data,
-         timestamp: new Date().toISOString()
-       });
-     } catch (logError) {
-       console.warn('Failed to log API response:', logError);
-     }
     return response;
   },
   (error) => {
-         try {
-       console.error('❌ API Response Error:', {
-         method: error.config?.method?.toUpperCase() || 'UNKNOWN',
-         url: error.config?.url || 'UNKNOWN',
-         status: error.response?.status || 0,
-         statusText: error.response?.statusText || 'UNKNOWN',
-         message: error.response?.data?.message || error.message || 'Unknown error',
-         data: error.response?.data || null,
-         timestamp: new Date().toISOString()
-       });
-     } catch (logError) {
-       console.warn('Failed to log API error:', logError);
-     }
-    
     // Handle specific error cases
     if (error.response?.status === 401) {
       console.error('🔒 Unauthorized access - token may be invalid');
@@ -259,68 +218,65 @@ export const useTeams = () => {
     return err.message || defaultMessage;
   };
 
-  // Create a new team
-  const createTeam = useCallback(async (teamData: CreateTeamRequest): Promise<Team | null> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      console.log('🏗️ Creating team:', teamData);
-      
-      const response = await api.post<{ success: boolean; data: Team }>('/teams', teamData);
-      
-      if (response.data.success && response.data.data) {
-        console.log('✅ Team created successfully:', response.data.data);
-        // Refresh teams list after creation
-        await fetchTeams();
-        return response.data.data;
-      } else {
-        throw new Error('Invalid response format from server');
-      }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to create team');
-      console.error('❌ Create team error:', errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
+  // API request helper with better error handling
+  const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+    const token = Cookies.get('adminToken') || 
+                  (typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null) || 
+                  Cookies.get('token');
+    if (!token) {
+      throw new Error('No authentication token available');
     }
-  }, []);
 
-  // Fetch user's team
-  const fetchMyTeam = useCallback(async (): Promise<Team | null> => {
-    setLoading(true);
-    setError(null);
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Test API connection
+  const testApiConnection = async () => {
+    const token = Cookies.get('adminToken') || 
+                  (typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null) || 
+                  Cookies.get('token');
     
     try {
-      console.log('👤 Fetching my team...');
+      const response = await fetch(`${API_BASE_URL}/health`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       
-      const response = await api.get<MyTeamResponse>('/teams/my-team');
-      
-      if (response.data.success && response.data.data) {
-        console.log('✅ My team fetched successfully:', response.data.data);
-        setMyTeam(response.data.data);
-        return response.data.data;
-      } else {
-        setMyTeam(null);
-        return null;
-      }
-    } catch (err: any) {
-      // Handle case where user is not part of any team (404)
-      if (err.response?.status === 404) {
-        console.log('ℹ️ User is not part of any team');
-        setMyTeam(null);
-        return null;
-      }
-      
-      const errorMessage = handleApiError(err, 'Failed to fetch your team');
-      console.error('❌ Fetch my team error:', errorMessage);
-      setError(errorMessage);
-      return null;
-    } finally {
-      setLoading(false);
+      return {
+        success: response.ok,
+        status: response.status,
+        message: response.ok ? 'Connected successfully' : 'Connection failed'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: 0,
+        message: 'Connection error'
+      };
     }
-  }, []);
+  };
 
   // Fetch all teams
   const fetchTeams = useCallback(async (): Promise<Team[] | null> => {
@@ -328,55 +284,88 @@ export const useTeams = () => {
     setError(null);
     
     try {
-      console.log('📋 Fetching all teams...');
+      const response = await apiRequest('/teams');
       
-      const response = await api.get<TeamsResponse>('/teams');
-      
-      if (response.data.success && Array.isArray(response.data.data)) {
-        console.log(`✅ Teams fetched successfully: ${response.data.data.length} teams`);
-        setTeams(response.data.data);
-        return response.data.data;
+      if (response.success) {
+        setTeams(response.data);
+        return response.data;
       } else {
-        console.warn('⚠️ Invalid teams response format');
-        setTeams([]);
-        return [];
+        throw new Error(response.message || 'Failed to fetch teams');
       }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to fetch teams');
-      console.error('❌ Fetch teams error:', errorMessage);
-      setError(errorMessage);
-      setTeams([]);
-      return null;
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Fetch all users available for team assignment
+  // Create team
+  const createTeam = useCallback(async (teamData: CreateTeamRequest): Promise<Team | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiRequest('/teams', {
+        method: 'POST',
+        body: JSON.stringify(teamData),
+      });
+
+      if (response.success) {
+        // Refresh teams list
+        await fetchTeams();
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to create team');
+      }
+    } catch (error) {
+      const errorMessage = handleApiError(error, 'Failed to create team');
+      console.error('❌ Create team error:', errorMessage);
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchTeams]);
+
+  // Get current user's team
+  const fetchMyTeam = useCallback(async (): Promise<Team | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiRequest('/teams/my-team');
+      
+      if (response.success && response.data) {
+        setMyTeam(response.data);
+        return response.data;
+      } else {
+        setMyTeam(null);
+        return null;
+      }
+    } catch (error) {
+      setMyTeam(null);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch all users
   const fetchUsers = useCallback(async (): Promise<User[] | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('👥 Fetching users...');
+      const response = await apiRequest('/users');
       
-      const response = await api.get<UsersResponse>('/teams/users');
-      
-      if (response.data.success && Array.isArray(response.data.data)) {
-        console.log(`✅ Users fetched successfully: ${response.data.data.length} users`);
-        setUsers(response.data.data);
-        return response.data.data;
+      if (response.success) {
+        setUsers(response.data);
+        return response.data;
       } else {
-        console.warn('⚠️ Invalid users response format');
-        setUsers([]);
-        return [];
+        throw new Error(response.message || 'Failed to fetch users');
       }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to fetch users');
-      console.error('❌ Fetch users error:', errorMessage);
-      setError(errorMessage);
-      setUsers([]);
-      return null;
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -388,178 +377,105 @@ export const useTeams = () => {
     setError(null);
     
     try {
-      console.log('➕ Adding member to team:', memberData);
-      
-      const response = await api.post('/teams/members', memberData);
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('✅ Member added successfully');
-        // Refresh teams and users list after adding member
-        await Promise.all([fetchTeams(), fetchUsers()]);
-        return true;
+      const response = await apiRequest('/teams/members/add', {
+        method: 'POST',
+        body: JSON.stringify(memberData),
+      });
+
+      if (response.success) {
+        // Refresh teams list
+        await fetchTeams();
+        return response.data;
       } else {
-        throw new Error('Unexpected response status');
+        throw new Error(response.message || 'Failed to add member');
       }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to add member to team');
-      console.error('❌ Add member error:', errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
-  }, [fetchTeams, fetchUsers]);
+  }, [fetchTeams]);
 
-  // Remove member from team - FIXED VERSION
+  // Remove member from team
   const removeMemberFromTeam = useCallback(async (teamId: string, userId: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('➖ Removing member from team:', { teamId, userId });
-      
-      // Validate inputs
-      if (!teamId || !userId) {
-        throw new Error('Team ID and User ID are required');
-      }
-      
-      const requestData: RemoveMemberRequest = {
-        teamId: teamId.trim(),
-        userId: userId.trim()
+      const requestData = {
+        teamId,
+        userId,
       };
-      
-      console.log('📤 Request data:', requestData);
-      console.log('🔗 Full URL:', `${API_BASE_URL}/teams/members/remove`);
-      
-      // Make the API call
-      const response = await api.post<RemoveMemberResponse>('/teams/members/remove', requestData);
-      
-      console.log('📥 Remove member response:', {
-        status: response.status,
-        data: response.data
+
+      const response = await apiRequest('/teams/members/remove', {
+        method: 'DELETE',
+        body: JSON.stringify(requestData),
       });
-      
-      // Check for successful response
-      if (response.status === 200) {
-        if (response.data && response.data.success) {
-          console.log('✅ Member removed successfully:', response.data.message);
-          
-          // Update local state with the updated team data if available
-          if (response.data.data) {
-            setTeams(prevTeams => 
-              prevTeams.map(team => 
-                team.id === teamId ? response.data.data : team
-              )
-            );
-          }
-          
-          // Refresh teams and users list after removing member
-          await Promise.all([fetchTeams(), fetchUsers()]);
-          return true;
-        } else {
-          // Handle case where status is 200 but success is false
-          const errorMsg = response.data?.message || 'Operation was not successful';
-          console.error('⚠️ Remove member failed:', errorMsg);
-          setError(errorMsg);
-          return false;
-        }
+
+      if (response.success) {
+        // Refresh teams list
+        await fetchTeams();
+        return response.data;
       } else {
-        throw new Error(`Unexpected status code: ${response.status}`);
+        throw new Error(response.message || 'Failed to remove member');
       }
-    } catch (err: any) {
-      console.error('❌ Remove member error:', err);
-      
-      // Enhanced error handling with specific status codes
-      let errorMessage: string;
-      
-      if (err.response?.status === 404) {
-        errorMessage = 'Team or user not found. Please refresh and try again.';
-      } else if (err.response?.status === 403) {
-        errorMessage = 'You do not have permission to remove this member.';
-      } else if (err.response?.status === 400) {
-        errorMessage = err.response?.data?.message || 'Invalid request. Please check the team and user information.';
-      } else if (err.response?.status === 409) {
-        errorMessage = 'Cannot remove member due to a conflict. The member may have already been removed.';
-      } else {
-        errorMessage = handleApiError(err, 'Failed to remove member from team');
-      }
-      
-      setError(errorMessage);
-      return false;
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
-  }, [fetchTeams, fetchUsers]);
+  }, [fetchTeams]);
 
-  // Alternative remove member function using different HTTP methods (for testing)
-  const removeMemberFromTeamAlternative = useCallback(async (teamId: string, userId: string, method: 'DELETE_URL' | 'DELETE_BODY' | 'POST' = 'POST'): Promise<boolean> => {
+  // Remove member from team (alternative method)
+  const removeMemberFromTeamAlt = useCallback(async (teamId: string, userId: string, method: 'DELETE' | 'POST' = 'DELETE'): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
     try {
-      let response;
-      
-      switch (method) {
-        case 'DELETE_URL':
-          // DELETE with URL parameters
-          response = await api.delete(`/teams/${teamId}/members/${userId}`);
-          break;
-          
-        case 'DELETE_BODY':
-          // DELETE with request body
-          response = await api.delete('/teams/members', {
-            data: { teamId, userId }
-          });
-          break;
-          
-        case 'POST':
-        default:
-          // POST method (current approach)
-          response = await api.post('/teams/members/remove', { teamId, userId });
-          break;
+      const requestData = {
+        teamId,
+        userId,
+      };
+
+      const response = await apiRequest('/teams/members/remove', {
+        method,
+        body: JSON.stringify(requestData),
+      });
+
+      if (response.success) {
+        // Refresh teams list
+        await fetchTeams();
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to remove member');
       }
-      
-      console.log(`✅ Remove member (${method}) response:`, response.data);
-      
-      if (response.status === 200 || response.status === 204) {
-        await Promise.all([fetchTeams(), fetchUsers()]);
-        return true;
-      }
-      
-      return false;
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, `Failed to remove member using ${method} method`);
-      console.error(`❌ Remove member (${method}) error:`, errorMessage);
-      setError(errorMessage);
-      return false;
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
-  }, [fetchTeams, fetchUsers]);
+  }, [fetchTeams]);
 
-  // Update team details
+  // Update team
   const updateTeam = useCallback(async (teamId: string, teamData: Partial<CreateTeamRequest>): Promise<Team | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('✏️ Updating team:', { teamId, teamData });
-      
-      const response = await api.put(`/teams/${teamId}`, teamData);
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('✅ Team updated successfully');
-        // Refresh teams list after update
+      const response = await apiRequest(`/teams/${teamId}`, {
+        method: 'PUT',
+        body: JSON.stringify(teamData),
+      });
+
+      if (response.success) {
+        // Refresh teams list
         await fetchTeams();
-        return response.data.data || response.data;
+        return response.data;
       } else {
-        throw new Error('Unexpected response status');
+        throw new Error(response.message || 'Failed to update team');
       }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to update team');
-      console.error('❌ Update team error:', errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -571,29 +487,25 @@ export const useTeams = () => {
     setError(null);
     
     try {
-      console.log('🗑️ Deleting team:', teamId);
-      
-      const response = await api.delete(`/teams/${teamId}`);
-      
-      if (response.status === 200 || response.status === 204) {
-        console.log('✅ Team deleted successfully');
-        // Refresh teams list after deletion
+      const response = await apiRequest(`/teams/${teamId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.success) {
+        // Refresh teams list
         await fetchTeams();
-        return true;
+        return response.data;
       } else {
-        throw new Error('Unexpected response status');
+        throw new Error(response.message || 'Failed to delete team');
       }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to delete team');
-      console.error('❌ Delete team error:', errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
   }, [fetchTeams]);
 
-  // Get team statistics
+  // Calculate team statistics
   const getTeamStats = useCallback((teamId: string) => {
     const team = teams.find(t => t.id === teamId);
     if (!team) {
@@ -612,141 +524,110 @@ export const useTeams = () => {
       updatedAt: team.updatedAt
     };
     
-    console.log('📊 Team stats calculated:', stats);
     return stats;
   }, [teams]);
 
   // Clear error
   const clearError = useCallback(() => {
-    console.log('🧹 Clearing error state');
     setError(null);
   }, []);
 
   // Refresh all data
   const refreshAll = useCallback(async () => {
-    console.log('🔄 Refreshing all data...');
-    setError(null);
-    
     try {
       await Promise.all([
         fetchTeams(),
         fetchUsers(),
         fetchMyTeam()
       ]);
-      console.log('✅ All data refreshed successfully');
-    } catch (err) {
-      console.error('❌ Error refreshing data:', err);
+    } catch (error) {
+      throw error;
     }
   }, [fetchTeams, fetchUsers, fetchMyTeam]);
 
-  // Get available users (not in any team)
+  // Get available users (users not in any team)
   const getAvailableUsers = useCallback(() => {
-    const availableUsers = users.filter(user => !user.team);
-    console.log(`👥 Available users: ${availableUsers.length}/${users.length}`);
-    return availableUsers;
-  }, [users]);
+    const teamMemberIds = new Set();
+    teams.forEach(team => {
+      team.members?.forEach(member => {
+        teamMemberIds.add(member.id);
+      });
+    });
 
-  // Get users in specific team
+    return users.filter(user => !teamMemberIds.has(user.id));
+  }, [teams, users]);
+
+  // Get users in a specific team
   const getUsersInTeam = useCallback((teamId: string) => {
     const team = teams.find(t => t.id === teamId);
-    const usersInTeam = team?.members || [];
-    console.log(`👥 Users in team ${teamId}: ${usersInTeam.length}`);
-    return usersInTeam;
+    return team?.members || [];
   }, [teams]);
 
   // Create team with leader and members
-  const createTeamWithMembers = useCallback(async (teamData: CreateTeamRequest): Promise<Team | null> => {
+  const createTeamWithLeader = useCallback(async (teamData: CreateTeamRequest): Promise<Team | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('🏗️ Creating team with leader and members:', teamData);
-      
-      const response = await api.post<{ success: boolean; data: Team }>('/teams', teamData);
-      
-      if (response.data.success && response.data.data) {
-        console.log('✅ Team created successfully with leader:', response.data.data);
-        // Refresh teams and users list after creation
-        await Promise.all([fetchTeams(), fetchUsers()]);
-        return response.data.data;
-      } else {
-        throw new Error('Invalid response format from server');
-      }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to create team with members');
-      console.error('❌ Create team with members error:', errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchTeams, fetchUsers]);
+      const response = await apiRequest('/teams/with-leader', {
+        method: 'POST',
+        body: JSON.stringify(teamData),
+      });
 
-  // Assign or change team leader
-  const assignTeamLeader = useCallback(async (teamId: string, leaderId: string): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      console.log('👑 Assigning team leader:', { teamId, leaderId });
-      
-      const response = await api.post('/teams/assign-leader', { teamId, leaderId });
-      
-      if (response.status === 200 || response.status === 201) {
-        console.log('✅ Team leader assigned successfully');
-        // Refresh teams list after leader assignment
+      if (response.success) {
+        // Refresh teams list
         await fetchTeams();
-        return true;
+        return response.data;
       } else {
-        throw new Error('Unexpected response status');
+        throw new Error(response.message || 'Failed to create team with leader');
       }
-    } catch (err: any) {
-      const errorMessage = handleApiError(err, 'Failed to assign team leader');
-      console.error('❌ Assign team leader error:', errorMessage);
-      setError(errorMessage);
-      throw new Error(errorMessage);
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
   }, [fetchTeams]);
 
-  // Get available users for leadership (team members)
-  const getAvailableLeaders = useCallback((teamId: string) => {
-    const team = teams.find(t => t.id === teamId);
-    if (!team) return [];
-    
-    return team.members.filter(member => member.id !== team.leaderId);
-  }, [teams]);
-
-  // Check if current user is a team leader using the new dedicated endpoint
-  const checkIsTeamLeader = useCallback(async (): Promise<boolean> => {
+  // Assign team leader
+  const assignTeamLeader = useCallback(async (teamId: string, leaderId: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('👑 Checking if user is team leader...');
-      
-      const response = await api.get<LeaderCheckResponse>('/teams/check-leader');
-      
-      if (response.data.success) {
-        const isLeader = response.data.data.isLeader;
-        console.log(`✅ Leadership check result: ${isLeader ? 'IS LEADER' : 'IS MEMBER'}`);
-        return isLeader;
+      const response = await apiRequest('/teams/assign-leader', {
+        method: 'POST',
+        body: JSON.stringify({ teamId, leaderId }),
+      });
+
+      if (response.success) {
+        // Refresh teams list
+        await fetchTeams();
+        return response.data;
       } else {
-        console.warn('⚠️ Leadership check failed');
-        return false;
+        throw new Error(response.message || 'Failed to assign team leader');
       }
-    } catch (err: any) {
-      // Handle specific error cases
-      if (err.response?.status === 401) {
-        console.error('🔒 Unauthorized - token may be invalid');
-        return false;
-      }
+    } catch (error) {
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchTeams]);
+
+  // Check if current user is team leader
+  const checkIfUserIsTeamLeader = useCallback(async (teamId: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiRequest(`/teams/${teamId}/is-leader`);
       
-      const errorMessage = handleApiError(err, 'Failed to check team leadership');
-      console.error('❌ Leadership check error:', errorMessage);
-      setError(errorMessage);
-      return false;
+      if (response.success) {
+        return response.data.isLeader;
+      } else {
+        throw new Error(response.message || 'Failed to check leadership status');
+      }
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -762,18 +643,17 @@ export const useTeams = () => {
     
     // Team operations
     createTeam,
-    createTeamWithMembers,
+    createTeamWithLeader,
     updateTeam,
     deleteTeam,
     
     // Leader operations
     assignTeamLeader,
-    getAvailableLeaders,
     
     // Member operations
     addMemberToTeam,
     removeMemberFromTeam,
-    removeMemberFromTeamAlternative, // For testing different methods
+    removeMemberFromTeamAlt,
     
     // Data fetching
     fetchTeams,
@@ -791,6 +671,6 @@ export const useTeams = () => {
     debugApiConnection,
     
     // Leadership check function
-    checkIsTeamLeader,
+    checkIfUserIsTeamLeader,
   };
 };

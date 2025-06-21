@@ -560,26 +560,11 @@ export const useTreasureHunts = () => {
     setLoading(true);
     setError(null);
     
-    console.log('🔄 Fetching all teams progress for hunt:', huntId);
-    
     try {
       const response = await api.get<AllTeamsProgressResponse>(`/treasure-hunts/${huntId}/teams-progress`);
       
-      console.log('📊 All teams progress API response:', {
-        status: response.status,
-        data: response.data,
-        success: response.data.success,
-        teamsCount: response.data.data?.length
-      });
-      
       if (response.data.success) {
         const teams = response.data.data;
-        console.log('✅ Teams progress data:', teams);
-        if (teams) {
-          teams.forEach(team => {
-            console.log(`  - Team: ${team.teamName} (ID: ${team.teamId})`);
-          });
-        }
         return teams;
       } else {
         throw new Error('Failed to fetch all teams progress');
@@ -603,27 +588,11 @@ export const useTreasureHunts = () => {
     setLoading(true);
     setError(null);
     
-    console.log('🏆 Fetching teams for winner declaration:', huntId);
-    
     try {
       const response = await api.get<TeamsForWinnerResponse>(`/treasure-hunts/${huntId}/teams-for-winner`);
       
-      console.log('📊 Teams for winner API response:', {
-        status: response.status,
-        data: response.data,
-        success: response.data.success,
-        teamsCount: response.data.data?.length
-      });
-      
       if (response.data.success) {
         const teams = response.data.data;
-        console.log('✅ Teams for winner data:', teams);
-        if (teams) {
-          teams.forEach(team => {
-            console.log(`  - Team: ${team.teamName} (ID: ${team.teamId}) - ${team.completionPercentage}% complete`);
-            console.log(`    Members: ${team.teamMembers.length}, Last submission: ${team.lastSubmissionTime}`);
-          });
-        }
         return teams;
       } else {
         throw new Error('Failed to fetch teams for winner declaration');
@@ -895,26 +864,13 @@ export const useTreasureHunts = () => {
     }
   }, []);
 
-  // Declare winner
+  // Declare winner for a treasure hunt
   const declareWinner = useCallback(async (huntId: string, teamId: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
-    console.log('🏆 Declare Winner API Call:', {
-      huntId,
-      teamId,
-      endpoint: `/treasure-hunts/${huntId}/declare-winner`,
-      requestBody: { teamId }
-    });
-    
     try {
       const response = await api.post(`/treasure-hunts/${huntId}/declare-winner`, { teamId });
-      
-      console.log('✅ Declare Winner API Response:', {
-        status: response.status,
-        data: response.data,
-        success: response.data.success
-      });
       
       if (response.data.success) {
         await Promise.all([

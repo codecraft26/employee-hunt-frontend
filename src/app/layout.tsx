@@ -30,14 +30,12 @@ export default function RootLayout({
             for (const registration of registrations) {
               // Check if registration is from a different origin/port
               if (registration.scope !== window.location.origin + '/') {
-                console.log('Unregistering old ServiceWorker from different port:', registration.scope);
                 await registration.unregister();
               }
             }
           }
 
           const registration = await navigator.serviceWorker.register('/sw.js');
-          console.log('Service Worker registered successfully:', registration);
           
           // Check for updates
           registration.addEventListener('updatefound', () => {
@@ -55,11 +53,9 @@ export default function RootLayout({
             }
           });
         } catch (error) {
-          console.error('Service Worker registration failed:', error);
-          
           // In development, provide helpful error message
           if (isDevelopment) {
-            console.log('💡 Development tip: Clear browser cache and try again if ServiceWorker errors persist');
+            // Development tip: Clear browser cache and try again if ServiceWorker errors persist
           }
         }
       };
@@ -73,15 +69,6 @@ export default function RootLayout({
         }
       });
     }
-
-    // Debug PWA capabilities
-    console.log('PWA Debug Info:', {
-      serviceWorkerSupported: 'serviceWorker' in navigator,
-      isHTTPS: location.protocol === 'https:',
-      isLocalhost: location.hostname === 'localhost',
-      userAgent: navigator.userAgent,
-      standalone: window.matchMedia('(display-mode: standalone)').matches
-    });
   }, []);
 
   return (

@@ -31,13 +31,35 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch treasure hunt details and teams for winner when modal opens
+  // Load treasure hunt details when modal opens
   useEffect(() => {
     if (isOpen && treasureHuntId) {
+      const loadTreasureHuntDetails = async () => {
+        try {
+          const data = await fetchTreasureHuntById(treasureHuntId);
+          if (data && data.assignedTeams) {
+            setTreasureHunt(data);
+          }
+        } catch (error) {
+          // Handle error
+        }
+      };
+
+      const loadTeamsForWinner = async () => {
+        try {
+          const data = await fetchTeamsForWinner(treasureHuntId);
+          if (data && Array.isArray(data)) {
+            setTeamsForWinner(data);
+          }
+        } catch (error) {
+          // Handle error
+        }
+      };
+
       loadTreasureHuntDetails();
       loadTeamsForWinner();
     }
-  }, [isOpen, treasureHuntId]);
+  }, [isOpen, treasureHuntId, fetchTreasureHuntById, fetchTeamsForWinner]);
 
   // Clear success message after 5 seconds
   useEffect(() => {
@@ -49,63 +71,12 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
     }
   }, [successMessage]);
 
-  const loadTreasureHuntDetails = async () => {
-    try {
-      console.log('🔄 Loading treasure hunt details:', treasureHuntId);
-      const data = await fetchTreasureHuntById(treasureHuntId);
-      console.log('📊 Treasure hunt details:', data);
-      if (data) {
-        setTreasureHunt(data);
-        console.log('✅ Treasure hunt loaded with assigned teams:', data.assignedTeams);
-      }
-    } catch (error) {
-      console.error('❌ Failed to load treasure hunt details:', error);
-    }
-  };
-
-  const loadTeamsForWinner = async () => {
-    try {
-      console.log('🏆 Loading teams for winner declaration:', treasureHuntId);
-      const data = await fetchTeamsForWinner(treasureHuntId);
-      console.log('📊 Teams for winner data:', data);
-      if (data) {
-        setTeamsForWinner(data);
-        console.log('✅ Teams for winner loaded:', data.length, 'teams');
-        data.forEach(team => {
-          console.log(`  - Team: ${team.teamName} (ID: ${team.teamId}) - ${team.completionPercentage}% complete`);
-          console.log(`    Members: ${team.teamMembers.length}, Last submission: ${team.lastSubmissionTime}`);
-        });
-      } else {
-        console.log('❌ No teams data returned from fetchTeamsForWinner');
-      }
-    } catch (error) {
-      console.error('❌ Failed to load teams for winner:', error);
-    }
-  };
-
   const handleDeclareWinner = async () => {
-    if (!selectedTeamId) {
-      console.error('No team selected for winner declaration');
-      return;
-    }
-
-    // Verify that the selected team exists in the teams for winner data
-    const selectedTeam = teamsForWinner.find(team => team.teamId === selectedTeamId);
-    if (!selectedTeam) {
-      console.error('Selected team not found in teams for winner data:', selectedTeamId);
-      return;
-    }
-
-    console.log('🏆 Declaring winner:', {
-      treasureHuntId,
-      selectedTeamId,
-      selectedTeam
-    });
+    if (!selectedTeamId) return;
 
     setIsSubmitting(true);
     try {
       const result = await declareWinner(treasureHuntId, selectedTeamId);
-      console.log('✅ Winner declared successfully:', result);
       setSuccessMessage('Winner declared successfully!');
       onSuccess?.();
       setTimeout(() => {
@@ -114,7 +85,6 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
         setIsSubmitting(false);
       }, 2000);
     } catch (error) {
-      console.error('❌ Failed to declare winner:', error);
       setIsSubmitting(false);
     }
   };
@@ -245,11 +215,6 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => {
-                      console.log('👆 Team selected:', {
-                        teamId: team.teamId,
-                        teamName: team.teamName,
-                        completionPercentage: team.completionPercentage
-                      });
                       setSelectedTeamId(team.teamId);
                     }}
                   >

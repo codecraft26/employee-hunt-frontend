@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { useAppSelector } from './redux';
+import Cookies from 'js-cookie';
+import { apiService } from '../services/apiService';
 
 // Types for user management
 export interface User {
@@ -69,57 +71,16 @@ export const useUserManagement = () => {
 
   const { token } = useAppSelector((state) => state.auth);
 
-  // Get API base URL with fallback
-  const getApiBaseUrl = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const protocol = window.location.protocol;
-      
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'http://localhost:5000';
-      }
-    }
-    return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-  }, []);
-
-  // Get authentication headers
-  const getAuthHeaders = useCallback(() => {
-    const authToken = token || 
-                     (typeof window !== 'undefined' ? localStorage.getItem('token') : null) ||
-                     (typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null);
-
-    if (!authToken) {
-      throw new Error('No authentication token found');
-    }
-
-    return {
-      'Authorization': `Bearer ${authToken}`,
-    };
+  // Get authentication token from cookies (same as rest of app)
+  const getAuthToken = useCallback(() => {
+    return Cookies.get('token') || token;
   }, [token]);
-
-  // Safe logging function
-  const safeLog = useCallback((message: string, data?: any) => {
-    try {
-      if (data) {
-        console.log(message, data);
-      } else {
-        console.log(message);
-      }
-    } catch (error) {
-      console.log(message);
-    }
-  }, []);
 
   // Create new admin user
   const createAdminUser = useCallback(async (adminData: CreateAdminRequest): Promise<CreateAdminResponse | null> => {
     setState(prev => ({ ...prev, createAdminLoading: true, createAdminError: null }));
     
     try {
-      safeLog('🔧 Creating admin user...', { email: adminData.email, name: adminData.name });
-      
-      const baseUrl = getApiBaseUrl();
-      const url = `${baseUrl}/api/auth/register/admin`;
-      
       // Create FormData for multipart/form-data
       const formData = new FormData();
       formData.append('email', adminData.email);
@@ -142,37 +103,20 @@ export const useUserManagement = () => {
         formData.append('idProof', adminData.idProof);
       }
 
-      const headers = getAuthHeaders();
+      const response = await apiService.post('/api/auth/register/admin', formData);
       
-      safeLog('📡 Making API request to:', url);
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-
-      safeLog('📥 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        safeLog('❌ API Error Response:', errorData);
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      if (response.success) {
+        setState(prev => ({ 
+          ...prev, 
+          createAdminLoading: false,
+          users: [...prev.users, response.data]
+        }));
+        return response;
+      } else {
+        throw new Error(response.message || 'Failed to create admin user');
       }
-
-      const result: CreateAdminResponse = await response.json();
-      safeLog('✅ Admin created successfully:', result);
-
-      setState(prev => ({ 
-        ...prev, 
-        createAdminLoading: false,
-        users: [...prev.users, result.data]
-      }));
-
-      return result;
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to create admin user';
-      safeLog('❌ Create admin error:', errorMessage);
       
       setState(prev => ({ 
         ...prev, 
@@ -182,51 +126,27 @@ export const useUserManagement = () => {
       
       return null;
     }
-  }, [getApiBaseUrl, getAuthHeaders, safeLog]);
+  }, []);
 
   // Fetch all users
   const fetchAllUsers = useCallback(async (): Promise<GetUsersResponse | null> => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      safeLog('🔧 Fetching all users...');
+      const response = await apiService.get('/api/auth/users');
       
-      const baseUrl = getApiBaseUrl();
-      const url = `${baseUrl}/api/auth/users`;
-      
-      const headers = {
-        ...getAuthHeaders(),
-        'Content-Type': 'application/json',
-      };
-      
-      safeLog('📡 Making API request to:', url);
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers,
-      });
-
-      safeLog('📥 Response status:', response.status);
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        safeLog('❌ API Error Response:', errorData);
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      if (response.success) {
+        setState(prev => ({ 
+          ...prev, 
+          loading: false,
+          users: response.data
+        }));
+        return response;
+      } else {
+        throw new Error(response.message || 'Failed to fetch users');
       }
-
-      const result: GetUsersResponse = await response.json();
-      safeLog('✅ Users fetched successfully:', { count: result.data.length });
-
-      setState(prev => ({ 
-        ...prev, 
-        loading: false,
-        users: result.data
-      }));
-
-      return result;
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to fetch users';
-      safeLog('❌ Fetch users error:', errorMessage);
       
       setState(prev => ({ 
         ...prev, 
@@ -236,7 +156,7 @@ export const useUserManagement = () => {
       
       return null;
     }
-  }, [getApiBaseUrl, getAuthHeaders, safeLog]);
+  }, []);
 
   // Refresh users data
   const refreshUsers = useCallback(async () => {

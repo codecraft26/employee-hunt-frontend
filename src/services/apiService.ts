@@ -1,14 +1,15 @@
 import axios from 'axios';
-import { getLocalStorageItem } from '../utils/clientStorage';
+import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const apiService = {
   async get(endpoint: string) {
     try {
+      const token = Cookies.get('token');
       const response = await axios.get(`${API_BASE_URL}${endpoint}`, {
         headers: {
-          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
+          Authorization: token ? `Bearer ${token}` : undefined
         }
       });
       return response.data;
@@ -20,11 +21,17 @@ const apiService = {
 
   async post(endpoint: string, data?: any) {
     try {
-      const response = await axios.post(`${API_BASE_URL}${endpoint}`, data, {
-        headers: {
-          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
-        }
-      });
+      const token = Cookies.get('token');
+      const headers: any = {
+        Authorization: token ? `Bearer ${token}` : undefined
+      };
+      
+      // Don't set Content-Type for FormData, let browser set it with boundary
+      if (!(data instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      const response = await axios.post(`${API_BASE_URL}${endpoint}`, data, { headers });
       return response.data;
     } catch (error) {
       console.error('API POST Error:', error);
@@ -34,11 +41,17 @@ const apiService = {
 
   async put(endpoint: string, data?: any) {
     try {
-      const response = await axios.put(`${API_BASE_URL}${endpoint}`, data, {
-        headers: {
-          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
-        }
-      });
+      const token = Cookies.get('token');
+      const headers: any = {
+        Authorization: token ? `Bearer ${token}` : undefined
+      };
+      
+      // Don't set Content-Type for FormData, let browser set it with boundary
+      if (!(data instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      const response = await axios.put(`${API_BASE_URL}${endpoint}`, data, { headers });
       return response.data;
     } catch (error) {
       console.error('API PUT Error:', error);
@@ -48,9 +61,10 @@ const apiService = {
 
   async delete(endpoint: string) {
     try {
+      const token = Cookies.get('token');
       const response = await axios.delete(`${API_BASE_URL}${endpoint}`, {
         headers: {
-          Authorization: `Bearer ${getLocalStorageItem('adminToken')}`
+          Authorization: token ? `Bearer ${token}` : undefined
         }
       });
       return response.data;

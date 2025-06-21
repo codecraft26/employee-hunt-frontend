@@ -1,27 +1,21 @@
 'use client';
 
-import React, { lazy, useCallback } from 'react';
+import React from 'react';
 import OptimizedAdminPageLayout from '../../../components/shared/OptimizedAdminPageLayout';
+import QuizzesTab from '../../../components/tabs/QuizzesTab';
 
-// Lazy load the QuizzesTab component
-const QuizzesTab = lazy(() => import('../../../components/tabs/QuizzesTab'));
+export default function AdminQuizzesPage() {
+  const handleCreateQuiz = () => {
+    // TODO: Implement create quiz functionality
+  };
 
-export default function QuizzesPage() {
-  // Memoized quiz handlers
-  const handleCreateQuiz = useCallback(() => {
-    console.log('Create quiz');
-    // TODO: API call to create quiz
-  }, []);
+  const handleViewQuiz = (quizId: string) => {
+    // TODO: Implement view quiz functionality
+  };
 
-  const handleViewQuiz = useCallback((quizId: string) => {
-    console.log(`View quiz: ${quizId}`);
-    // TODO: Navigate to quiz details
-  }, []);
-
-  const handleEditQuiz = useCallback((quizId: string) => {
-    console.log(`Edit quiz: ${quizId}`);
-    // TODO: Navigate to quiz edit form
-  }, []);
+  const handleEditQuiz = (quizId: string) => {
+    // TODO: Implement edit quiz functionality
+  };
 
   return (
     <OptimizedAdminPageLayout title="Quizzes Management">

@@ -1,9 +1,10 @@
 // pages/admin/AdminDashboard.tsx
 'use client';
 
-import React, { useState, useCallback, lazy, useMemo } from 'react';
+import React, { useState, useCallback, lazy, useMemo, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
+import { useSearchParams } from 'next/navigation';
 
 import LazyWrapper from '../../components/shared/LazyWrapper';
 
@@ -20,6 +21,7 @@ const SubmissionsManagementTab = lazy(() => import('../../components/tabs/Submis
 const WinnerSelectionModal = lazy(() => import('../../components/modals/WinnerSelectionModal'));
 const AdminApprovalsTab = lazy(() => import('../../components/tabs/AdminApprovalsTab'));
 const PhotoWallTab = lazy(() => import('../../components/tabs/PhotoWallTab'));
+const UserManagementTab = lazy(() => import('../../components/tabs/UserManagementTab'));
 
 import { 
   Stats, 
@@ -32,7 +34,7 @@ import {
 } from '../../types/admin';
 
 // Extended TabView type to include clue, submission management, categories, and photo wall
-type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall' | 'activities';
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall' | 'user-management' | 'activities';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -150,15 +152,18 @@ export default function AdminDashboard() {
   const { user, logout: handleLogout } = useAuth();
   const treasureHuntsHook = useTreasureHunts();
   const { resetCurrentTreasureHunt, fetchTreasureHuntWithClues } = treasureHuntsHook;
+  const searchParams = useSearchParams();
 
-  // Debug: Log available functions from the hook
-  console.log('🔍 Available functions from useTreasureHunts:', Object.keys(treasureHuntsHook));
-  console.log('🔍 resetCurrentTreasureHunt function:', typeof resetCurrentTreasureHunt, resetCurrentTreasureHunt);
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['overview', 'quizzes', 'treasure-hunts', 'polls', 'teams', 'categories', 'photo-wall', 'user-management', 'activities', 'approve-users'].includes(tabParam)) {
+      setActiveView(tabParam as ExtendedTabView);
+    }
+  }, [searchParams]);
 
   // Handler functions for API calls - These will be implemented when connecting to backend
   const handleQuickAction = useCallback((type: string) => {
-    console.log(`Quick action: ${type}`);
-    
     // Navigate to appropriate tab based on quick action
     switch (type) {
       case 'quiz':
@@ -193,43 +198,42 @@ export default function AdminDashboard() {
       case 'create-activity':
         setActiveView('activities');
         break;
+      case 'user-management':
+        setActiveView('user-management');
+        break;
       
       default:
-        console.log(`Unhandled quick action: ${type}`);
+        // Unhandled quick action
+        break;
     }
-  }, []);
+  }, [setActiveView]);
 
   // Quiz handlers
   const handleCreateQuiz = useCallback(() => {
-    console.log('Create quiz');
     // TODO: API call to create quiz
   }, []);
 
   const handleViewQuiz = useCallback((quizId: string) => {
-    console.log(`View quiz: ${quizId}`);
     // TODO: Navigate to quiz details
   }, []);
 
   const handleEditQuiz = useCallback((quizId: string) => {
-    console.log(`Edit quiz: ${quizId}`);
     // TODO: Navigate to quiz edit form
   }, []);
 
   // Treasure hunt handlers
   const handleViewClues = useCallback(async (huntId: string) => {
-    console.log(`View clues: ${huntId}`);
     setSelectedTreasureHuntId(huntId);
     setActiveView('clues-management');
     
     try {
       await fetchTreasureHuntWithClues(huntId);
     } catch (error) {
-      console.error('Failed to fetch treasure hunt with clues:', error);
+      // Failed to fetch treasure hunt with clues
     }
   }, [fetchTreasureHuntWithClues]);
 
   const handleViewSubmissions = useCallback(async (huntId: string) => {
-    console.log(`View submissions: ${huntId}`);
     setSelectedTreasureHuntId(huntId);
     setActiveView('submissions-management');
     
@@ -237,7 +241,6 @@ export default function AdminDashboard() {
   }, []);
 
   const handleDeclareWinner = useCallback((huntId: string) => {
-    console.log(`Declare winner: ${huntId}`);
     setWinnerSelectionModal({
       isOpen: true,
       huntId: huntId
@@ -252,12 +255,11 @@ export default function AdminDashboard() {
     if (resetCurrentTreasureHunt && typeof resetCurrentTreasureHunt === 'function') {
       resetCurrentTreasureHunt();
     } else {
-      console.warn('⚠️ resetCurrentTreasureHunt function is not available');
+      // ⚠️ resetCurrentTreasureHunt function is not available
     }
   }, [resetCurrentTreasureHunt]);
 
   const handleWinnerSelectionSuccess = useCallback(() => {
-    console.log('Winner declared successfully');
     // Optionally show a success message or refresh data
   }, []);
 
@@ -268,71 +270,59 @@ export default function AdminDashboard() {
     if (resetCurrentTreasureHunt && typeof resetCurrentTreasureHunt === 'function') {
       resetCurrentTreasureHunt();
     } else {
-      console.warn('⚠️ resetCurrentTreasureHunt function is not available');
+      // ⚠️ resetCurrentTreasureHunt function is not available
     }
   }, [resetCurrentTreasureHunt]);
 
   // Poll handlers
   const handleCreatePoll = () => {
-    console.log('Create poll - handled by PollsTab component');
     // This is now handled within the PollsTab component
   };
 
   const handleViewResults = (pollId: string) => {
-    console.log(`View results: ${pollId}`);
     // TODO: Navigate to poll results page or open modal
   };
 
   const handleNotifyWinner = (pollId: string) => {
-    console.log(`Notify users about poll results: ${pollId}`);
     // TODO: API call to notify users about poll results
   };
 
   // Team handlers - now handled by the TeamsTab component itself
   const handleCreateTeam = () => {
-    console.log('Create team - handled by TeamsTab component');
     // This is now handled within the TeamsTab component
   };
 
   const handleImportUsers = () => {
-    console.log('Import users');
     // TODO: Handle user import - could open a modal or navigate to import page
   };
 
   const handleManageMembers = (teamId: string) => {
-    console.log(`Manage members for team: ${teamId}`);
     // This is now handled within the TeamsTab component
   };
 
   const handleViewStats = (teamId: string) => {
-    console.log(`View stats for team: ${teamId}`);
     // This is now handled within the TeamsTab component
   };
 
   // NEW: Category handlers - handled by the CategoriesTab component itself
   const handleCreateCategory = () => {
-    console.log('Create category - handled by CategoriesTab component');
     // This is now handled within the CategoriesTab component
   };
 
   const handleViewCategoryStats = (categoryId: string) => {
-    console.log(`View stats for category: ${categoryId}`);
     // This is now handled within the CategoriesTab component
   };
 
   // Approval handlers
   const handleApprove = (approvalId: number) => {
-    console.log(`Approve: ${approvalId}`);
     // TODO: API call to approve
   };
 
   const handleReject = (approvalId: number) => {
-    console.log(`Reject: ${approvalId}`);
     // TODO: API call to reject
   };
 
   const handleAddFeedback = (approvalId: number) => {
-    console.log(`Add feedback: ${approvalId}`);
     // TODO: Open feedback modal
   };
 
@@ -465,6 +455,13 @@ export default function AdminDashboard() {
         return (
           <LazyWrapper>
             <PhotoWallTab />
+          </LazyWrapper>
+        );
+
+      case 'user-management':
+        return (
+          <LazyWrapper>
+            <UserManagementTab />
           </LazyWrapper>
         );
      

@@ -51,8 +51,8 @@ const UserQuizTab: React.FC = () => {
     currentQuiz,
     assignedQuestions,
     teamRankings,
-    fetchMyQuizzes,
-    getQuizById,
+    fetchUserQuizzes,
+    fetchQuizById,
     getAssignedQuestions,
     submitAnswer,
     getTeamRankings,
@@ -86,8 +86,8 @@ const UserQuizTab: React.FC = () => {
 
   // Fetch quizzes on component mount
   useEffect(() => {
-    fetchMyQuizzes();
-  }, [fetchMyQuizzes]);
+    fetchUserQuizzes();
+  }, [fetchUserQuizzes]);
 
   // Timer for current question
   useEffect(() => {
@@ -141,8 +141,8 @@ const UserQuizTab: React.FC = () => {
 
   const handleRefresh = useCallback(() => {
     clearError();
-    fetchMyQuizzes();
-  }, [clearError, fetchMyQuizzes]);
+    fetchUserQuizzes();
+  }, [clearError, fetchUserQuizzes]);
 
   const handleStartQuiz = async (quiz: UserQuiz) => {
     try {
@@ -150,30 +150,22 @@ const UserQuizTab: React.FC = () => {
       setQuizStartTime(new Date());
       
       // Fetch the full quiz details and assigned questions
-      await getQuizById(quiz.id);
+      await fetchQuizById(quiz.id);
       const questions = await getAssignedQuestions(quiz.id);
       
-      console.log('Fetched questions:', questions); // Debug log
-      
       if (questions && questions.length > 0) {
-        console.log('First question:', questions[0]); // Debug log
-        
-        // Find the first unanswered question or start from beginning for review
-        const nextUnansweredIndex = findNextUnansweredQuestion(0);
-        const startIndex = nextUnansweredIndex !== -1 ? nextUnansweredIndex : 0;
-        
-        setCurrentQuestionIndex(startIndex);
+        setCurrentQuestionIndex(0);
         setSelectedAnswer(null);
         setShowQuestionReview(false);
         
         // If starting with a completed question, show it in review mode
-        if (questions[startIndex]?.isCompleted) {
+        if (questions[0]?.isCompleted) {
           setShowQuestionReview(true);
-          setSelectedAnswer(questions[startIndex].userAnswer || null);
+          setSelectedAnswer(questions[0].userAnswer || null);
           setTimeRemaining(0); // No timer for completed questions
         } else {
           // Set timer for unanswered question
-          const timeLimit = questions[startIndex]?.question?.timeLimit || 30;
+          const timeLimit = questions[0]?.question?.timeLimit || 30;
           setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
         }
         
@@ -186,7 +178,7 @@ const UserQuizTab: React.FC = () => {
 
   const handleViewResults = async (quiz: UserQuiz) => {
     setSelectedQuiz(quiz);
-    await getQuizById(quiz.id);
+    await fetchQuizById(quiz.id);
     setShowResultsModal(true);
   };
 
@@ -256,7 +248,7 @@ const UserQuizTab: React.FC = () => {
       // Quiz completed
       setShowQuizModal(false);
       setShowResultsModal(true);
-      fetchMyQuizzes(); // Refresh quiz list
+      fetchUserQuizzes(); // Refresh quiz list
       return;
     }
     
@@ -284,7 +276,7 @@ const UserQuizTab: React.FC = () => {
         // All questions reviewed, finish quiz
         setShowQuizModal(false);
         setShowResultsModal(true);
-        fetchMyQuizzes();
+        fetchUserQuizzes();
       }
     }
   };

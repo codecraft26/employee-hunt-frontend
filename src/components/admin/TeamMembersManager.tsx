@@ -34,12 +34,6 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = memo(({
     clearError();
 
     try {
-      console.log('Attempting to remove member:', {
-        teamId: team.id,
-        userId: member.id,
-        memberName: member.name
-      });
-
       const success = await removeMemberFromTeam(team.id, member.id);
       
       if (success) {
@@ -53,7 +47,6 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = memo(({
         onMemberRemoved?.();
       } else {
         // This should not happen if our error handling is correct, but just in case
-        console.error('Remove member returned false without throwing an error');
         showError(
           'Removal Failed',
           'Failed to remove member from team. Please try again.',
@@ -61,8 +54,6 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = memo(({
         );
       }
     } catch (err: any) {
-      console.error('Failed to remove member:', err);
-      
       // Show error toast with specific message
       const errorMessage = err.message || 'An unexpected error occurred';
       showError(
@@ -88,8 +79,6 @@ const TeamMembersManager: React.FC<TeamMembersManagerProps> = memo(({
           <p className="text-red-700 text-sm">{error}</p>
         </div>
       )}
-
-
 
       <div className="bg-white shadow-sm rounded-lg border">
         {membersList.length === 0 ? (

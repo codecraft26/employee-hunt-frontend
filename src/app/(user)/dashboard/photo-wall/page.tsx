@@ -8,7 +8,6 @@ import UserPhotoWallTab from '../../../../components/user/UserPhotoWallTab';
 export default function PhotoWallPage() {
   const handleUploadSuccess = () => {
     // Could refresh data or show a notification
-    console.log('Photo uploaded successfully');
   };
 
   return (

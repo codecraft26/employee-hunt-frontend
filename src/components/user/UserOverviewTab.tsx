@@ -40,7 +40,7 @@ const QUICK_ACTIONS: QuickAction[] = [
   { title: 'Join Treasure Hunt', icon: MapPin, color: 'from-green-500 to-green-600', type: 'treasure-hunt' },
   { title: 'Vote in Polls', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'polls' },
   { title: 'Photo Wall', icon: Camera, color: 'from-teal-500 to-teal-600', type: 'photo-wall' },
-  { title: 'View Activities', icon: Zap, color: 'from-orange-500 to-orange-600', type: 'activities' },
+    { title: 'View Activities', icon: Zap, color: 'from-orange-500 to-orange-600', type: 'activities' },
   { title: 'My Team', icon: Users, color: 'from-indigo-500 to-indigo-600', type: 'team' },
   { title: 'My Profile', icon: Medal, color: 'from-pink-500 to-pink-600', type: 'profile' }
 ];
@@ -77,9 +77,7 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
 
   // Memoized navigation handler
   const handleQuickAction = useCallback((type: string) => {
-    console.log(`Quick action: ${type}`);
-    
-    // Navigate to appropriate route based on quick action
+    // Navigate to appropriate tab based on quick action
     switch (type) {
       case 'quiz':
         router.push('/dashboard/quiz');
@@ -90,9 +88,6 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
       case 'polls':
         router.push('/dashboard/polls');
         break;
-      case 'photo-wall':
-        router.push('/dashboard/photo-wall');
-        break;
       case 'team':
         router.push('/dashboard/team');
         break;
@@ -102,8 +97,12 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
       case 'activities':
         router.push('/dashboard/activities');
         break;
+      case 'photo-wall':
+        router.push('/dashboard/photo-wall');
+        break;
       default:
-        console.log(`Unhandled quick action: ${type}`);
+        console.warn('Unhandled quick action:', type);
+        break;
     }
   }, [router]);
 

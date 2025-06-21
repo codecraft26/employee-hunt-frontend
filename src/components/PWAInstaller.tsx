@@ -38,16 +38,16 @@ const PWAInstaller: React.FC = () => {
     };
   }, []);
 
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      console.log('User accepted the PWA installation');
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          // User accepted the PWA installation
+        }
+        setDeferredPrompt(null);
+      });
     }
-    setDeferredPrompt(null);
   };
 
   const handleDismiss = () => {

@@ -54,25 +54,9 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
     setRefreshing(true);
     try {
       const submissions = await getTeamSubmissionsForAdmin(hunt.id);
-      console.log('🎯 Admin Panel - Team Submissions Data:', submissions);
-      console.log('🎯 First submission structure:', submissions?.[0]);
-      
-      submissions?.forEach((submission, index) => {
-        console.log(`🖼️ Submission ${index + 1}:`, {
-          id: submission.id,
-          hasImageUrls: !!submission.imageUrls,
-          imageUrlsCount: submission.imageUrls?.length || 0,
-          imageUrls: submission.imageUrls,
-          hasSingleImageUrl: !!submission.imageUrl,
-          imageUrl: submission.imageUrl,
-          hasSelectedSubmissions: !!submission.selectedSubmissions,
-          selectedSubmissionsCount: submission.selectedSubmissions?.length || 0
-        });
-      });
-      
       setTeamSubmissions(submissions || []);
     } catch (error) {
-      console.error('Failed to load team submissions:', error);
+      // Handle error
     } finally {
       setRefreshing(false);
     }
@@ -108,7 +92,6 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
       
       alert(`Submission ${action}d successfully!`);
     } catch (error) {
-      console.error(`Failed to ${action} submission:`, error);
       alert(`Failed to ${action} submission. Please try again.`);
     } finally {
       setActionLoading(prev => ({ ...prev, [submissionId]: false }));
@@ -141,6 +124,73 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
   const pendingSubmissions = teamSubmissions.filter(s => s.status === 'PENDING');
   const approvedSubmissions = teamSubmissions.filter(s => s.status === 'APPROVED');
   const rejectedSubmissions = teamSubmissions.filter(s => s.status === 'REJECTED');
+
+  // Render team submissions
+  const renderTeamSubmissions = () => {
+    if (!teamSubmissions || teamSubmissions.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No submissions yet</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {teamSubmissions.map((submission, index) => (
+          <div key={index} className="bg-white rounded-lg border p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-medium">
+                  {submission.team?.name?.charAt(0) || 'T'}
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">{submission.team?.name || 'Unknown Team'}</h4>
+                  <p className="text-sm text-gray-500">Stage {submission.stageNumber || index + 1}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className={`inline-flex items-center px-2 py-1 text-xs font-medium ${getStatusColor(submission.status)} rounded-full`}>
+                  {getStatusIcon(submission.status)}
+                  <span className="ml-1">{submission.status}</span>
+                </span>
+              </div>
+            </div>
+            
+            {submission.imageUrl && (
+              <div className="mb-3">
+                <img 
+                  src={submission.imageUrl} 
+                  alt={`Submission ${index + 1}`}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              </div>
+            )}
+            
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600">{submission.description || 'No description provided'}</p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => openFeedbackModal(submission, 'approve')}
+                  disabled={actionLoading[submission.id]}
+                  className="px-3 py-1 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => openFeedbackModal(submission, 'reject')}
+                  disabled={actionLoading[submission.id]}
+                  className="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -229,188 +279,7 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
           Team Submissions ({teamSubmissions.length})
         </h3>
 
-        {teamSubmissions.length === 0 ? (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">No Submissions Yet</h4>
-            <p className="text-gray-500">Teams haven't submitted any photos for review yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {teamSubmissions.map((submission) => (
-              <div
-                key={submission.id}
-                className="border rounded-lg p-6 hover:shadow-sm transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                      <Users className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                        <span>{submission.team?.name}</span>
-                        <Crown className="h-4 w-4 text-yellow-500" />
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        Submitted by: {submission.submittedBy?.name} (Team Leader)
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(submission.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full border ${getStatusColor(submission.status)}`}>
-                    {getStatusIcon(submission.status)}
-                    <span className="ml-1">{submission.status}</span>
-                  </span>
-                </div>
-
-                {/* Leader Notes */}
-                {submission.leaderNotes && (
-                  <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <p className="text-sm font-medium text-blue-800 mb-1">Leader Notes:</p>
-                    <p className="text-blue-700 text-sm">{submission.leaderNotes}</p>
-                  </div>
-                )}
-
-                {/* Images */}
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-700 mb-3">
-                    Team Selected Images ({submission.imageUrls?.length || 1})
-                    {submission.imageUrls?.length > 1 && (
-                      <span className="ml-2 text-blue-600 font-medium">
-                        - {submission.imageUrls.length} photos submitted by team leader
-                      </span>
-                    )}
-                  </p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {/* Display ALL images from imageUrls array */}
-                    {submission.imageUrls && submission.imageUrls.length > 0 ? (
-                      submission.imageUrls.map((imageUrl: string, index: number) => (
-                        <div key={`${submission.id}-image-${index}`} className="relative group">
-                          <img
-                            src={imageUrl}
-                            alt={`Team ${submission.team?.name} submission ${index + 1}`}
-                            className="w-full h-48 object-cover rounded-lg border border-blue-200 hover:border-blue-400 transition-all duration-200 hover:shadow-lg"
-                            onError={(e) => {
-                              console.error(`Failed to load image ${index + 1}:`, imageUrl);
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                            }}
-                          />
-                          <div className="absolute top-2 left-2 bg-blue-600 bg-opacity-90 text-white px-2 py-1 rounded text-xs font-medium">
-                            Photo {index + 1}
-                          </div>
-                          <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full">
-                            <CheckCircle className="h-3 w-3" />
-                          </div>
-                          {/* Image index indicator */}
-                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
-                            {index + 1} of {submission.imageUrls.length}
-                          </div>
-                          {/* Hover overlay */}
-                          <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <Eye className="h-6 w-6 text-white" />
-                          </div>
-                        </div>
-                      ))
-                    ) : submission.imageUrl ? (
-                      /* Fallback to single imageUrl if imageUrls array is empty */
-                      <div className="relative group">
-                        <img
-                          src={submission.imageUrl}
-                          alt="Team submission"
-                          className="w-full h-48 object-cover rounded-lg border"
-                        />
-                        <div className="absolute top-2 left-2 bg-gray-600 bg-opacity-90 text-white px-2 py-1 rounded text-xs">
-                          Single Photo
-                        </div>
-                      </div>
-                    ) : (
-                      /* No images available */
-                      <div className="col-span-full p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
-                        <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>No images available for this submission</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Member Submission Details */}
-                {submission.selectedSubmissions?.length > 0 ? (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-3">Individual Member Submissions:</p>
-                    <div className="space-y-3">
-                      {submission.selectedSubmissions.map((memberSubmission: any, index: number) => (
-                        <div key={memberSubmission.id || index} className="bg-gray-50 rounded-lg p-3">
-                          <div className="flex items-start space-x-3">
-                            <img
-                              src={memberSubmission.imageUrl}
-                              alt={`Submission by ${memberSubmission.submittedBy?.name}`}
-                              className="w-16 h-16 object-cover rounded-lg border"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <p className="text-sm font-medium text-gray-900">
-                                  {memberSubmission.submittedBy?.name || 'Unknown Member'}
-                                </p>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(memberSubmission.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600">
-                                {memberSubmission.description}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Description:</p>
-                    <p className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg">
-                      {submission.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Admin Feedback */}
-                {submission.adminFeedback && (
-                  <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-sm font-medium text-green-800 mb-1">Your Feedback:</p>
-                    <p className="text-green-700 text-sm">{submission.adminFeedback}</p>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                {submission.status === 'PENDING' && (
-                  <div className="flex items-center space-x-3">
-                    <button
-                      onClick={() => openFeedbackModal(submission, 'approve')}
-                      disabled={actionLoading[submission.id]}
-                      className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      <span>Approve</span>
-                    </button>
-                    <button
-                      onClick={() => openFeedbackModal(submission, 'reject')}
-                      disabled={actionLoading[submission.id]}
-                      className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                    >
-                      <XCircle className="h-4 w-4" />
-                      <span>Reject</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        {renderTeamSubmissions()}
       </div>
 
       {/* Feedback Modal */}
