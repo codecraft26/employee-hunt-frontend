@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Smartphone, Chrome, Safari, Share2, Home, X } from 'lucide-react';
+import { Smartphone, Chrome, Globe, Share2, Home, X } from 'lucide-react';
 
 interface PWAInstallGuideProps {
   isOpen: boolean;
@@ -58,7 +58,7 @@ const PWAInstallGuide: React.FC<PWAInstallGuideProps> = ({ isOpen, onClose }) =>
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Safari className="h-4 w-4" />
+              <Globe className="h-4 w-4" />
               <span>iOS</span>
             </button>
             <button
