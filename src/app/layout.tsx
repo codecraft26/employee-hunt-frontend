@@ -5,6 +5,7 @@ import { store } from '../store';
 import AuthProvider from '../components/AuthProvider';
 import PWAInstaller from '../components/PWAInstaller';
 import PWADebugger from '../components/PWADebugger';
+import PWAStatus from '../components/PWAStatus';
 import OfflineIndicator from '../components/OfflineIndicator';
 import { ToastProvider } from '../components/shared/ToastContainer';
 import './globals.css';
@@ -155,6 +156,7 @@ export default function RootLayout({
             <ToastProvider>
               <OfflineIndicator />
               <PWADebugger />
+              <PWAStatus />
               {children}
               <PWAInstaller />
             </ToastProvider>

@@ -2,284 +2,314 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Download, 
-  Bell, 
-  Trash2, 
-  Wifi, 
-  WifiOff, 
   Smartphone, 
+  Download, 
+  Trash2, 
+  RefreshCw, 
+  CheckCircle, 
+  XCircle, 
+  Info,
+  Wifi,
+  WifiOff,
   Settings,
-  RefreshCw,
-  HardDrive,
-  CheckCircle,
-  XCircle
+  Shield,
+  Zap
 } from 'lucide-react';
-import { usePWA, PWAUtils } from '../../hooks/usePWA';
 
-export default function PWASettingsPage() {
-  const { 
-    isOnline, 
-    isInstalled, 
-    isInstallable, 
-    hasUpdate, 
-    isLoading,
-    installApp,
-    updateApp,
-    dismissInstall,
-    checkForUpdates
-  } = usePWA();
-
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  const [cacheSize, setCacheSize] = useState<number>(0);
-  const [displayMode, setDisplayMode] = useState<string>('browser');
-  const [isClearing, setIsClearing] = useState(false);
+const PWASettingsPage: React.FC = () => {
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [cacheSize, setCacheSize] = useState<string>('Calculating...');
+  const [serviceWorkerStatus, setServiceWorkerStatus] = useState<string>('Checking...');
 
   useEffect(() => {
-    // Check notification permission
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-    }
+    const checkPWAStatus = () => {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches;
+      const navigatorStandalone = (window.navigator as any).standalone === true;
+      const isInstalled = standalone || navigatorStandalone || document.referrer.includes('android-app://');
+      
+      setIsInstalled(isInstalled);
+      setIsStandalone(standalone || navigatorStandalone);
+    };
 
-    // Get cache size
-    PWAUtils.getCacheSize().then(setCacheSize);
+    const checkOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+    };
 
-    // Get display mode
-    setDisplayMode(PWAUtils.getDisplayMode());
+    const checkServiceWorkerStatus = async () => {
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            setServiceWorkerStatus('Active');
+          } else {
+            setServiceWorkerStatus('Not registered');
+          }
+        } catch (error) {
+          setServiceWorkerStatus('Error');
+        }
+      } else {
+        setServiceWorkerStatus('Not supported');
+      }
+    };
+
+    const calculateCacheSize = async () => {
+      if ('caches' in window) {
+        try {
+          const cacheNames = await caches.keys();
+          let totalSize = 0;
+          
+          for (const cacheName of cacheNames) {
+            const cache = await caches.open(cacheName);
+            const keys = await cache.keys();
+            // Rough estimation: each cached item is ~100KB
+            totalSize += keys.length * 100;
+          }
+          
+          if (totalSize > 1024) {
+            setCacheSize(`${(totalSize / 1024).toFixed(1)} MB`);
+          } else {
+            setCacheSize(`${totalSize} KB`);
+          }
+        } catch (error) {
+          setCacheSize('Error calculating');
+        }
+      } else {
+        setCacheSize('Not supported');
+      }
+    };
+
+    checkPWAStatus();
+    checkOnlineStatus();
+    checkServiceWorkerStatus();
+    calculateCacheSize();
+
+    // Listen for online/offline events
+    window.addEventListener('online', checkOnlineStatus);
+    window.addEventListener('offline', checkOnlineStatus);
+
+    // Listen for display mode changes
+    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    mediaQuery.addEventListener('change', checkPWAStatus);
+
+    return () => {
+      window.removeEventListener('online', checkOnlineStatus);
+      window.removeEventListener('offline', checkOnlineStatus);
+      mediaQuery.removeEventListener('change', checkPWAStatus);
+    };
   }, []);
 
-  const handleRequestNotifications = async () => {
-    const permission = await PWAUtils.requestNotificationPermission();
-    setNotificationPermission(permission);
-  };
-
-  const handleClearCache = async () => {
-    setIsClearing(true);
-    try {
-      await PWAUtils.clearCache();
-      setCacheSize(0);
-      // Show success message
-      PWAUtils.showNotification('Cache cleared successfully!');
-    } catch (error) {
-      console.error('Failed to clear cache:', error);
-    } finally {
-      setIsClearing(false);
+  const clearCache = async () => {
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        setCacheSize('0 KB');
+        alert('Cache cleared successfully!');
+      } catch (error) {
+        alert('Error clearing cache');
+      }
     }
   };
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const unregisterServiceWorker = async () => {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.unregister();
+          setServiceWorkerStatus('Unregistered');
+          alert('Service Worker unregistered successfully!');
+        }
+      } catch (error) {
+        alert('Error unregistering Service Worker');
+      }
+    }
   };
 
-  const getStatusIcon = (status: boolean) => {
-    return status ? (
-      <CheckCircle className="h-5 w-5 text-green-500" />
-    ) : (
-      <XCircle className="h-5 w-5 text-red-500" />
-    );
+  const refreshApp = () => {
+    window.location.reload();
   };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
-        <div className="mb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center space-x-3 mb-4">
-            <div className="h-12 w-12 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <Settings className="h-6 w-6 text-white" />
+            <div className="h-10 w-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <Settings className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">PWA Settings</h1>
-              <p className="text-gray-600">Manage your Progressive Web App experience</p>
+              <h1 className="text-2xl font-bold text-gray-900">PWA Settings</h1>
+              <p className="text-gray-600">Manage your Progressive Web App settings</p>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Status Overview */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">App Status</h2>
-            
-            <div className="space-y-4">
+        {/* Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Installation Status */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Smartphone className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Installation Status</h2>
+            </div>
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Wifi className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-700">Connection Status</span>
-                </div>
+                <span className="text-sm text-gray-600">Installed as PWA</span>
                 <div className="flex items-center space-x-2">
-                  {isOnline ? (
-                    <>
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-green-600 font-medium">Online</span>
-                    </>
+                  {isInstalled ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
-                    <>
-                      <WifiOff className="h-5 w-5 text-red-500" />
-                      <span className="text-red-600 font-medium">Offline</span>
-                    </>
+                    <XCircle className="h-4 w-4 text-red-500" />
                   )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Smartphone className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-700">Installation Status</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(isInstalled)}
-                  <span className={`font-medium ${isInstalled ? 'text-green-600' : 'text-red-600'}`}>
-                    {isInstalled ? 'Installed' : 'Not Installed'}
+                  <span className="text-sm font-medium">
+                    {isInstalled ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
-
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Bell className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-700">Notifications</span>
-                </div>
+                <span className="text-sm text-gray-600">Standalone Mode</span>
                 <div className="flex items-center space-x-2">
-                  {getStatusIcon(notificationPermission === 'granted')}
-                  <span className={`font-medium capitalize ${
-                    notificationPermission === 'granted' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {notificationPermission}
+                  {isStandalone ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Info className="h-4 w-4 text-blue-500" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {isStandalone ? 'Yes' : 'Browser'}
                   </span>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <HardDrive className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-700">Cache Size</span>
-                </div>
-                <span className="text-gray-600 font-medium">
-                  {formatBytes(cacheSize)}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Settings className="h-5 w-5 text-gray-400" />
-                  <span className="text-gray-700">Display Mode</span>
-                </div>
-                <span className="text-gray-600 font-medium capitalize">
-                  {displayMode}
-                </span>
               </div>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Actions</h2>
-            
-            <div className="space-y-4">
-              {/* Install App */}
-              {isInstallable && !isInstalled && (
-                <button
-                  onClick={installApp}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center space-x-2 bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <RefreshCw className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Download className="h-5 w-5" />
-                  )}
-                  <span>{isLoading ? 'Installing...' : 'Install App'}</span>
-                </button>
+          {/* Connection Status */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              {isOnline ? (
+                <Wifi className="h-5 w-5 text-green-500" />
+              ) : (
+                <WifiOff className="h-5 w-5 text-red-500" />
               )}
+              <h2 className="text-lg font-semibold text-gray-900">Connection</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Network Status</span>
+                <span className={`text-sm font-medium ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+                  {isOnline ? 'Online' : 'Offline'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Service Worker</span>
+                <span className="text-sm font-medium text-gray-900">{serviceWorkerStatus}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-              {/* Update App */}
-              {hasUpdate && (
-                <button
-                  onClick={updateApp}
-                  className="w-full flex items-center justify-center space-x-2 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <RefreshCw className="h-5 w-5" />
-                  <span>Update Available - Install Now</span>
-                </button>
-              )}
-
-              {/* Enable Notifications */}
-              {notificationPermission !== 'granted' && (
-                <button
-                  onClick={handleRequestNotifications}
-                  className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <Bell className="h-5 w-5" />
-                  <span>Enable Notifications</span>
-                </button>
-              )}
-
-              {/* Check for Updates */}
+        {/* Cache Management */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Zap className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Cache Management</h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Cache Size</span>
+              <span className="text-sm font-medium text-gray-900">{cacheSize}</span>
+            </div>
+            <div className="flex space-x-3">
               <button
-                onClick={checkForUpdates}
-                className="w-full flex items-center justify-center space-x-2 bg-gray-600 text-white py-3 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+                onClick={clearCache}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
               >
-                <RefreshCw className="h-5 w-5" />
-                <span>Check for Updates</span>
+                <Trash2 className="h-4 w-4" />
+                <span className="text-sm font-medium">Clear Cache</span>
               </button>
-
-              {/* Clear Cache */}
               <button
-                onClick={handleClearCache}
-                disabled={isClearing}
-                className="w-full flex items-center justify-center space-x-2 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                onClick={refreshApp}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
               >
-                {isClearing ? (
-                  <RefreshCw className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-5 w-5" />
-                )}
-                <span>{isClearing ? 'Clearing...' : 'Clear Cache'}</span>
+                <RefreshCw className="h-4 w-4" />
+                <span className="text-sm font-medium">Refresh App</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* PWA Features Info */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">PWA Features</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <WifiOff className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="font-medium text-gray-900 mb-2">Offline Support</h3>
-              <p className="text-sm text-gray-600">
-                Access cached content and features even when offline
-              </p>
-            </div>
+        {/* Service Worker Management */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <Shield className="h-5 w-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Service Worker</h2>
+          </div>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Service Workers enable offline functionality and background sync. 
+              Only unregister if you're experiencing issues.
+            </p>
+            <button
+              onClick={unregisterServiceWorker}
+              className="px-4 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors text-sm font-medium"
+            >
+              Unregister Service Worker
+            </button>
+          </div>
+        </div>
 
-            <div className="text-center">
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Bell className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="font-medium text-gray-900 mb-2">Push Notifications</h3>
-              <p className="text-sm text-gray-600">
-                Get notified about new activities and updates
-              </p>
+        {/* Installation Guide */}
+        {!isInstalled && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Download className="h-5 w-5 text-gray-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Install App</h2>
             </div>
-
-            <div className="text-center">
-              <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                <Smartphone className="h-6 w-6 text-purple-600" />
-              </div>
-              <h3 className="font-medium text-gray-900 mb-2">Native Experience</h3>
+            <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                App-like experience with fast loading and smooth navigation
+                Install this app on your device for a better experience with offline support and faster loading.
               </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-blue-900 mb-2">Installation Instructions:</h3>
+                <div className="text-sm text-blue-800 space-y-1">
+                  <p><strong>Android:</strong> Tap the menu (⋮) in Chrome and select "Add to Home screen"</p>
+                  <p><strong>iOS:</strong> Tap the Share button in Safari and select "Add to Home Screen"</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PWA Benefits */}
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">PWA Benefits</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-gray-700">Works offline</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-gray-700">Faster loading</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-gray-700">Push notifications</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-gray-700">Home screen access</span>
             </div>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+};
+
+export default PWASettingsPage; 
