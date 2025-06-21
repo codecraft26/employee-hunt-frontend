@@ -93,14 +93,14 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
       case 'photo-wall':
         router.push('/dashboard/photo-wall');
         break;
-      case 'activities':
-        router.push('/dashboard/activities');
-        break;
       case 'team':
         router.push('/dashboard/team');
         break;
       case 'profile':
         router.push('/dashboard/profile');
+        break;
+      case 'activities':
+        router.push('/dashboard/activities');
         break;
       default:
         console.log(`Unhandled quick action: ${type}`);
@@ -124,68 +124,15 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
     return userTeam.leaderId === user.id || userTeam.leader?.id === user.id;
   }, [userTeam, user]);
 
-  // Memoized stats data
-  const statsData = useMemo(() => [
-    {
-      label: 'Total Points',
-      value: user?.points || 0,
-      icon: Trophy,
-      color: 'blue'
-    },
-    {
-      label: 'Team Rank',
-      value: `#${user?.rank || 'N/A'}`,
-      icon: Medal,
-      color: 'green'
-    },
-    {
-      label: 'Activities',
-      value: activities?.length || 0,
-      icon: Target,
-      color: 'purple'
-    },
-    {
-      label: 'Hunts Joined',
-      value: 3, // This could be dynamic based on actual data
-      icon: MapPin,
-      color: 'yellow'
-    }
-  ], [user?.points, user?.rank, activities?.length]);
-
-  // Memoized color classes
-  const colorClasses = useMemo(() => ({
-    blue: 'bg-blue-100 text-blue-600',
-    green: 'bg-green-100 text-green-600',
-    purple: 'bg-purple-100 text-purple-600',
-    yellow: 'bg-yellow-100 text-yellow-600'
-  }), []);
-
   return (
     <div className="space-y-8">
-      {/* Horizontal Layout with Stats and Quick Actions */}
+      {/* Horizontal Layout with Team Info and Quick Actions */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-        {/* Left Block - User Stats */}
+        {/* Left Block - Team Info */}
         <div className="space-y-4 lg:space-y-6">
           <div>
             <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">My Dashboard</h2>
-            <p className="text-sm lg:text-base text-gray-600">Your performance and progress</p>
-          </div>
-          
-          {/* User Stats Cards - Optimized with memoized data */}
-          <div className="grid grid-cols-2 gap-3 lg:gap-4">
-            {statsData.map((stat, index) => (
-              <div key={stat.label} className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs lg:text-sm font-medium text-gray-600">{stat.label}</p>
-                    <p className="text-xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
-                  <div className={`p-2 lg:p-3 ${colorClasses[stat.color as keyof typeof colorClasses]} rounded-lg lg:rounded-xl`}>
-                    <stat.icon className="h-4 w-4 lg:h-6 lg:w-6" />
-                  </div>
-                </div>
-              </div>
-            ))}
+            <p className="text-sm lg:text-base text-gray-600">Your team and progress</p>
           </div>
 
           {/* Team Info - Optimized rendering */}

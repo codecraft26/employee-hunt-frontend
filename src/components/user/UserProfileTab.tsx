@@ -13,7 +13,8 @@ import {
   Tag,
   Crown,
   Shield,
-  Trophy
+  Trophy,
+  Home
 } from 'lucide-react';
 import { useCategories } from '../../hooks/useCategories';
 import { useTeams } from '../../hooks/useTeams';
@@ -166,15 +167,39 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                 </div>
               </div>
             )}
+            {user.roomNumber && (
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <Home className="h-5 w-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Room Number</p>
+                  <p className="text-gray-900">{user.roomNumber}</p>
+                </div>
+              </div>
+            )}
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <Building2 className="h-5 w-5 text-gray-400" />
               <div>
-                <p className="text-sm font-medium text-gray-700">Category</p>
+                <p className="text-sm font-medium text-gray-700">Department</p>
                 <p className="text-gray-900">
-                  {categoriesLoading ? 'Loading...' : (userCategory?.name || 'Not assigned')}
+                  {user.department || 'Not assigned'}
                 </p>
               </div>
             </div>
+            {user.categories && user.categories.length > 0 && (
+              <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <Tag className="h-5 w-5 text-gray-400 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Categories</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {user.categories.map((category: any) => (
+                      <span key={category.id} className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">
+                        {category.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <Briefcase className="h-5 w-5 text-gray-400" />
               <div>
@@ -188,7 +213,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                 <p className="text-sm font-medium text-gray-700">Team</p>
                 <div className="flex items-center space-x-2">
                   <p className="text-gray-900">
-                    {teamLoading ? 'Loading...' : (myTeam?.name || 'Not assigned')}
+                    {teamLoading ? 'Loading...' : (myTeam?.name || user.team?.name || 'Not assigned')}
                   </p>
                   {isTeamLeader && (
                     <Crown className="h-4 w-4 text-yellow-500" title="Team Leader" />

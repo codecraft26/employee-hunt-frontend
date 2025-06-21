@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RowsPhotoAlbum } from 'react-photo-album';
-import html2canvas from 'html2canvas';
 import { 
   Palette, 
   Upload, 
@@ -29,10 +28,11 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
     uploadCollageImage,
     publishCollage,
     loading,
-    error
+    error,
+    setError
   } = usePhotoWall();
 
-  const [step, setStep] = useState(1); // 1: Select photos, 2: Arrange, 3: Finalize
+  const [step, setStep] = useState(1); // 1: Select photos, 2: Generate, 3: Finalize
   const [approvedPhotos, setApprovedPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [collageTitle, setCollageTitle] = useState('');
@@ -40,8 +40,6 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
   const [collageId, setCollageId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
-
-  const collageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchApprovedPhotos();
@@ -92,35 +90,66 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
   };
 
   const generateCollageImage = async () => {
-    if (!collageRef.current || !collageId) return;
+    if (!collageId) return;
 
     setGenerating(true);
     try {
-      const canvas = await html2canvas(collageRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2, // Higher quality
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        width: collageRef.current.scrollWidth,
-        height: collageRef.current.scrollHeight,
+      // Prepare data for the Sharp-based API
+      const collageData = {
+        title: collageTitle,
+        description: collageDescription,
+        imageUrls: selectedPhotos.map(photo => photo.imageUrl),
+        layout: 'grid',
+        width: 1200,
+        height: 800
+      };
+
+      // Call the Sharp-based API endpoint
+      const response = await fetch('/api/collage/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(collageData)
       });
 
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            const success = await uploadCollageImage(collageId, blob);
-            if (success) {
-              setStep(3);
-            }
-          } catch (error) {
-            console.error('Failed to upload collage image:', error);
-          }
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Convert base64 image to blob for upload
+        const base64Data = result.data.imageUrl.split(',')[1];
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        setGenerating(false);
-      }, 'image/jpeg', 0.95);
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'image/jpeg' });
+
+        // Upload the generated collage
+        const uploadSuccess = await uploadCollageImage(collageId, blob);
+        if (uploadSuccess) {
+          setStep(3);
+        }
+
+        // Log processing results
+        if (result.data.failedImages > 0) {
+          console.warn(`${result.data.failedImages} images failed to process and were replaced with placeholders`);
+        }
+      } else {
+        throw new Error(result.message || 'Failed to generate collage');
+      }
+
     } catch (error) {
       console.error('Failed to generate collage image:', error);
+      setError(error instanceof Error ? error.message : 'Failed to generate collage');
+    } finally {
       setGenerating(false);
     }
   };
@@ -189,7 +218,7 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
               <span className={`ml-2 text-sm ${
                 step >= stepNum ? 'text-gray-900' : 'text-gray-500'
               }`}>
-                {stepNum === 1 ? 'Select Photos' : stepNum === 2 ? 'Create Collage' : 'Publish'}
+                {stepNum === 1 ? 'Select Photos' : stepNum === 2 ? 'Generate Collage' : 'Publish'}
               </span>
               {stepNum < 3 && <div className="w-8 h-px bg-gray-300 ml-4" />}
             </div>
@@ -316,49 +345,34 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
         </div>
       )}
 
-      {/* Step 2: Arrange and Generate */}
+      {/* Step 2: Generate Collage */}
       {step === 2 && (
         <div className="p-6">
           <div className="mb-6">
-            <h3 className="text-md font-medium text-gray-900 mb-2">Arrange Photos and Generate Image</h3>
+            <h3 className="text-md font-medium text-gray-900 mb-2">Generate Collage Image</h3>
             <p className="text-sm text-gray-600">
-              The photos will be automatically arranged. Review the layout and generate the collage image.
+              The photos will be automatically arranged using Sharp image processing. Click generate to create the collage image.
             </p>
           </div>
 
-          {/* Collage Preview */}
+          {/* Selected Photos Preview */}
           <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-            <div
-              ref={collageRef}
-              className="bg-white p-6 rounded-lg shadow-sm"
-              style={{ minHeight: '400px' }}
-            >
-              {/* Collage Header */}
-              <div className="text-center mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{collageTitle}</h1>
-                {collageDescription && (
-                  <p className="text-gray-600 text-lg">{collageDescription}</p>
-                )}
-              </div>
-              
-              {/* Photo Album */}
-              <RowsPhotoAlbum
-                photos={albumPhotos}
-                spacing={10}
-                padding={0}
-                targetRowHeight={200}
-              />
-              
-              {/* Collage Footer */}
-              <div className="text-center mt-6 pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-500">
-                  Created on {new Date().toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Selected Photos ({selectedPhotos.length})</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {selectedPhotos.map((photo, index) => (
+                <div key={photo.id} className="relative">
+                  <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.caption || `Photo ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="absolute top-1 left-1 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {index + 1}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -394,7 +408,7 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">🎉 Collage Ready!</h3>
             <p className="text-gray-600 mb-6">
-              Your collage has been created and the image has been generated. Ready to publish?
+              Your collage has been created and the image has been generated using Sharp. Ready to publish?
             </p>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

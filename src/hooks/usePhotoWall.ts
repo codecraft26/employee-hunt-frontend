@@ -371,6 +371,7 @@ export const usePhotoWall = () => {
     loading,
     error,
     clearError,
+    setError,
     
     // User functions
     uploadPhoto,

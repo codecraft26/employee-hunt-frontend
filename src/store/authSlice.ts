@@ -13,12 +13,18 @@ export interface User {
   profileImage?: string;
   department?: string;
   hobbies?: string[];
+  roomNumber?: string;
   createdAt?: string;
   updatedAt?: string;
   team?: {
     id: string;
     name: string;
   } | null;
+  categories?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+  }>;
   points?: number;
   rank?: number;
   activeChallenges?: number;

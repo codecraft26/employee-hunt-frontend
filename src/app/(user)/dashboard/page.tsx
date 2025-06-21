@@ -15,13 +15,6 @@ import { lazy } from 'react';
 // Lazy load the UserOverviewTab component
 const UserOverviewTab = lazy(() => import('../../../components/user/UserOverviewTab'));
 
-// Static notifications data - moved outside component to prevent re-creation
-const STATIC_NOTIFICATIONS = [
-  { id: 1, title: 'New Quiz Available', message: 'Team Alpha has a new quiz to complete', time: '2 hours ago', type: 'quiz' },
-  { id: 2, title: 'Treasure Hunt Update', message: 'Your clue has been approved!', time: '4 hours ago', type: 'treasure' },
-  { id: 3, title: 'Voting Ends Soon', message: 'Office Event voting ends in 2 hours', time: '6 hours ago', type: 'vote' }
-];
-
 export default function UserDashboardUI() {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -107,7 +100,6 @@ export default function UserDashboardUI() {
           icon={Trophy}
           iconGradient="from-indigo-600 to-purple-600"
           userName={user.name}
-          notificationCount={STATIC_NOTIFICATIONS.length}
           onLogout={handleLogout}
         />
 

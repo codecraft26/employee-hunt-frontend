@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { Bell, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 interface OptimizedHeaderProps {
   title: string;
@@ -7,7 +7,6 @@ interface OptimizedHeaderProps {
   icon: React.ComponentType<{ className?: string }>;
   iconGradient: string;
   userName?: string;
-  notificationCount?: number;
   onLogout: () => void;
 }
 
@@ -17,7 +16,6 @@ const OptimizedHeader: React.FC<OptimizedHeaderProps> = memo(({
   icon: Icon,
   iconGradient,
   userName,
-  notificationCount = 0,
   onLogout
 }) => {
   return (
@@ -38,14 +36,6 @@ const OptimizedHeader: React.FC<OptimizedHeaderProps> = memo(({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            {notificationCount > 0 && (
-              <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                <Bell className="h-6 w-6" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  {notificationCount}
-                </span>
-              </button>
-            )}
             <button
               onClick={onLogout}
               className="p-2 text-gray-400 hover:text-red-600 transition-colors"
