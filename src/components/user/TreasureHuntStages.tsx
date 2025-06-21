@@ -295,9 +295,40 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
             <TimerDisplay 
               {...getHuntTimingStatus(hunt)}
               variant="compact"
+              startTime={hunt.startTime}
+              endTime={hunt.endTime}
+              showCountdown={true}
             />
           </div>
         </div>
+
+        {/* Prominent Timer Display for Active Hunts */}
+        {(hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS') && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Time Remaining</h3>
+                  <p className="text-sm text-gray-600">Complete all stages before time runs out!</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <TimerDisplay 
+                  variant="detailed"
+                  status="active"
+                  urgency="normal"
+                  startTime={hunt.startTime}
+                  endTime={hunt.endTime}
+                  showCountdown={true}
+                  className="bg-white"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Overview */}
         {progress && (

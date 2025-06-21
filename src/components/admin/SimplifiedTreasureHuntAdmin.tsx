@@ -57,7 +57,6 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
       console.log('🎯 Admin Panel - Team Submissions Data:', submissions);
       console.log('🎯 First submission structure:', submissions?.[0]);
       
-      // Log image information for debugging
       submissions?.forEach((submission, index) => {
         console.log(`🖼️ Submission ${index + 1}:`, {
           id: submission.id,

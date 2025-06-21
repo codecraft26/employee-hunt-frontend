@@ -260,7 +260,10 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
               status={canAccessHunt ? 'active' : hunt.status === 'UPCOMING' ? 'upcoming' : 'ended'}
               timeText={canAccessHunt ? 'Active' : hunt.status === 'UPCOMING' ? 'Upcoming' : 'Ended'}
               urgency="normal"
-              className="bg-white bg-opacity-20" 
+              className="bg-white bg-opacity-20"
+              startTime={hunt.startTime}
+              endTime={hunt.endTime}
+              showCountdown={true}
             />
           </div>
         </div>

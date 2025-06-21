@@ -201,7 +201,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Add a direct click handler for debugging
   const handleIdProofClick = () => {
     console.log('ID proof button clicked');
     const fileInput = document.getElementById('id-proof') as HTMLInputElement;

@@ -251,6 +251,9 @@ export default function UserTreasureHuntTab() {
                           status="active"
                           timeText="Active"
                           urgency={timingStatus.urgency}
+                          startTime={hunt.startTime}
+                          endTime={hunt.endTime}
+                          showCountdown={true}
                         />
                       )}
                       
@@ -260,6 +263,9 @@ export default function UserTreasureHuntTab() {
                           status="upcoming"
                           timeText="Upcoming"
                           urgency={timingStatus.urgency}
+                          startTime={hunt.startTime}
+                          endTime={hunt.endTime}
+                          showCountdown={true}
                         />
                       )}
                     </div>
