@@ -102,6 +102,25 @@ export default function RegisterPage() {
     };
   }, [dispatch]);
 
+  // Handle clicking outside dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const dropdown = document.getElementById('categories-dropdown');
+      const dropdownTrigger = document.getElementById('categories-dropdown-trigger');
+      
+      if (dropdown && dropdownTrigger) {
+        if (!dropdown.contains(event.target as Node) && !dropdownTrigger.contains(event.target as Node)) {
+          dropdown.classList.add('hidden');
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Password strength calculation
   useEffect(() => {
     const password = formData.password;
@@ -229,7 +248,7 @@ export default function RegisterPage() {
       
       case 2:
         if (!formData.employeeCode.trim()) errors.push('Employee Code is required');
-        if (formData.categoryIds.length === 0) errors.push('At least one category is required');
+        if (formData.categoryIds.length === 0) errors.push('Categories are required');
         break;
       
       case 3:
@@ -288,7 +307,7 @@ export default function RegisterPage() {
       submitData.append('name', formData.name);
       submitData.append('email', formData.email);
       submitData.append('password', formData.password);
-      submitData.append('categoryIds', formData.categoryIds.join(','));
+      submitData.append('categoryIds', JSON.stringify(formData.categoryIds));
       submitData.append('employeeCode', formData.employeeCode);
       submitData.append('gender', formData.gender);
       submitData.append('hobbies', formData.hobbies);
@@ -494,56 +513,77 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Categories <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-sm text-gray-600 mb-3">Select all categories that apply to you:</p>
+                    <p className="text-sm text-gray-600 mb-3">Select categories that apply to you:</p>
                     
-                    {/* Categories Grid */}
-                    <div className="space-y-3 max-h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
-                      {categoriesLoading ? (
-                        <div className="text-center py-4">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                          <p className="text-sm text-gray-500 mt-2">Loading categories...</p>
+                    {/* Categories Multi-Select Dropdown */}
+                    <div className="relative">
+                      <div 
+                        id="categories-dropdown-trigger"
+                        className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer"
+                        onClick={() => {
+                          const dropdown = document.getElementById('categories-dropdown');
+                          if (dropdown) {
+                            dropdown.classList.toggle('hidden');
+                          }
+                        }}
+                      >
+                        <span className={formData.categoryIds.length === 0 ? 'text-gray-400' : 'text-gray-900'}>
+                          {formData.categoryIds.length === 0 
+                            ? 'Select categories' 
+                            : `${formData.categoryIds.length} category${formData.categoryIds.length > 1 ? 'ies' : 'y'} selected`
+                          }
+                        </span>
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
                         </div>
-                      ) : categories.length === 0 ? (
-                        <div className="text-center py-4">
-                          <p className="text-sm text-gray-500">No categories available</p>
-                        </div>
-                      ) : (
-                        categories.map((category) => (
-                          <label 
-                            key={category.id} 
-                            className="flex items-start space-x-3 p-3 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              value={category.id}
-                              checked={formData.categoryIds.includes(category.id)}
-                              onChange={(e) => {
-                                const { value, checked } = e.target;
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  categoryIds: checked 
-                                    ? [...prev.categoryIds, value]
-                                    : prev.categoryIds.filter(id => id !== value)
-                                }));
-                                if (validationErrors.length > 0) {
-                                  setValidationErrors([]);
-                                }
-                              }}
-                              className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 mt-0.5"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-gray-900 block">
-                                {category.name}
-                              </span>
-                              {category.description && (
-                                <span className="text-xs text-gray-500 block mt-1">
-                                  {category.description}
-                                </span>
-                              )}
-                            </div>
-                          </label>
-                        ))
-                      )}
+                      </div>
+                      
+                      {/* Dropdown Options */}
+                      <div 
+                        id="categories-dropdown"
+                        className="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {categoriesLoading ? (
+                          <div className="p-3 text-center text-sm text-gray-500">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                            Loading categories...
+                          </div>
+                        ) : categories.length === 0 ? (
+                          <div className="p-3 text-center text-sm text-gray-500">
+                            No categories available
+                          </div>
+                        ) : (
+                          categories.map((category) => (
+                            <label 
+                              key={category.id}
+                              className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                value={category.id}
+                                checked={formData.categoryIds.includes(category.id)}
+                                onChange={(e) => {
+                                  const { value, checked } = e.target;
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    categoryIds: checked 
+                                      ? [...prev.categoryIds, value]
+                                      : prev.categoryIds.filter(id => id !== value)
+                                  }));
+                                  if (validationErrors.length > 0) {
+                                    setValidationErrors([]);
+                                  }
+                                }}
+                                className="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 mr-3"
+                              />
+                              <span className="text-sm text-gray-900">{category.name}</span>
+                            </label>
+                          ))
+                        )}
+                      </div>
                     </div>
                     
                     {/* Selected Categories Summary */}
@@ -553,32 +593,29 @@ export default function RegisterPage() {
                           Selected Categories ({formData.categoryIds.length}):
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {formData.categoryIds.map((categoryId) => {
-                            const category = categories.find(c => c.id === categoryId);
-                            return category ? (
-                              <span 
-                                key={categoryId}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                          {formData.categoryIds.map((id) => (
+                            <span 
+                              key={id}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                              {categories.find(c => c.id === id)?.name}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    categoryIds: prev.categoryIds.filter((categoryId) => categoryId !== id),
+                                  }));
+                                }}
+                                className="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:bg-blue-500 focus:text-white"
                               >
-                                {category.name}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      categoryIds: prev.categoryIds.filter(id => id !== categoryId)
-                                    }));
-                                  }}
-                                  className="flex-shrink-0 ml-1.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-blue-400 hover:bg-blue-200 hover:text-blue-500 focus:outline-none focus:bg-blue-500 focus:text-white"
-                                >
-                                  <span className="sr-only">Remove {category.name}</span>
-                                  <svg className="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8">
-                                    <path strokeLinecap="round" strokeWidth="1.5" d="m1 1 6 6m0-6-6 6" />
-                                  </svg>
-                                </button>
-                              </span>
-                            ) : null;
-                          })}
+                                <span className="sr-only">Remove {categories.find(c => c.id === id)?.name}</span>
+                                <svg className="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8">
+                                  <path strokeLinecap="round" strokeWidth="1.5" d="m1 1 6 6m0-6-6 6" />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
                         </div>
                       </div>
                     )}
