@@ -37,29 +37,33 @@ const PollsFilter: React.FC<PollsFilterProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+    <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 p-6 mb-6">
       <div className="flex items-center space-x-2 mb-4">
-        <Filter className="h-5 w-5 text-gray-600" />
-        <h3 className="font-medium text-gray-900">Filter Polls</h3>
+        <Filter className="h-5 w-5 text-slate-300" />
+        <h3 className="font-medium text-white">Filter Polls</h3>
       </div>
 
       <div className="space-y-4">
         {/* Status Filter */}
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
+          <label className="text-sm font-medium text-slate-200 mb-2 block">Status</label>
           <div className="flex flex-wrap gap-2">
             {statusFilters.map((filter) => (
               <button
                 key={filter.key}
                 onClick={() => onStatusChange(filter.key)}
-                className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border border-slate-600 ${
                   activeStatus === filter.key
-                    ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-indigo-700 text-white shadow-md'
+                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
                 }`}
               >
                 <span>{filter.label}</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-xs ${filter.color}`}>
+                <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                  activeStatus === filter.key
+                    ? 'bg-indigo-900 text-indigo-200'
+                    : 'bg-slate-800 text-slate-300'
+                }`}>
                   {filter.count}
                 </span>
               </button>
@@ -69,16 +73,16 @@ const PollsFilter: React.FC<PollsFilterProps> = ({
 
         {/* Type Filter */}
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">Poll Type</label>
+          <label className="text-sm font-medium text-slate-200 mb-2 block">Poll Type</label>
           <div className="flex flex-wrap gap-2">
             {typeFilters.map((filter) => (
               <button
                 key={filter.key}
                 onClick={() => onTypeChange(filter.key)}
-                className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors border border-slate-600 ${
                   activeType === filter.key
-                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-purple-700 text-white shadow-md'
+                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
                 }`}
               >
                 <filter.icon className="h-4 w-4" />

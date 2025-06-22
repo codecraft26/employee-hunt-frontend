@@ -432,201 +432,130 @@ const UserQuizTab: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">My Quizzes</h2>
-          <p className="text-gray-600">Test your knowledge and compete with your team</p>
-        </div>
-        <button 
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={index} className="gaming-card p-4 sm:p-6 animate-pulse">
+            <div className="h-6 bg-slate-700 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/3"></div>
+            <div className="mt-4 h-10 bg-slate-700 rounded-lg"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 gaming-card">
+        <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+        <h3 className="mt-4 text-xl font-bold text-white">Oops! Something went wrong.</h3>
+        <p className="mt-2 text-base text-slate-400">{error}</p>
+        <button
           onClick={handleRefresh}
-          disabled={loading}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+          className="mt-6 btn-gaming inline-flex items-center"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className="mr-2 h-5 w-5" />
+          Try Again
         </button>
       </div>
+    );
+  }
 
-      {/* Error Display */}
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-red-700 text-sm">{error}</p>
-            <button
-              onClick={handleRefresh}
-              className="mt-2 text-red-600 hover:text-red-700 text-sm underline"
-            >
-              Try again
-            </button>
-          </div>
-        </div>
-      )}
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gradient mb-2 flex items-center">
+          <Target className="h-7 w-7 sm:h-8 sm:h-8 mr-3 text-blue-400" />
+          Available Quizzes
+        </h2>
+        <p className="text-slate-300 text-sm sm:text-base">
+          Choose a quiz to start your challenge. Good luck!
+        </p>
+      </div>
 
-      {/* Quizzes Grid */}
-      {loading && quizzes.length === 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-              <div className="p-6 animate-pulse">
-                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-300 rounded w-1/2 mb-4"></div>
-                <div className="h-6 bg-gray-300 rounded w-20 mb-4"></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="h-8 bg-gray-300 rounded"></div>
-                  <div className="h-8 bg-gray-300 rounded"></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : quizzes.length === 0 ? (
-        <div className="text-center py-12">
-          <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No quizzes available</h3>
-          <p className="text-gray-600 mb-4">Check back later for new quizzes</p>
+      {quizzes.length === 0 ? (
+        <div className="text-center py-12 gaming-card">
+          <Shield className="mx-auto h-12 w-12 text-blue-400" />
+          <h3 className="mt-4 text-xl font-bold text-white">No Quizzes Available</h3>
+          <p className="mt-2 text-base text-slate-400">
+            Check back later for new quizzes and challenges.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {quizzes.map((quiz) => {
+            const status = getQuizDisplayStatus(quiz);
+            const statusColor = getQuizStatusColor(status);
             const progress = getQuizProgress(quiz);
-            const canStart = canStartQuiz(quiz);
-            const displayStatus = getQuizDisplayStatus(quiz);
-            const expired = displayStatus === 'EXPIRED';
-            
+            const isExpired = isQuizExpired(quiz);
+            const canTake = canStartQuiz(quiz);
+
             return (
-              <div key={quiz.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{quiz.title}</h3>
-                      <p className="text-sm text-gray-600 mb-3">{quiz.description}</p>
-                      <div className="flex items-center space-x-2 mb-4">
-                        <span className={`inline-flex items-center space-x-1 px-3 py-1 text-sm font-medium rounded-full ${getQuizStatusColor(displayStatus)}`}>
-                          {getStatusIcon(displayStatus)}
-                          <span>{displayStatus}</span>
-                        </span>
-                        {quiz.isCompleted && (
-                          <span className="inline-flex items-center space-x-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                            <Trophy className="h-3 w-3" />
-                            <span>Completed</span>
-                          </span>
-                        )}
-                        {expired && (
-                          <span className="inline-flex items-center space-x-1 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                            <Clock className="h-3 w-3" />
-                            <span>Expired</span>
-                          </span>
-                        )}
-                      </div>
+              <div
+                key={quiz.id}
+                className="gaming-card p-4 sm:p-5 flex flex-col justify-between hover-lift group"
+              >
+                <div>
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-gradient transition-colors duration-300">
+                      {quiz.title}
+                    </h3>
+                    <div
+                      className={`flex items-center text-xs font-bold px-3 py-1 rounded-full ${statusColor}`}
+                    >
+                      {getStatusIcon(status)}
+                      <span className="ml-1.5">{status}</span>
                     </div>
                   </div>
+                  <p className="text-slate-400 text-sm mb-4 h-10">
+                    {quiz.description}
+                  </p>
 
-                  <div className="space-y-3">
-                    {/* Progress Bar */}
-                    {quiz.status === 'ACTIVE' && (
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm text-gray-600 mb-1">
-                          <span>Progress</span>
-                          <span>{String(progress.completed)}/{String(progress.total)} questions</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${progress.percentage}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-gray-600">Questions</p>
-                        <p className="font-medium">{quiz.questionsPerParticipant}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Total Points</p>
-                        <p className="font-medium">{quiz.maxScore || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Participants</p>
-                        <p className="font-medium">{quiz.totalParticipants}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Your Score</p>
-                        <p className="font-medium">{quiz.userScore !== undefined ? quiz.userScore : '-'}</p>
-                      </div>
+                  <div className="space-y-3 text-sm text-slate-300">
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-3 text-blue-400" />
+                      <span>{quiz.questionsPerParticipant} Questions</span>
                     </div>
-
-                    <div>
-                      <p className="text-sm text-gray-600 mb-2">Schedule</p>
-                      <div className="space-y-1 text-xs text-gray-500">
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Start: {formatQuizDate(quiz.startTime)}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Clock className="h-3 w-3" />
-                          <span>End: {formatQuizDate(quiz.endTime)}</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-3 text-yellow-400" />
+                      <span>
+                        Ends: {formatQuizDate(quiz.endTime)}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
-                  <div className="flex justify-between space-x-2">
-                    {canStart && displayStatus === 'ACTIVE' && (
-                      <button 
-                        onClick={() => handleStartQuiz(quiz)}
-                        className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                <div className="mt-6">
+                  {status === 'COMPLETED' ? (
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                      <button
+                        onClick={() => handleViewResults(quiz)}
+                        className="btn-gaming w-full text-sm py-2"
                       >
-                        <Play className="h-4 w-4" />
-                        <span>{progress.completed > 0 ? 'Continue' : 'Start Quiz'}</span>
+                        View Results
                       </button>
-                    )}
-                    
-                    {displayStatus === 'UPCOMING' && (
-                      <button 
-                        disabled
-                        className="flex-1 px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-center space-x-2"
+                      <button
+                        onClick={() => handleViewRankings(quiz)}
+                        className="btn-gaming w-full text-sm py-2 bg-gradient-to-r from-purple-500 to-indigo-500"
                       >
-                        <Clock className="h-4 w-4" />
-                        <span>Upcoming</span>
+                        Rankings
                       </button>
-                    )}
-                    
-                    {quiz.isCompleted && (
-                      <>
-                        <button 
-                          onClick={() => handleViewResults(quiz)}
-                          className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-1 text-sm"
-                        >
-                          <Award className="h-4 w-4" />
-                          <span>Results</span>
-                        </button>
-                        <button 
-                          onClick={() => handleViewRankings(quiz)}
-                          className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-1 text-sm"
-                        >
-                          <BarChart3 className="h-4 w-4" />
-                          <span>Rankings</span>
-                        </button>
-                      </>
-                    )}
-                    
-                    {expired && !quiz.isCompleted && (
-                      <button 
-                        disabled
-                        className="flex-1 px-4 py-2 bg-red-300 text-red-700 rounded-lg cursor-not-allowed flex items-center justify-center space-x-2"
-                      >
-                        <Clock className="h-4 w-4" />
-                        <span>Expired</span>
-                      </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleStartQuiz(quiz)}
+                      disabled={!canTake || isExpired}
+                      className="btn-gaming w-full disabled:opacity-50 disabled:cursor-not-allowed group/play-btn"
+                    >
+                      <div className="flex items-center justify-center">
+                        <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover/play-btn:scale-125" />
+                        <span>{isExpired ? 'Expired' : canTake ? 'Start Quiz' : 'Locked'}</span>
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -634,10 +563,10 @@ const UserQuizTab: React.FC = () => {
         </div>
       )}
 
-      {/* Quiz Taking Modal */}
-      {showQuizModal && selectedQuiz && assignedQuestions.length > 0 && currentQuestionIndex < assignedQuestions.length && assignedQuestions[currentQuestionIndex] && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      {/* Quiz Modal */}
+      {showQuizModal && selectedQuiz && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="gaming-card w-full max-w-2xl max-h-[90vh] flex flex-col animate-bounce-in">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">{selectedQuiz.title}</h3>
@@ -969,8 +898,8 @@ const UserQuizTab: React.FC = () => {
 
       {/* Quiz Results Modal */}
       {showResultsModal && selectedQuiz && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="gaming-card w-full max-w-3xl max-h-[90vh] flex flex-col animate-bounce-in">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Quiz Results</h3>
               <button
@@ -1053,9 +982,9 @@ const UserQuizTab: React.FC = () => {
       )}
 
       {/* Team Rankings Modal */}
-      {showRankingsModal && selectedQuiz && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+      {showRankingsModal && teamRankings && selectedQuiz && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="gaming-card w-full max-w-lg max-h-[90vh] flex flex-col animate-bounce-in">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Team Rankings</h3>
               <button

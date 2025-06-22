@@ -195,18 +195,18 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-2">
             {showIcon && (
-              <div className={`p-1 rounded-full ${colors.bg}`}>
+              <div className={`p-1 rounded-full bg-green-900/30`}>
                 {getStatusIcon()}
               </div>
             )}
             <div>
               <div className="flex items-center space-x-1">
-                <span className={`text-sm font-semibold ${colors.text} capitalize`}>
+                <span className="text-sm font-semibold text-green-300 capitalize">
                   {currentStatus}
                 </span>
                 {currentUrgency === 'high' && getUrgencyIcon()}
               </div>
-              <span className={`text-lg font-bold ${colors.text} ${currentUrgency === 'high' ? 'animate-pulse' : ''}`}>
+              <span className="text-2xl font-bold text-white tracking-wide">
                 {timeRemaining}
               </span>
             </div>

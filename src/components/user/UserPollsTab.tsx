@@ -94,96 +94,106 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
 
   if (loading && polls.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading polls...</p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="gaming-card p-4 sm:p-6 animate-pulse">
+            <div className="h-6 bg-slate-700 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/3"></div>
+            <div className="mt-4 h-10 bg-slate-700 rounded-lg"></div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Polls & Voting</h2>
-          <p className="text-gray-600 mt-1">Participate in team polls and see results</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gradient flex items-center gap-3">
+            <VoteIcon className="h-7 w-7 sm:h-8 sm:w-8 text-purple-400" />
+            Polls & Voting
+          </h2>
+          <p className="text-slate-300 mt-1">Participate in team polls and see results</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+          className="btn-gaming-secondary"
           title="Refresh polls"
         >
           <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
+      {/* Error Message */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="gaming-card p-4 border border-red-500/20 bg-red-500/10">
           <div className="flex items-start space-x-2">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-red-700">{error}</p>
+            <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-red-300">{error}</p>
           </div>
         </div>
       )}
 
+      {/* Success Message */}
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="gaming-card p-4 border border-green-500/20 bg-green-500/10">
           <div className="flex items-start space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <p className="text-green-700">{successMessage}</p>
+            <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0 mt-0.5" />
+            <p className="text-green-300">{successMessage}</p>
           </div>
         </div>
       )}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm border">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="gaming-card p-4 sm:p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <VoteIcon className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <VoteIcon className="h-5 w-5 text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{pollCounts.total}</p>
-              <p className="text-xs text-gray-600">Total Polls</p>
+              <p className="text-2xl font-bold text-white">{pollCounts.total}</p>
+              <p className="text-xs text-slate-400">Total Polls</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 shadow-sm border">
+        <div className="gaming-card p-4 sm:p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Clock className="h-5 w-5 text-green-600" />
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <Clock className="h-5 w-5 text-green-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{pollCounts.active}</p>
-              <p className="text-xs text-gray-600">Active Polls</p>
+              <p className="text-2xl font-bold text-white">{pollCounts.active}</p>
+              <p className="text-xs text-slate-400">Active Polls</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 shadow-sm border">
+        <div className="gaming-card p-4 sm:p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Calendar className="h-5 w-5 text-yellow-600" />
+            <div className="p-2 bg-yellow-500/20 rounded-lg">
+              <Calendar className="h-5 w-5 text-yellow-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{pollCounts.upcoming}</p>
-              <p className="text-xs text-gray-600">Upcoming</p>
+              <p className="text-2xl font-bold text-white">{pollCounts.upcoming}</p>
+              <p className="text-xs text-slate-400">Upcoming</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 shadow-sm border">
+        <div className="gaming-card p-4 sm:p-6">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <CheckCircle className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <CheckCircle className="h-5 w-5 text-purple-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{pollCounts.completed}</p>
-              <p className="text-xs text-gray-600">Completed</p>
+              <p className="text-2xl font-bold text-white">{pollCounts.completed}</p>
+              <p className="text-xs text-slate-400">Completed</p>
             </div>
           </div>
         </div>
@@ -201,14 +211,14 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
       {/* Polls List */}
       <div className="space-y-6">
         {filteredPolls.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <VoteIcon className="h-12 w-12 text-gray-400" />
+          <div className="text-center py-12 gaming-card">
+            <div className="w-24 h-24 mx-auto bg-slate-700 rounded-full flex items-center justify-center mb-4">
+              <VoteIcon className="h-12 w-12 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-white mb-2">
               {polls.length === 0 ? 'No polls available' : 'No polls match your filters'}
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-slate-400 mb-4">
               {polls.length === 0 
                 ? 'Check back later for new polls to participate in'
                 : 'Try adjusting your filters to see more polls'
@@ -229,20 +239,20 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
 
       {/* Active Poll Reminder */}
       {pollCounts.active > 0 && activeStatusFilter !== VoteStatus.ACTIVE && (
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Clock className="h-5 w-5 text-green-600" />
+        <div className="gaming-card p-4 border border-green-500/20 bg-green-500/10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <Clock className="h-5 w-5 text-green-400" />
             </div>
             <div className="flex-1">
-              <h4 className="font-medium text-gray-900">Active Polls Available</h4>
-              <p className="text-sm text-gray-600">
+              <h4 className="font-medium text-white">Active Polls Available</h4>
+              <p className="text-sm text-slate-300">
                 You have {pollCounts.active} active poll{pollCounts.active > 1 ? 's' : ''} waiting for your vote.
               </p>
             </div>
             <button
               onClick={() => setActiveStatusFilter(VoteStatus.ACTIVE)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              className="btn-gaming text-sm font-medium"
             >
               View Active Polls
             </button>

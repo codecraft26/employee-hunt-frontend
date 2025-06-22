@@ -385,11 +385,11 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border p-6">
+      <div className="bg-slate-800 rounded-2xl p-6 shadow-[0_0_24px_0_rgba(0,255,180,0.08)]">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{hunt.title}</h2>
-            <p className="text-gray-600">{hunt.description}</p>
+            <h2 className="text-2xl font-bold text-white">{hunt.title}</h2>
+            <p className="text-slate-200">{hunt.description}</p>
           </div>
           <div className="text-right">
             <div className="flex items-center space-x-2 mb-2">
@@ -419,18 +419,20 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
 
         {/* Prominent Timer Display for Active Hunts */}
         {(hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS') && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Time Remaining</h3>
-                  <p className="text-sm text-gray-600">Complete all stages before time runs out!</p>
-                </div>
+          <div className="mb-6 flex flex-col md:flex-row gap-4 items-stretch w-full">
+            {/* Info Card */}
+            <div className="flex-1 bg-slate-800 rounded-2xl flex items-center p-4 md:p-6">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400/30 to-blue-500/20 flex items-center justify-center shadow-lg mr-4">
+                <Clock className="h-6 w-6 text-green-200" />
               </div>
-              <div className="text-right">
+              <div>
+                <h3 className="text-lg font-bold text-white">Time Remaining</h3>
+                <p className="text-sm text-slate-300">Complete all stages before time runs out!</p>
+              </div>
+            </div>
+            {/* Timer Card */}
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-full h-full">
                 <TimerDisplay 
                   variant="detailed"
                   status="active"
@@ -438,7 +440,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                   startTime={hunt.startTime}
                   endTime={hunt.endTime}
                   showCountdown={true}
-                  className="bg-white"
+                  className="bg-transparent text-green-200 font-bold h-full w-full"
                 />
               </div>
             </div>
@@ -449,20 +451,20 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
         {progress && (
           <div className="grid grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{progress.totalStages}</div>
-              <div className="text-sm text-gray-500">Total Stages</div>
+              <div className="text-2xl font-bold text-white">{progress.totalStages}</div>
+              <div className="text-sm text-slate-300">Total Stages</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{progress.completedStages}</div>
-              <div className="text-sm text-gray-500">Completed</div>
+              <div className="text-2xl font-bold text-green-400">{progress.completedStages}</div>
+              <div className="text-sm text-slate-300">Completed</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">{progress.pendingStages}</div>
-              <div className="text-sm text-gray-500">Pending</div>
+              <div className="text-2xl font-bold text-yellow-400">{progress.pendingStages}</div>
+              <div className="text-sm text-slate-300">Pending</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{progress.rejectedStages}</div>
-              <div className="text-sm text-gray-500">Rejected</div>
+              <div className="text-2xl font-bold text-red-400">{progress.rejectedStages}</div>
+              <div className="text-sm text-slate-300">Rejected</div>
             </div>
           </div>
         )}
@@ -496,7 +498,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
             <p className="text-green-700 mb-4">
               Congratulations! Your team has successfully completed all stages of the treasure hunt.
             </p>
-            <div className="bg-white rounded-lg p-4 border border-green-200">
+            <div className="bg-slate-900 rounded-lg p-4 border border-green-800">
               <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
                 <Clock className="h-4 w-4" />
                 <span>Waiting for admin to review and declare results...</span>
@@ -517,7 +519,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
             <p className="text-blue-700 mb-4">
               Your team has submitted the final stage. All stages are now complete!
             </p>
-            <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <div className="bg-slate-900 rounded-lg p-4 border border-blue-800">
               <div className="flex items-center justify-center space-x-2 text-sm text-blue-600">
                 <Clock className="h-4 w-4" />
                 <span>Waiting for admin approval and results...</span>
@@ -538,7 +540,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
             <p className="text-yellow-700 mb-4">
               The treasure hunt has concluded and the results are in!
             </p>
-            <div className="bg-white rounded-lg p-4 border border-yellow-200">
+            <div className="bg-slate-900 rounded-lg p-4 border border-yellow-800">
               <div className="flex items-center justify-center space-x-2 text-sm">
                 <Crown className="h-4 w-4 text-yellow-600" />
                 <span className="text-yellow-800 font-medium">
@@ -556,8 +558,8 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
       )}
 
       {/* Stage Progression Timeline */}
-      <div className="bg-white rounded-2xl shadow-sm border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+      <div className="bg-slate-800 rounded-2xl p-6 shadow-[0_0_24px_0_rgba(0,255,180,0.08)]">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
           <Target className="h-5 w-5 mr-2" />
           Stage Progression
         </h3>
@@ -593,7 +595,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
             return (
               <div
                 key={stage.id}
-                className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all ${
+                className={`bg-slate-800 rounded-2xl overflow-hidden shadow-[0_0_24px_0_rgba(0,255,180,0.08)] transition-all ${
                   stage.isCurrent ? 'ring-2 ring-blue-500 shadow-lg' : ''
                 } ${stage.submission?.status === 'APPROVED' ? 'ring-2 ring-green-500 shadow-lg' : ''}
                 ${!stage.isUnlocked ? 'opacity-60' : ''}`}
@@ -620,7 +622,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                     </div>
                   </div>
 
-                  <h3 className="font-semibold text-gray-900 mb-2">{stage.description}</h3>
+                  <h3 className="font-semibold text-white mb-2">{stage.description}</h3>
 
                   {/* Stage Status */}
                   {stage.submission && (
@@ -666,7 +668,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                     <div className="space-y-3">
                       {/* Member Submission */}
                       <div className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-medium text-gray-900 mb-3">Submit Your Photo</h4>
+                        <h4 className="font-medium text-white mb-3">Submit Your Photo</h4>
                         
                         {imagePreview ? (
                           <div className="mb-3">
@@ -691,12 +693,12 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                               className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                             >
                               <Camera className="h-5 w-5 text-blue-600" />
-                              <span className="text-sm font-medium text-gray-700">Take Photo</span>
+                              <span className="text-sm font-medium text-slate-200">Take Photo</span>
                             </button>
                             
                             <label className="flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                               <Upload className="h-5 w-5 text-green-600" />
-                              <span className="text-sm font-medium text-gray-700">Choose from Gallery</span>
+                              <span className="text-sm font-medium text-slate-200">Choose from Gallery</span>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -711,7 +713,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Describe your submission..."
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-slate-700 rounded-lg bg-slate-800 text-white placeholder:text-slate-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           />
 
                           <button
@@ -728,7 +730,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                       {/* Leader Review Section */}
                       {isTeamLeader && (
                         <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-                          <h4 className="font-medium text-blue-900 mb-3 flex items-center">
+                          <h4 className="font-medium text-blue-200 mb-3 flex items-center">
                             <Crown className="h-4 w-4 mr-2" />
                             Team Leader Review
                           </h4>
@@ -751,7 +753,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                                       alt="Submission"
                                       className="w-full h-20 object-cover rounded mb-2"
                                     />
-                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                    <p className="text-sm text-slate-200 line-clamp-2">
                                       {submission.description}
                                     </p>
                                     <p className="text-xs text-gray-500">
@@ -766,7 +768,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                                 onChange={(e) => setLeaderNotes(e.target.value)}
                                 placeholder="Add notes about the selected submission..."
                                 rows={2}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-slate-700 rounded-lg bg-slate-800 text-white placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               />
 
                               <button
@@ -825,7 +827,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
 
       {/* My Submissions */}
       {mySubmissions.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border p-6">
+        <div className="bg-slate-800 rounded-2xl p-6 shadow-[0_0_24px_0_rgba(0,255,180,0.08)]">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">My Submissions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {mySubmissions.map((submission) => (
