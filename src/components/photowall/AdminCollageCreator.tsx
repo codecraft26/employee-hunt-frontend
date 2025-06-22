@@ -93,6 +93,8 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
     if (!collageId) return;
 
     setGenerating(true);
+    setError(null); // Clear previous errors
+    
     try {
       // Prepare data for the Sharp-based API
       const collageData = {
@@ -104,22 +106,43 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
         height: 800
       };
 
-      // Call the Sharp-based API endpoint
+      console.log('Starting collage generation with', selectedPhotos.length, 'images');
+
+      // Call the Sharp-based API endpoint with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const response = await fetch('/api/collage/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(collageData)
+        body: JSON.stringify(collageData),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        
+        if (response.status === 413) {
+          throw new Error('Request too large - try with fewer images');
+        } else if (response.status === 504) {
+          throw new Error('Request timeout - the server took too long to respond');
+        } else if (response.status === 502) {
+          throw new Error('Server error - please try again in a few moments');
+        } else {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
       }
 
       const result = await response.json();
 
       if (result.success) {
+        console.log('Collage generated successfully, uploading...');
+        
         // Convert base64 image to blob for upload
         const base64Data = result.data.imageUrl.split(',')[1];
         const byteCharacters = atob(base64Data);
@@ -136,11 +159,14 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
         const uploadSuccess = await uploadCollageImage(collageId, blob);
         if (uploadSuccess) {
           setStep(3);
-        }
-
-        // Log processing results
-        if (result.data.failedImages > 0) {
-          console.warn(`${result.data.failedImages} images failed to process and were replaced with placeholders`);
+          
+          // Show success message with processing details
+          if (result.data.failedImages > 0) {
+            console.warn(`${result.data.failedImages} images failed to process and were replaced with placeholders`);
+            // You could show a toast notification here about failed images
+          }
+        } else {
+          throw new Error('Failed to upload collage image');
         }
       } else {
         throw new Error(result.message || 'Failed to generate collage');
@@ -148,7 +174,23 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
 
     } catch (error) {
       console.error('Failed to generate collage image:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate collage');
+      
+      let errorMessage = 'Failed to generate collage';
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out - please try again with fewer images';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Request timeout - please try again';
+        } else if (error.message.includes('memory')) {
+          errorMessage = 'Memory limit exceeded - try with fewer images';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Network error - please check your connection and try again';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setGenerating(false);
     }

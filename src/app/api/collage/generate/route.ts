@@ -20,6 +20,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate image count
+    if (imageUrls.length > 10) {
+      return NextResponse.json(
+        { success: false, message: 'Maximum 10 images allowed' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Starting collage generation with', imageUrls.length, 'images');
+
     // Create a base canvas with white background
     const baseCanvas = sharp({
       create: {
@@ -30,17 +40,34 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Load and process images
+    // Load and process images with timeout and better error handling
     const processedImages = await Promise.all(
       imageUrls.map(async (imageUrl: string, index: number) => {
         try {
-          // Fetch image from URL
-          const response = await fetch(imageUrl);
+          console.log(`Processing image ${index + 1}: ${imageUrl}`);
+          
+          // Fetch image from URL with timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          const response = await fetch(imageUrl, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; CollageGenerator/1.0)'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
           if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${imageUrl}`);
+            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
           }
           
           const imageBuffer = await response.arrayBuffer();
+          
+          if (imageBuffer.byteLength === 0) {
+            throw new Error('Empty image buffer received');
+          }
           
           // Process image with Sharp
           const processedImage = await sharp(Buffer.from(imageBuffer))
@@ -50,23 +77,28 @@ export async function POST(request: NextRequest) {
             })
             .png(); // Convert to PNG for transparency support
           
+          console.log(`Successfully processed image ${index + 1}`);
+          
           return {
             buffer: await processedImage.toBuffer(),
             index,
             success: true
           };
         } catch (error) {
-          console.error(`Failed to process image ${index}:`, error);
+          console.error(`Failed to process image ${index + 1}:`, error);
           // Create a placeholder image
           const placeholder = await createPlaceholderImage(300, 300, `Image ${index + 1}`);
           return {
             buffer: placeholder,
             index,
-            success: false
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
           };
         }
       })
     );
+
+    console.log('All images processed, calculating layout');
 
     // Calculate layout positions
     const layoutPositions = calculateLayout(imageUrls.length, width, height);
@@ -106,15 +138,19 @@ export async function POST(request: NextRequest) {
       const image = processedImages[index];
       const position = layoutPositions[index];
       if (position) {
-        // Create rounded corners mask
-        const roundedImage = sharp(image.buffer)
-          .resize(position.width, position.height, { fit: 'cover' });
-        
-        composites.push({
-          input: await roundedImage.toBuffer(),
-          top: position.y,
-          left: position.x
-        });
+        try {
+          // Create rounded corners mask
+          const roundedImage = sharp(image.buffer)
+            .resize(position.width, position.height, { fit: 'cover' });
+          
+          composites.push({
+            input: await roundedImage.toBuffer(),
+            top: position.y,
+            left: position.x
+          });
+        } catch (error) {
+          console.error(`Failed to add image ${index} to composite:`, error);
+        }
       }
     }
 
@@ -134,28 +170,51 @@ export async function POST(request: NextRequest) {
       left: 0
     });
 
+    console.log('Generating final collage');
+
     // Generate final collage
     const collageBuffer = await baseCanvas
       .composite(composites)
-      .jpeg({ quality: 95 })
+      .jpeg({ quality: 90 }) // Reduced quality for better performance
       .toBuffer();
+
+    console.log('Collage generated successfully');
 
     // Convert to base64 for response
     const base64Image = `data:image/jpeg;base64,${collageBuffer.toString('base64')}`;
+
+    const failedImages = processedImages.filter(img => !img.success);
+    if (failedImages.length > 0) {
+      console.warn(`${failedImages.length} images failed to process:`, failedImages.map(img => img.error));
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         imageUrl: base64Image,
         processedImages: processedImages.length,
-        failedImages: processedImages.filter(img => !img.success).length
+        failedImages: failedImages.length,
+        failedImageErrors: failedImages.map(img => ({ index: img.index, error: img.error }))
       }
     });
 
   } catch (error) {
     console.error('Collage generation error:', error);
+    
+    // More specific error messages
+    let errorMessage = 'Failed to generate collage';
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('abort')) {
+        errorMessage = 'Request timeout - some images took too long to process';
+      } else if (error.message.includes('memory')) {
+        errorMessage = 'Memory limit exceeded - try with fewer images';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return NextResponse.json(
-      { success: false, message: 'Failed to generate collage' },
+      { success: false, message: errorMessage },
       { status: 500 }
     );
   }

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "next lint",
-    "test:pwa": "node scripts/test-pwa.js"
+    "test:pwa": "node scripts/test-pwa.js",
+    "test:collage": "node scripts/test-collage.js",
+    "postinstall": "sharp --install"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
