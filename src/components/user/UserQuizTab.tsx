@@ -26,15 +26,23 @@ import {
   XCircle
 } from 'lucide-react';
 import { useUserQuizzes, UserQuiz, UserQuizQuestion } from '../../hooks/useUserQuizzes';
+import QuizNotifications from '../quiz/QuizNotifications';
 
 const UserQuizTab: React.FC = () => {
-  // Add CSS animation for progress bar
+  // Add CSS animation for progress bar and pulse effect
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = `
       @keyframes progress {
         from { width: 0%; }
         to { width: 100%; }
+      }
+      @keyframes pulse-red {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      .pulse-critical {
+        animation: pulse-red 1s ease-in-out infinite;
       }
     `;
     document.head.appendChild(style);
@@ -55,7 +63,10 @@ const UserQuizTab: React.FC = () => {
     getQuizById,
     getAssignedQuestions,
     submitAnswer,
+    isQuestionAnswered,
+    isQuizCompleted,
     getTeamRankings,
+    getQuizResults,
     getQuizStatusColor,
     formatQuizDate,
     getQuizProgress,
@@ -66,46 +77,104 @@ const UserQuizTab: React.FC = () => {
     resetState
   } = useUserQuizzes();
 
+  // Component state
   const [selectedQuiz, setSelectedQuiz] = useState<UserQuiz | null>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [showRankingsModal, setShowRankingsModal] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizResults, setQuizResults] = useState<any>(null);
+  const [timeRemaining, setTimeRemaining] = useState(30);
+  const [quizTimeRemaining, setQuizTimeRemaining] = useState(0);
   const [quizStartTime, setQuizStartTime] = useState<Date | null>(null);
+  const [cardTimerUpdate, setCardTimerUpdate] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showQuestionReview, setShowQuestionReview] = useState(false);
-  const [showImmediateFeedback, setShowImmediateFeedback] = useState(false);
-  const [feedbackData, setFeedbackData] = useState<{
-    isCorrect: boolean;
-    correctAnswer: number;
-    selectedAnswer: number;
-    score: number;
-  } | null>(null);
+  // Removed showImmediateFeedback and feedbackData - no longer showing immediate feedback
+  const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
 
   // Fetch quizzes on component mount
   useEffect(() => {
     fetchMyQuizzes();
   }, [fetchMyQuizzes]);
 
-  // Timer for current question
+  // Check completion status for all quizzes
   useEffect(() => {
-    if (showQuizModal && assignedQuestions.length > 0 && timeRemaining > 0 && !getCurrentQuestion()?.isCompleted) {
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            // Auto-submit when time runs out
-            handleAutoSubmit();
-            return 0;
+    const checkCompletedQuizzes = async () => {
+      const completed = new Set<string>();
+      
+      for (const quiz of quizzes) {
+        if (quiz.status === 'ACTIVE' || quiz.status === 'COMPLETED') {
+          const isCompleted = await isQuizCompleted(quiz.id);
+          if (isCompleted) {
+            completed.add(quiz.id);
           }
-          return prev - 1;
-        });
-      }, 1000);
+        }
+      }
+      
+      setCompletedQuizzes(completed);
+    };
 
-      return () => clearInterval(timer);
+    if (quizzes.length > 0) {
+      checkCompletedQuizzes();
     }
-  }, [showQuizModal, timeRemaining, assignedQuestions, currentQuestionIndex]);
+  }, [quizzes, isQuizCompleted]);
+
+  // Update quiz cards every minute to refresh timers
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Force re-render to update card timers without API call
+      setCardTimerUpdate(prev => prev + 1);
+    }, 30000); // Update every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Timer for current question - DISABLED per requirement
+  // useEffect(() => {
+  //   if (showQuizModal && assignedQuestions.length > 0 && timeRemaining > 0 && !getCurrentQuestion()?.isCompleted) {
+  //     const timer = setInterval(() => {
+  //       setTimeRemaining(prev => {
+  //         if (prev <= 1) {
+  //           // Auto-submit when time runs out
+  //           handleAutoSubmit();
+  //           return 0;
+  //         }
+  //         return prev - 1;
+  //       });
+  //     }, 1000);
+
+  //     return () => clearInterval(timer);
+  //   }
+  // }, [showQuizModal, timeRemaining, assignedQuestions, currentQuestionIndex]);
+
+  // Timer for entire quiz duration - DISABLED per requirement
+  // useEffect(() => {
+  //   if (showQuizModal && selectedQuiz) {
+  //     const updateQuizTimer = () => {
+  //       const now = new Date();
+  //       const endTime = new Date(selectedQuiz.endTime);
+  //       const remainingSeconds = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+        
+  //       setQuizTimeRemaining(remainingSeconds);
+        
+  //       // Auto-close quiz when time runs out
+  //       if (remainingSeconds <= 0) {
+  //         alert('Quiz time has expired!');
+  //         handleCloseQuiz();
+  //       }
+  //     };
+
+  //     // Update immediately
+  //     updateQuizTimer();
+      
+  //     // Update every second
+  //     const timer = setInterval(updateQuizTimer, 1000);
+
+  //     return () => clearInterval(timer);
+  //   }
+  // }, [showQuizModal, selectedQuiz]);
 
   // Helper function to get current question
   const getCurrentQuestion = (): UserQuizQuestion | null => {
@@ -145,12 +214,24 @@ const UserQuizTab: React.FC = () => {
   }, [clearError, fetchMyQuizzes]);
 
   const handleStartQuiz = async (quiz: UserQuiz) => {
+    // Check if user has already completed this quiz
+    if (completedQuizzes.has(quiz.id)) {
+      alert('You have already completed this quiz!');
+      return;
+    }
+
     try {
+      console.log('Starting quiz:', quiz); // Debug log
       setSelectedQuiz(quiz);
       setQuizStartTime(new Date());
       
+      // Clear any previous errors
+      clearError();
+      
       // Fetch the full quiz details and assigned questions
+      console.log('Fetching quiz details...'); // Debug log
       await getQuizById(quiz.id);
+      console.log('Fetching assigned questions...'); // Debug log
       const questions = await getAssignedQuestions(quiz.id);
       
       console.log('Fetched questions:', questions); // Debug log
@@ -177,17 +258,35 @@ const UserQuizTab: React.FC = () => {
           setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
         }
         
+        console.log('Opening quiz modal...'); // Debug log
         setShowQuizModal(true);
+      } else {
+        console.error('No questions received or empty questions array');
+        const errorMsg = error || 'No questions available for this quiz. This could mean:\n\n• You are not assigned to a team\n• No questions have been assigned to your team\n• The quiz is not properly configured\n\nPlease contact an administrator for assistance.';
+        alert(errorMsg);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to start quiz:', err);
+      const errorMsg = err.message || error || 'Failed to start quiz. Please check your internet connection and try again.';
+      alert(errorMsg);
     }
   };
 
   const handleViewResults = async (quiz: UserQuiz) => {
-    setSelectedQuiz(quiz);
-    await getQuizById(quiz.id);
-    setShowResultsModal(true);
+    try {
+      setSelectedQuiz(quiz);
+      // Use the new quiz results endpoint for comprehensive results
+      const resultsData = await getQuizResults(quiz.id);
+      // Also get basic quiz data
+      await getQuizById(quiz.id);
+      setShowResultsModal(true);
+    } catch (err) {
+      console.error('Failed to fetch quiz results:', err);
+      // Fallback to basic quiz data if results endpoint fails
+      setSelectedQuiz(quiz);
+      await getQuizById(quiz.id);
+      setShowResultsModal(true);
+    }
   };
 
   const handleViewRankings = async (quiz: UserQuiz) => {
@@ -199,7 +298,23 @@ const UserQuizTab: React.FC = () => {
   const handleSubmitAnswer = async () => {
     const currentQuestion = getCurrentQuestion();
     
-    if (selectedAnswer === null || !selectedQuiz || !currentQuestion || currentQuestion.isCompleted) {
+    // Enhanced validation to prevent duplicate submissions
+    if (selectedAnswer === null || 
+        !selectedQuiz || 
+        !currentQuestion || 
+        currentQuestion.isCompleted || 
+        isSubmitting ||
+        isQuestionAnswered(currentQuestion.question.id) ||
+        (currentQuestion.userAnswer !== null && currentQuestion.userAnswer !== undefined)) {
+      console.log('Submission blocked:', {
+        selectedAnswer,
+        hasQuiz: !!selectedQuiz,
+        hasQuestion: !!currentQuestion,
+        isCompleted: currentQuestion?.isCompleted,
+        isSubmitting,
+        isAlreadyAnswered: currentQuestion ? isQuestionAnswered(currentQuestion.question.id) : false,
+        hasUserAnswer: currentQuestion?.userAnswer !== null && currentQuestion?.userAnswer !== undefined
+      });
       return;
     }
 
@@ -222,35 +337,26 @@ const UserQuizTab: React.FC = () => {
       });
 
       if (success) {
-        // Get the updated question data from the assignedQuestions state
-        const updatedQuestion = assignedQuestions.find(q => q.question.id === currentQuestion.question.id);
-        
-        if (updatedQuestion) {
-          // Show immediate feedback
-          setFeedbackData({
-            isCorrect: updatedQuestion.isCorrect || false,
-            correctAnswer: updatedQuestion.question?.correctAnswer || 0,
-            selectedAnswer: selectedAnswer,
-            score: updatedQuestion.score || 0
-          });
-          setShowImmediateFeedback(true);
-          
-          // Auto-move to next question after 2.5 seconds
-          setTimeout(() => {
-            setShowImmediateFeedback(false);
-            setFeedbackData(null);
-            handleMoveToNextQuestion();
-          }, 2500);
-        } else {
-          // Fallback: move to next question immediately
-          handleMoveToNextQuestion();
-        }
+        // Don't show immediate feedback - just move to next question
+        handleMoveToNextQuestion();
       }
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to submit answer:', err);
-      setShowImmediateFeedback(false);
-      setFeedbackData(null);
+      
+      // Handle specific error cases
+      const errorMessage = err.response?.data?.message || err.message;
+      
+      if (errorMessage?.includes('already answered')) {
+        // If question was already answered, just move to next question
+        console.log('Question already answered, moving to next question');
+        
+        // Move to next question without trying to update state
+        handleMoveToNextQuestion();
+      } else {
+        // For other errors, just move to next question
+        console.log('Error submitting answer, but continuing...');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -261,9 +367,9 @@ const UserQuizTab: React.FC = () => {
     
     // Check if all questions are now completed
     if (completionStatus.isAllCompleted) {
-      // Quiz completed
+      // Quiz completed - just show simple message
       setShowQuizModal(false);
-      setShowResultsModal(true);
+      alert('🎉 Quiz Completed! Your answers have been submitted successfully.');
       fetchMyQuizzes(); // Refresh quiz list
       return;
     }
@@ -343,64 +449,14 @@ const UserQuizTab: React.FC = () => {
     }
   };
 
-  const handleAnswerSelection = async (optionIndex: number) => {
-    if (showQuestionReview || showImmediateFeedback || isSubmitting) return;
+  const handleAnswerSelection = (optionIndex: number) => {
+    if (showQuestionReview || isSubmitting) return;
     
     const currentQuestion = getCurrentQuestion();
     if (!currentQuestion || !selectedQuiz || currentQuestion.isCompleted) return;
     
+    // Just set the selected answer - don't submit immediately
     setSelectedAnswer(optionIndex);
-    setIsSubmitting(true);
-    
-    const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
-    
-    console.log('Answer selection with data:', {
-      quizId: selectedQuiz.id,
-      questionId: currentQuestion.question.id,
-      selectedOption: optionIndex,
-      timeTaken,
-      currentQuestion
-    }); // Debug log
-    
-    try {
-      const success = await submitAnswer(selectedQuiz.id, currentQuestion.question.id, {
-        selectedOption: optionIndex,
-        timeTaken: timeTaken
-      });
-
-      if (success) {
-        // Get the updated question data from the assignedQuestions state
-        const updatedQuestion = assignedQuestions.find(q => q.question.id === currentQuestion.question.id);
-        
-        if (updatedQuestion) {
-          // Show immediate feedback
-          setFeedbackData({
-            isCorrect: Boolean(updatedQuestion.isCorrect),
-            correctAnswer: Number(updatedQuestion.question?.correctAnswer || 0),
-            selectedAnswer: optionIndex,
-            score: Number(updatedQuestion.score || 0)
-          });
-          setShowImmediateFeedback(true);
-          
-          // Auto-move to next question after 2.5 seconds
-          setTimeout(() => {
-            setShowImmediateFeedback(false);
-            setFeedbackData(null);
-            handleMoveToNextQuestion();
-          }, 2500);
-        } else {
-          // Fallback: move to next question immediately
-          handleMoveToNextQuestion();
-        }
-      }
-      
-    } catch (err) {
-      console.error('Failed to submit answer:', err);
-      setShowImmediateFeedback(false);
-      setFeedbackData(null);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleCloseQuiz = () => {
@@ -409,10 +465,10 @@ const UserQuizTab: React.FC = () => {
     setCurrentQuestionIndex(0);
     setSelectedAnswer(null);
     setTimeRemaining(0);
+    setQuizTimeRemaining(0);
     setQuizStartTime(null);
     setShowQuestionReview(false);
-    setShowImmediateFeedback(false);
-    setFeedbackData(null);
+    // Removed immediate feedback cleanup - no longer used
     resetState();
   };
 
@@ -429,6 +485,17 @@ const UserQuizTab: React.FC = () => {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatQuizTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
@@ -469,19 +536,22 @@ const UserQuizTab: React.FC = () => {
       <div>
         <h2 className="text-2xl sm:text-3xl font-bold text-gradient mb-2 flex items-center">
           <Target className="h-7 w-7 sm:h-8 sm:h-8 mr-3 text-blue-400" />
-          Available Quizzes
+          My Quizzes
         </h2>
         <p className="text-slate-300 text-sm sm:text-base">
-          Choose a quiz to start your challenge. Good luck!
+          Your quiz activities - available, completed, and upcoming quizzes.
         </p>
       </div>
+
+      {/* Quiz Notifications */}
+      <QuizNotifications />
 
       {quizzes.length === 0 ? (
         <div className="text-center py-12 gaming-card">
           <Shield className="mx-auto h-12 w-12 text-blue-400" />
-          <h3 className="mt-4 text-xl font-bold text-white">No Quizzes Available</h3>
+          <h3 className="mt-4 text-xl font-bold text-white">No Quizzes Found</h3>
           <p className="mt-2 text-base text-slate-400">
-            Check back later for new quizzes and challenges.
+            No quizzes have been assigned to you yet. Check back later!
           </p>
         </div>
       ) : (
@@ -492,11 +562,27 @@ const UserQuizTab: React.FC = () => {
             const progress = getQuizProgress(quiz);
             const isExpired = isQuizExpired(quiz);
             const canTake = canStartQuiz(quiz);
+            
+            // Override status for completed quizzes
+            const userCompletedQuiz = completedQuizzes.has(quiz.id);
+            const displayStatus = userCompletedQuiz && status !== 'COMPLETED' ? 'COMPLETED' : status;
+            const displayStatusColor = userCompletedQuiz && status !== 'COMPLETED' 
+              ? 'bg-green-100 text-green-800 border-green-200' 
+              : statusColor;
+
+            // Calculate remaining time for active quizzes
+            const now = new Date();
+            const endTime = new Date(quiz.endTime);
+            const remainingTimeSeconds = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
 
             return (
               <div
                 key={quiz.id}
-                className="gaming-card p-4 sm:p-5 flex flex-col justify-between hover-lift group"
+                className={`gaming-card p-4 sm:p-5 flex flex-col justify-between hover-lift group ${
+                  (status === 'COMPLETED' || userCompletedQuiz) 
+                    ? 'opacity-95 bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/50' 
+                    : ''
+                }`}
               >
                 <div>
                   <div className="flex justify-between items-start mb-3">
@@ -504,12 +590,40 @@ const UserQuizTab: React.FC = () => {
                       {quiz.title}
                     </h3>
                     <div
-                      className={`flex items-center text-xs font-bold px-3 py-1 rounded-full ${statusColor}`}
+                      className={`flex items-center text-xs font-bold px-3 py-1 rounded-full ${displayStatusColor}`}
                     >
-                      {getStatusIcon(status)}
-                      <span className="ml-1.5">{status}</span>
+                      {getStatusIcon(displayStatus)}
+                      <span className="ml-1.5">{displayStatus}</span>
                     </div>
                   </div>
+                  
+                  {/* Quiz Timer Display */}
+                  {status === 'ACTIVE' && !isExpired && !userCompletedQuiz && (
+                    <div className={`mb-3 p-3 rounded-lg border-2 ${
+                      remainingTimeSeconds <= 300 
+                        ? 'bg-red-50 border-red-200 text-red-800' 
+                        : remainingTimeSeconds <= 600 
+                        ? 'bg-orange-50 border-orange-200 text-orange-800'
+                        : 'bg-blue-50 border-blue-200 text-blue-800'
+                    }`}>
+                      <div className="flex items-center space-x-2">
+                        <Timer className="h-4 w-4" />
+                        <div>
+                          <p className="text-xs font-medium">
+                            {remainingTimeSeconds <= 300 ? 'Time Critical!' : 
+                             remainingTimeSeconds <= 600 ? 'Time Warning!' : 
+                             'Time Remaining:'}
+                          </p>
+                          <p className={`text-sm font-bold ${
+                            remainingTimeSeconds <= 300 ? 'pulse-critical' : ''
+                          }`}>
+                            {formatQuizTime(remainingTimeSeconds)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <p className="text-slate-400 text-sm mb-4 h-10">
                     {quiz.description}
                   </p>
@@ -529,32 +643,30 @@ const UserQuizTab: React.FC = () => {
                 </div>
 
                 <div className="mt-6">
-                  {status === 'COMPLETED' ? (
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                      <button
-                        onClick={() => handleViewResults(quiz)}
-                        className="btn-gaming w-full text-sm py-2"
-                      >
-                        View Results
-                      </button>
-                      <button
-                        onClick={() => handleViewRankings(quiz)}
-                        className="btn-gaming w-full text-sm py-2 bg-gradient-to-r from-purple-500 to-indigo-500"
-                      >
-                        Rankings
-                      </button>
+                  {status === 'COMPLETED' || completedQuizzes.has(quiz.id) ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-lg text-center font-semibold text-sm">
+                        ✅ {status === 'COMPLETED' ? 'Quiz Completed' : 'You completed this quiz'}
+                      </div>
+                      {quiz.userScore !== undefined && (
+                        <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-lg text-center text-xs">
+                          Your Score: {quiz.userScore} / {quiz.maxScore || '?'} points
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <button
-                      onClick={() => handleStartQuiz(quiz)}
-                      disabled={!canTake || isExpired}
-                      className="btn-gaming w-full disabled:opacity-50 disabled:cursor-not-allowed group/play-btn"
-                    >
-                      <div className="flex items-center justify-center">
-                        <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover/play-btn:scale-125" />
-                        <span>{isExpired ? 'Expired' : canTake ? 'Start Quiz' : 'Locked'}</span>
-                      </div>
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => handleStartQuiz(quiz)}
+                        disabled={!canTake || isExpired}
+                        className="btn-gaming w-full disabled:opacity-50 disabled:cursor-not-allowed group/play-btn"
+                      >
+                        <div className="flex items-center justify-center">
+                          <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover/play-btn:scale-125" />
+                          <span>{isExpired ? 'Expired' : canTake ? 'Start Quiz' : 'Locked'}</span>
+                        </div>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -565,60 +677,84 @@ const UserQuizTab: React.FC = () => {
 
       {/* Quiz Modal */}
       {showQuizModal && selectedQuiz && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-          <div className="gaming-card w-full max-w-2xl max-h-[90vh] flex flex-col animate-bounce-in">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">{selectedQuiz.title}</h3>
-                <p className="text-gray-600">Question {currentQuestionIndex + 1} of {assignedQuestions.length}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-semibold truncate">{selectedQuiz.title}</h3>
+                <p className="text-blue-100 text-sm">Question {currentQuestionIndex + 1} of {assignedQuestions.length}</p>
                 {showQuestionReview && (
-                  <p className="text-sm text-blue-600 mt-1">Review Mode - Already Answered</p>
+                  <p className="text-xs text-blue-200 mt-1">Review Mode - Already Answered</p>
                 )}
               </div>
-              <div className="flex items-center space-x-4">
-                {!showQuestionReview && (
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">Time Remaining</p>
-                    <p className={`text-lg font-bold ${timeRemaining <= 10 ? 'text-red-600' : 'text-blue-600'}`}>
-                      {formatTime(timeRemaining)}
-                    </p>
-                  </div>
-                )}
-                {showQuestionReview && (
-                  <div className="text-right">
-                    <p className="text-sm text-green-600">Completed</p>
-                    <div className="flex items-center space-x-1 text-green-600">
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="text-sm font-medium">Answered</span>
+              
+              {/* Quiz Progress Ring */}
+              <div className="hidden sm:flex items-center space-x-4 ml-4">
+                <div className="text-center">
+                  <div className="relative w-12 h-12">
+                    <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+                      <path
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="rgba(255,255,255,0.2)"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeDasharray={`${((currentQuestionIndex + 1) / assignedQuestions.length) * 100}, 100`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xs font-bold">{currentQuestionIndex + 1}</span>
                     </div>
                   </div>
-                )}
+                </div>
+                
                 <button
                   onClick={handleCloseQuiz}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-blue-100 hover:text-white transition-colors p-1"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
+              
+              {/* Mobile close button */}
+              <button
+                onClick={handleCloseQuiz}
+                className="sm:hidden text-blue-100 hover:text-white transition-colors p-1 ml-2"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="space-y-6">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentQuestionIndex + 1) / assignedQuestions.length) * 100}%` }}
-                ></div>
+              <div className="bg-gray-100 rounded-lg p-3 sm:p-4">
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                  <span>Progress</span>
+                  <span>{getQuizCompletionStatus().completed} of {getQuizCompletionStatus().total} completed</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${((currentQuestionIndex + 1) / assignedQuestions.length) * 100}%` }}
+                  ></div>
+                </div>
               </div>
 
               {/* Question Status Indicator */}
               {showQuestionReview && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-center space-x-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-green-900">Question Already Answered</p>
-                      <p className="text-sm text-green-700">
+                      <p className="font-medium text-green-900 text-sm sm:text-base">Question Already Answered</p>
+                      <p className="text-xs sm:text-sm text-green-700">
                         Score: {assignedQuestions[currentQuestionIndex]?.score || 0} points
                         {assignedQuestions[currentQuestionIndex]?.isCorrect !== undefined && (
                           <span className="ml-2">
@@ -631,63 +767,13 @@ const UserQuizTab: React.FC = () => {
                 </div>
               )}
 
-              {/* Immediate Feedback Overlay */}
-              {showImmediateFeedback && feedbackData && (
-                <div className={`border-2 rounded-lg p-4 ${
-                  feedbackData.isCorrect 
-                    ? 'bg-green-50 border-green-200' 
-                    : 'bg-red-50 border-red-200'
-                }`}>
-                  <div className="flex items-center space-x-2 mb-2">
-                    {feedbackData.isCorrect ? (
-                      <CheckCircle className="h-6 w-6 text-green-600" />
-                    ) : (
-                      <XCircle className="h-6 w-6 text-red-600" />
-                    )}
-                    <div>
-                      <p className={`font-bold text-lg ${
-                        feedbackData.isCorrect ? 'text-green-900' : 'text-red-900'
-                      }`}>
-                        {feedbackData.isCorrect ? 'Correct!' : 'Incorrect!'}
-                      </p>
-                      <p className={`text-sm ${
-                        feedbackData.isCorrect ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        Points earned: +{feedbackData.score || 0}
-                      </p>
-                    </div>
-                  </div>
-                  {!feedbackData.isCorrect && (
-                    <p className="text-sm text-red-700">
-                      Correct answer: <span className="font-medium">
-                        {String.fromCharCode(65 + feedbackData.correctAnswer)} - {assignedQuestions[currentQuestionIndex]?.question?.options[feedbackData.correctAnswer]}
-                      </span>
-                    </p>
-                  )}
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-1">
-                      <div 
-                        className="bg-blue-600 h-1 rounded-full transition-all duration-2500"
-                        style={{ 
-                          animation: 'progress 2.5s linear forwards',
-                          width: '0%'
-                        }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Moving to next question...</p>
-                  </div>
-                </div>
-              )}
-
               {/* Question */}
-              <div className={`rounded-lg p-6 ${
-                showImmediateFeedback 
-                  ? (feedbackData?.isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200')
-                  : showQuestionReview 
-                    ? 'bg-green-50 border border-green-200' 
-                    : 'bg-gray-50'
+              <div className={`rounded-lg p-4 sm:p-6 border-2 transition-colors ${
+                showQuestionReview 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-gray-50 border-gray-200'
               }`}>
-                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                <h4 className="text-lg sm:text-xl font-medium text-gray-900 mb-4 sm:mb-6 leading-relaxed">
                   {assignedQuestions[currentQuestionIndex]?.question?.question || 'Loading question...'}
                 </h4>
                 
@@ -695,81 +781,62 @@ const UserQuizTab: React.FC = () => {
                   {assignedQuestions[currentQuestionIndex]?.question?.options?.map((option, index) => {
                     const isSelected = selectedAnswer === index;
                     
-                    // Ensure we're comparing numbers properly
+                    // For review mode, show correct/incorrect styling
                     const currentCorrectAnswer = showQuestionReview ? 
-                      Number(assignedQuestions[currentQuestionIndex]?.question?.correctAnswer) : 
-                      Number(feedbackData?.correctAnswer);
+                      Number(assignedQuestions[currentQuestionIndex]?.question?.correctAnswer) : null;
                     const currentUserAnswer = showQuestionReview ? 
-                      Number(assignedQuestions[currentQuestionIndex].userAnswer) : 
-                      Number(feedbackData?.selectedAnswer);
+                      Number(assignedQuestions[currentQuestionIndex].userAnswer) : null;
                     
-                    const isCorrect = (showQuestionReview || showImmediateFeedback) && 
-                      (currentCorrectAnswer === index);
-                    const isUserAnswer = (showQuestionReview || showImmediateFeedback) && 
-                      (currentUserAnswer === index);
+                    const isCorrect = showQuestionReview && (currentCorrectAnswer === index);
+                    const isUserAnswer = showQuestionReview && (currentUserAnswer === index);
                     
                     let buttonStyle = '';
                     let iconStyle = '';
                     
-                    if (showImmediateFeedback && feedbackData) {
-                      // Immediate feedback styling
+                    if (showQuestionReview) {
+                      // Review mode styling
                       if (isCorrect && isUserAnswer) {
-                        buttonStyle = 'border-green-500 bg-green-100 text-green-900'; // Correct answer user selected
+                        buttonStyle = 'border-green-500 bg-green-100 text-green-900 shadow-sm'; // Correct answer user selected
                         iconStyle = 'border-green-500 bg-green-500 text-white';
                       } else if (isCorrect) {
                         buttonStyle = 'border-green-500 bg-green-50 text-green-800'; // Correct answer
                         iconStyle = 'border-green-500 bg-green-500 text-white';
                       } else if (isUserAnswer) {
-                        buttonStyle = 'border-red-500 bg-red-100 text-red-900'; // Wrong answer user selected
+                        buttonStyle = 'border-red-500 bg-red-100 text-red-900 shadow-sm'; // Wrong answer user selected
                         iconStyle = 'border-red-500 bg-red-500 text-white';
                       } else {
                         buttonStyle = 'border-gray-200 bg-white text-gray-700'; // Other options
-                        iconStyle = 'border-gray-300';
-                      }
-                    } else if (showQuestionReview) {
-                      // Review mode styling
-                      if (isCorrect && isUserAnswer) {
-                        buttonStyle = 'border-green-500 bg-green-100 text-green-900'; // Correct answer user selected
-                        iconStyle = 'border-green-500 bg-green-500 text-white';
-                      } else if (isCorrect) {
-                        buttonStyle = 'border-green-500 bg-green-50 text-green-800'; // Correct answer
-                        iconStyle = 'border-green-500 bg-green-500 text-white';
-                      } else if (isUserAnswer) {
-                        buttonStyle = 'border-red-500 bg-red-100 text-red-900'; // Wrong answer user selected
-                        iconStyle = 'border-red-500 bg-red-500 text-white';
-                      } else {
-                        buttonStyle = 'border-gray-200 bg-white text-gray-900'; // Other options
-                        iconStyle = 'border-gray-300';
+                        iconStyle = 'border-gray-300 text-gray-500';
                       }
                     } else {
-                      // Normal active mode styling
-                      buttonStyle = isSelected
-                        ? 'border-blue-500 bg-blue-50 text-blue-900'
-                        : 'border-gray-200 bg-white text-gray-900 hover:border-gray-300';
+                      // Normal mode styling
+                      buttonStyle = isSelected 
+                        ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md' 
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-25';
                       iconStyle = isSelected 
                         ? 'border-blue-500 bg-blue-500 text-white' 
-                        : 'border-gray-300';
+                        : 'border-gray-300 text-gray-500';
                     }
 
-                    const isDisabled = showQuestionReview || showImmediateFeedback || isSubmitting;
+                    const isDisabled = showQuestionReview || isSubmitting;
 
                     return (
                       <button
                         key={index}
                         onClick={() => !isDisabled && handleAnswerSelection(index)}
                         disabled={isDisabled}
-                        className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${buttonStyle} ${
-                          isDisabled ? 'cursor-default opacity-75' : 'cursor-pointer hover:shadow-sm'
-                        } ${isSubmitting ? 'pointer-events-none' : ''}`}
+                        className={`w-full text-left p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 ${buttonStyle} ${
+                          isDisabled ? 'cursor-default' : 'cursor-pointer hover:shadow-sm'
+                        } ${isSubmitting ? 'opacity-75' : ''}`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium ${iconStyle}`}>
+                            <span className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${iconStyle}`}>
                               {String.fromCharCode(65 + index)}
                             </span>
-                            <span>{option}</span>
+                            <span className="text-sm sm:text-base leading-relaxed">{option}</span>
                           </div>
-                          {(showQuestionReview || showImmediateFeedback) && (
+                          {showQuestionReview && (
                             <div className="flex items-center space-x-1">
                               {isCorrect && <Check className="h-4 w-4 text-green-600" />}
                               {isUserAnswer && !isCorrect && <XCircle className="h-4 w-4 text-red-600" />}
@@ -783,25 +850,35 @@ const UserQuizTab: React.FC = () => {
               </div>
 
               {/* Question Info */}
-              <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>Points: {String(assignedQuestions[currentQuestionIndex]?.question?.points || 0)}</span>
-                <span>Time Limit: {String(assignedQuestions[currentQuestionIndex]?.question?.timeLimit || 0)}s</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 bg-gray-50 rounded-lg p-3 sm:p-4">
+                <div className="text-center">
+                  <span className="font-medium block">Points:</span>
+                  <span className="text-blue-600 font-semibold">{String(assignedQuestions[currentQuestionIndex]?.question?.points || 0)}</span>
+                </div>
+                <div className="text-center">
+                  <span className="font-medium block">Time Limit:</span>
+                  <span className="text-green-600 font-semibold">{String(assignedQuestions[currentQuestionIndex]?.question?.timeLimit || 0)}s</span>
+                </div>
+                <div className="text-center col-span-2 sm:col-span-1">
+                  <span className="font-medium block">Quiz Ends:</span>
+                  <span className="text-orange-600 font-semibold text-xs">{new Date(selectedQuiz.endTime).toLocaleTimeString()}</span>
+                </div>
               </div>
 
               {/* Navigation Buttons */}
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-2 border-t border-gray-200">
                 <div className="flex space-x-2">
                   <button
                     onClick={handlePreviousQuestion}
                     disabled={currentQuestionIndex === 0}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
                   <button
                     onClick={handleNextQuestion}
                     disabled={currentQuestionIndex === assignedQuestions.length - 1}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>
@@ -809,10 +886,10 @@ const UserQuizTab: React.FC = () => {
 
                 <div className="flex space-x-2">
                   {/* Skip button for unanswered questions */}
-                  {!showQuestionReview && !showImmediateFeedback && (
+                  {!showQuestionReview && (
                     <button
                       onClick={() => handleMoveToNextQuestion()}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center space-x-2"
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center space-x-2 transition-colors"
                     >
                       <SkipForward className="h-4 w-4" />
                       <span>Skip</span>
@@ -820,11 +897,11 @@ const UserQuizTab: React.FC = () => {
                   )}
 
                   {/* Submit button for unanswered questions */}
-                  {!showQuestionReview && !showImmediateFeedback && (
+                  {!showQuestionReview && (
                     <button
                       onClick={handleSubmitAnswer}
                       disabled={selectedAnswer === null || isSubmitting}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      className="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all duration-200"
                     >
                       {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
                       <span>
@@ -845,18 +922,13 @@ const UserQuizTab: React.FC = () => {
                   )}
 
                   {/* Continue button for completed questions */}
-                  {(showQuestionReview || showImmediateFeedback) && (
+                  {showQuestionReview && (
                     <button
-                      onClick={showImmediateFeedback ? undefined : handleMoveToNextQuestion}
-                      disabled={showImmediateFeedback}
-                      className={`px-6 py-2 rounded-lg flex items-center space-x-2 ${
-                        showImmediateFeedback 
-                          ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                          : 'bg-gray-600 text-white hover:bg-gray-700'
-                      }`}
+                      onClick={handleMoveToNextQuestion}
+                      className="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-sm bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 flex items-center justify-center space-x-2 transition-all duration-200"
                     >
                       <span>
-                        {showImmediateFeedback ? 'Please wait...' : (() => {
+                        {(() => {
                           const nextUnanswered = findNextUnansweredQuestion(currentQuestionIndex + 1);
                           if (nextUnanswered === -1) {
                             return currentQuestionIndex === assignedQuestions.length - 1 ? 'Finish Review' : 'Continue Review';
@@ -865,201 +937,33 @@ const UserQuizTab: React.FC = () => {
                           }
                         })()}
                       </span>
-                      {!showImmediateFeedback && <ArrowRight className="h-4 w-4" />}
+                      <ArrowRight className="h-4 w-4" />
                     </button>
                   )}
                 </div>
               </div>
-
-              {/* Quiz Status Summary */}
-              <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Quiz Progress:</span>
-                  <span className="font-medium">
-                    {getQuizCompletionStatus().completed} of {getQuizCompletionStatus().total} questions completed
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(getQuizCompletionStatus().completed / getQuizCompletionStatus().total) * 100}%` }}
-                  ></div>
-                </div>
-                {getQuizCompletionStatus().remaining > 0 && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    {getQuizCompletionStatus().remaining} question(s) remaining
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Quiz Results Modal */}
-      {showResultsModal && selectedQuiz && (
+      {/* Quiz Results Modal - DISABLED per requirements */}
+      {/* {showResultsModal && selectedQuiz && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
           <div className="gaming-card w-full max-w-3xl max-h-[90vh] flex flex-col animate-bounce-in">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Quiz Results</h3>
-              <button
-                onClick={() => setShowResultsModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="text-center">
-                <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
-                <h4 className="text-xl font-bold text-gray-900">{selectedQuiz.title}</h4>
-                <p className="text-gray-600">{selectedQuiz.description}</p>
-                
-                {/* Show winning team if available */}
-                {selectedQuiz.winningTeam && (
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <div className="flex items-center justify-center space-x-2">
-                      <Trophy className="h-5 w-5 text-yellow-600" />
-                      <div>
-                        <p className="text-sm font-medium text-yellow-800">Quiz Winner</p>
-                        <p className="text-lg font-bold text-yellow-900">{selectedQuiz.winningTeam.name}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-green-600">
-                    {selectedQuiz.userScore || 0}
-                  </p>
-                  <p className="text-gray-600">out of {selectedQuiz.maxScore || 0} points</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {selectedQuiz.maxScore ? Math.round(((selectedQuiz.userScore || 0) / selectedQuiz.maxScore) * 100) : 0}% accuracy
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="text-center">
-                  <p className="text-gray-600">Questions</p>
-                  <p className="font-semibold">{selectedQuiz.questionsPerParticipant}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600">Your Rank</p>
-                  <p className="font-semibold">#{selectedQuiz.teamRank || 'N/A'}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600">Total Teams</p>
-                  <p className="font-semibold">{selectedQuiz.totalTeams}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600">Participants</p>
-                  <p className="font-semibold">{selectedQuiz.totalParticipants}</p>
-                </div>
-              </div>
-
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleViewRankings(selectedQuiz)}
-                  className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span>View Rankings</span>
-                </button>
-                <button
-                  onClick={() => setShowResultsModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+            ... results modal content ...
           </div>
         </div>
-      )}
+      )} */}
 
-      {/* Team Rankings Modal */}
-      {showRankingsModal && teamRankings && selectedQuiz && (
+      {/* Team Rankings Modal - DISABLED per requirements */}
+      {/* {showRankingsModal && teamRankings && selectedQuiz && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
           <div className="gaming-card w-full max-w-lg max-h-[90vh] flex flex-col animate-bounce-in">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Team Rankings</h3>
-              <button
-                onClick={() => setShowRankingsModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h4 className="text-xl font-bold text-gray-900">{selectedQuiz.title}</h4>
-                <p className="text-gray-600">Final Team Standings</p>
-              </div>
-
-              {teamRankings.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">No rankings available yet</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {teamRankings.map((team, index) => (
-                    <div 
-                      key={team.teamId}
-                      className={`p-4 rounded-lg border-2 ${
-                        index === 0 ? 'border-yellow-200 bg-yellow-50' :
-                        index === 1 ? 'border-gray-200 bg-gray-50' :
-                        index === 2 ? 'border-orange-200 bg-orange-50' :
-                        'border-gray-200 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                            index === 0 ? 'bg-yellow-500 text-white' :
-                            index === 1 ? 'bg-gray-500 text-white' :
-                            index === 2 ? 'bg-orange-500 text-white' :
-                            'bg-blue-500 text-white'
-                          }`}>
-                            {index === 0 ? <Trophy className="h-4 w-4" /> :
-                             index === 1 ? <Medal className="h-4 w-4" /> :
-                             index === 2 ? <Award className="h-4 w-4" /> :
-                             team.rank}
-                          </div>
-                          <div>
-                            <h5 className="font-semibold text-gray-900">{String(team.teamName || '')}</h5>
-                            <p className="text-sm text-gray-600">
-                              {String(team.completedParticipants || 0)}/{String(team.totalParticipants || 0)} completed
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">{String(team.totalScore || 0)}</p>
-                          <p className="text-sm text-gray-600">
-                            Avg: {String(Math.round(team.averageScore || 0))}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <button
-                onClick={() => setShowRankingsModal(false)}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Close
-              </button>
-            </div>
+            ... rankings modal content ...
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };

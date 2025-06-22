@@ -116,12 +116,42 @@ export const useUserQuizzes = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/quizzes/my-quizzes');
-      if (response.data.success) {
-        setQuizzes(response.data.data);
-      } else {
-        throw new Error(response.data.message || 'Failed to fetch quizzes');
+      // Try to fetch all quizzes including completed ones
+      let allQuizzes: UserQuiz[] = [];
+      
+      try {
+        const response = await api.get('/quizzes/my-quizzes?includeCompleted=true');
+        if (response.data.success) {
+          allQuizzes = response.data.data;
+        }
+      } catch (firstErr) {
+        // If includeCompleted param doesn't work, try without it and fetch completed separately
+        console.log('Trying fallback approach for completed quizzes...');
+        
+        // Fetch active/upcoming quizzes
+        const activeResponse = await api.get('/quizzes/my-quizzes');
+        if (activeResponse.data.success) {
+          allQuizzes = activeResponse.data.data;
+        }
+        
+        // Try to fetch completed quizzes separately
+        try {
+          const completedResponse = await api.get('/quizzes/my-quizzes/completed');
+          if (completedResponse.data.success) {
+            // Merge completed quizzes with active ones, avoiding duplicates
+            const completedQuizzes = completedResponse.data.data;
+            const existingIds = new Set(allQuizzes.map(q => q.id));
+            const newCompletedQuizzes = completedQuizzes.filter((q: UserQuiz) => !existingIds.has(q.id));
+            allQuizzes = [...allQuizzes, ...newCompletedQuizzes];
+          }
+        } catch (completedErr) {
+          console.log('No separate completed quizzes endpoint available');
+        }
       }
+      
+      console.log('Fetched quizzes:', allQuizzes.length, 'quizzes');
+      console.log('Quiz statuses:', allQuizzes.map(q => ({ id: q.id, title: q.title, status: q.status })));
+      setQuizzes(allQuizzes);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch quizzes');
     } finally {
@@ -155,33 +185,90 @@ export const useUserQuizzes = () => {
     setError(null);
     try {
       console.log('Fetching assigned questions for quiz:', quizId); // Debug log
+      
+      // Check if user has authentication
+      const token = Cookies.get('token');
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+      
       const response = await api.get(`/quizzes/${quizId}/assigned-questions`);
       console.log('Assigned questions response:', response.data); // Debug log
+      
       if (response.data.success) {
-        setAssignedQuestions(response.data.data);
-        return response.data.data;
+        const questions = response.data.data;
+        console.log('Number of questions received:', questions?.length || 0);
+        setAssignedQuestions(questions || []);
+        return questions || [];
       } else {
-        throw new Error(response.data.message || 'Failed to fetch questions');
+        const errorMessage = response.data.message || 'Failed to fetch questions';
+        console.error('API returned error:', errorMessage);
+        throw new Error(errorMessage);
       }
     } catch (err: any) {
       console.error('Get assigned questions error:', err); // Debug log
-      setError(err.response?.data?.message || 'Failed to fetch questions');
+      
+      let errorMessage = 'Failed to fetch questions';
+      if (err.response?.status === 401) {
+        errorMessage = 'Authentication required. Please log in again.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'You are not authorized to access this quiz. Please ensure you are assigned to a team.';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'Quiz not found or no questions assigned to you.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       return [];
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Check if user has completed all questions for a quiz
+  const isQuizCompleted = useCallback(async (quizId: string): Promise<boolean> => {
+    try {
+      const questions = await getAssignedQuestions(quizId);
+      if (!questions || questions.length === 0) {
+        return false;
+      }
+      
+      // Check if all questions are completed
+      const completedCount = questions.filter((q: any) => q.isCompleted).length;
+      return completedCount === questions.length;
+    } catch (error) {
+      console.error('Error checking quiz completion:', error);
+      return false;
+    }
+  }, [getAssignedQuestions]);
+
+  // Check if a question has already been answered
+  const isQuestionAnswered = useCallback((questionId: string): boolean => {
+    const question = assignedQuestions.find(q => q.question.id === questionId);
+    return question?.isCompleted || false;
+  }, [assignedQuestions]);
+
   // Submit answer for a question
   const submitAnswer = useCallback(async (quizId: string, questionId: string, answerData: { selectedOption: number; timeTaken: number }) => {
     setLoading(true);
     setError(null);
+    
+    // Pre-check if question is already answered
+    if (isQuestionAnswered(questionId)) {
+      console.log('Question already answered locally, skipping submission');
+      setLoading(false);
+      return true;
+    }
+    
     try {
       console.log('Submitting answer:', { quizId, questionId, answerData }); // Debug log
       
-      // Transform the data to match API expectations
+      // Send data directly to match backend expectations
       const requestBody = {
-        answer: answerData.selectedOption,
+        selectedOption: answerData.selectedOption,
         timeTaken: answerData.timeTaken
       };
       
@@ -208,7 +295,29 @@ export const useUserQuizzes = () => {
     } catch (err: any) {
       console.error('Submit answer error:', err); // Debug log
       console.error('Error response:', err.response?.data); // Debug log
-      setError(err.response?.data?.message || 'Failed to submit answer');
+      
+      const errorMessage = err.response?.data?.message || 'Failed to submit answer';
+      
+      // Handle "already answered" case gracefully
+      if (errorMessage?.includes('already answered')) {
+        console.log('Question already answered, marking as completed');
+        
+        // Mark the question as completed even though we got an error
+        setAssignedQuestions(prev => 
+          prev.map(q => q.question.id === questionId ? { 
+            ...q, 
+            isCompleted: true,
+            answer: answerData.selectedOption,
+            userAnswer: answerData.selectedOption,
+            timeTaken: answerData.timeTaken
+          } : q)
+        );
+        
+        // Return true since the question is effectively answered
+        return true;
+      }
+      
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);
@@ -230,6 +339,26 @@ export const useUserQuizzes = () => {
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch rankings');
       return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Get quiz results (if published)
+  const getQuizResults = useCallback(async (quizId: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.get(`/quizzes/${quizId}/results`);
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch quiz results');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to fetch quiz results');
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -327,7 +456,10 @@ export const useUserQuizzes = () => {
     getQuizById,
     getAssignedQuestions,
     submitAnswer,
+    isQuestionAnswered,
+    isQuizCompleted,
     getTeamRankings,
+    getQuizResults,
     getQuizStatusColor,
     formatQuizDate,
     getQuizProgress,

@@ -281,15 +281,84 @@ body {
   transition: all 0.3s ease;
 }
 
-.gaming-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: rgba(30, 41, 59, 0.9);
+/* Global input styles to fix white text inheritance */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="time"],
+input[type="week"],
+textarea,
+select {
+  color: #1f2937 !important; /* Dark gray text for light backgrounds */
 }
 
-.gaming-input::placeholder {
-  color: rgba(148, 163, 184, 0.6);
+/* For inputs with dark/gaming backgrounds */
+input.gaming-input,
+input[class*="bg-gray-"],
+input[class*="bg-slate-"],
+input[class*="bg-blue-"],
+input[class*="bg-purple-"]:not([class*="bg-purple-50"]),
+input[class*="bg-indigo-"]:not([class*="bg-indigo-50"]),
+input[class*="bg-black"],
+input[class*="bg-transparent"] {
+  color: white !important;
+}
+
+/* Specific overrides for light backgrounds */
+input[class*="bg-white"],
+input[class*="bg-gray-50"],
+input[class*="bg-gray-100"],
+input[class*="bg-slate-50"],
+input[class*="bg-slate-100"],
+input[class*="bg-blue-50"],
+input[class*="bg-purple-50"],
+input[class*="bg-indigo-50"],
+input[class*="bg-green-50"],
+input[class*="bg-yellow-50"],
+input[class*="bg-red-50"],
+input[class*="bg-orange-50"] {
+  color: #1f2937 !important;
+}
+
+/* Common form input utility classes */
+.form-input {
+  @apply text-gray-900 bg-white border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.form-input-dark {
+  @apply text-white bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.form-input-gaming {
+  @apply text-white bg-slate-800/80 border border-slate-600/50 rounded-lg px-3 py-2 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-slate-800/90;
+}
+
+/* Additional input text color fixes for any missed cases */
+input:not([class*="text-"]):not([class*="gaming-input"]) {
+  color: #1f2937;
+}
+
+textarea:not([class*="text-"]) {
+  color: #1f2937;
+}
+
+select:not([class*="text-"]) {
+  color: #1f2937;
+}
+
+/* Fix for inputs inside gaming/dark themed containers */
+.gaming-card input:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-purple-50"]),
+.gaming-bg input:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-purple-50"]),
+.glass input:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-purple-50"]),
+.glass-dark input:not([class*="bg-white"]):not([class*="bg-gray-50"]):not([class*="bg-purple-50"]) {
+  color: white !important;
 }
 
 /* Status indicators */

@@ -422,35 +422,38 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
       </div>
 
       {/* Enhanced Recent Activities Section - Mobile responsive */}
-      <div className="gaming-card p-4 sm:p-6 lg:p-8 animate-bounce-in" style={{ animationDelay: '0.4s' }}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 lg:mb-8 space-y-3 sm:space-y-0">
-          <div>
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gradient mb-2 flex items-center">
-              <Flame className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mr-2 sm:mr-3 text-orange-400" />
-              Recent Activities
+      <div className="gaming-card p-3 sm:p-4 md:p-6 lg:p-8 animate-bounce-in" style={{ animationDelay: '0.4s' }}>
+        <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 lg:mb-8">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient mb-1 sm:mb-2 flex items-center">
+              <Flame className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 mr-2 sm:mr-3 text-orange-400 flex-shrink-0" />
+              <span className="truncate">Recent Activities</span>
             </h2>
-            <p className="text-slate-300 text-sm sm:text-base">Stay updated with epic announcements</p>
+            <p className="text-slate-300 text-xs sm:text-sm md:text-base">Stay updated with epic announcements</p>
           </div>
-          <button
-            onClick={() => router.push('/dashboard/activities')}
-            className="btn-gaming neon-glow-orange hover-lift text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 self-start sm:self-auto inline-flex items-center"
-          >
-            <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">View All Activities</span>
-            <span className="sm:hidden">View All</span>
-          </button>
+          <div className="flex-shrink-0">
+            <button
+              onClick={() => router.push('/dashboard/activities')}
+              className="btn-gaming neon-glow-orange hover-lift text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 w-full sm:w-auto inline-flex items-center justify-center"
+            >
+              <Zap className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2 flex-shrink-0" />
+              <span className="hidden md:inline">View All Activities</span>
+              <span className="md:hidden">View All</span>
+            </button>
+          </div>
         </div>
 
         {activitiesLoading ? (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
             {Array.from({ length: 3 }).map((_, index) => (
               <div key={index} className="animate-pulse">
-                <div className="gaming-card p-3 sm:p-4">
+                <div className="gaming-card p-3 sm:p-4 md:p-5">
                   <div className="flex items-center space-x-3 sm:space-x-4">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg sm:rounded-xl opacity-20"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 sm:h-4 bg-slate-600 rounded w-3/4 opacity-20"></div>
-                      <div className="h-2 sm:h-3 bg-slate-600 rounded w-1/2 opacity-20"></div>
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg sm:rounded-xl opacity-20 flex-shrink-0"></div>
+                    <div className="flex-1 space-y-1.5 sm:space-y-2 min-w-0">
+                      <div className="h-3 sm:h-4 md:h-5 bg-slate-600 rounded w-full max-w-xs opacity-20"></div>
+                      <div className="h-2 sm:h-3 md:h-4 bg-slate-600 rounded w-full max-w-sm opacity-20"></div>
+                      <div className="h-2 sm:h-2.5 bg-slate-600 rounded w-1/3 opacity-20"></div>
                     </div>
                   </div>
                 </div>
@@ -458,22 +461,22 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
             ))}
           </div>
         ) : !activities || activities.length === 0 ? (
-          <div className="text-center py-8 sm:py-12">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-              <Zap className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-white" />
+          <div className="text-center py-6 sm:py-8 md:py-12">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 md:mb-6">
+              <Zap className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">No Recent Activities</h3>
-            <p className="text-slate-400 mb-4 sm:mb-6 text-sm sm:text-base">Check back later for epic announcements and challenges</p>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2 md:mb-3">No Recent Activities</h3>
+            <p className="text-slate-400 mb-3 sm:mb-4 md:mb-6 text-xs sm:text-sm md:text-base px-4">Check back later for epic announcements and challenges</p>
             <button
               onClick={() => router.push('/dashboard/activities')}
-              className="btn-gaming text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 inline-flex items-center"
+              className="btn-gaming text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 inline-flex items-center"
             >
-              <Gem className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <Gem className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2 flex-shrink-0" />
               Check Activities
             </button>
           </div>
         ) : (
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-2 sm:space-y-3 md:space-y-4">
             {activities.slice(0, 3).map((activity, index) => {
               const IconComponent = getIconComponent(getActivityTypeIcon(activity.type));
               const gradient = getActivityGradient(activity.type);
@@ -481,23 +484,28 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
               return (
                 <div
                   key={activity.id}
-                  className="gaming-card p-3 sm:p-4 lg:p-6 hover-lift cursor-pointer group"
+                  className="gaming-card p-3 sm:p-4 md:p-5 lg:p-6 hover-lift cursor-pointer group transition-all duration-300"
                   onClick={() => router.push('/dashboard/activities')}
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-3 sm:space-x-4">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 text-white" />
+                    {/* Activity Icon */}
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 rounded-lg sm:rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 xl:h-8 xl:w-8 text-white" />
                     </div>
+                    
+                    {/* Activity Content */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm sm:text-base lg:text-lg font-bold text-white truncate group-hover:text-gradient transition-colors duration-300">
+                      <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white truncate group-hover:text-gradient transition-colors duration-300 mb-1">
                         {activity.title}
                       </h3>
-                      <p className="text-slate-300 text-xs sm:text-sm lg:text-base line-clamp-2 mt-1">
+                      <p className="text-slate-300 text-xs sm:text-sm md:text-base line-clamp-2 leading-relaxed mb-2 sm:mb-3">
                         {activity.description}
                       </p>
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 mt-2 sm:mt-3">
-                        <span className="text-xs text-slate-400">
+                      
+                      {/* Activity Meta Info */}
+                      <div className="flex flex-col xs:flex-row xs:items-center space-y-1 xs:space-y-0 xs:space-x-3 sm:space-x-4">
+                        <span className="text-xs sm:text-sm text-slate-400 flex-shrink-0">
                           {new Date(activity.createdAt).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -505,27 +513,32 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
                             minute: '2-digit'
                           })}
                         </span>
-                        <span className="text-xs px-2 sm:px-3 py-1 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 rounded-full border border-blue-500/30 self-start">
+                        <span className="text-xs sm:text-sm px-2 sm:px-3 py-1 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 rounded-full border border-blue-500/30 self-start xs:self-auto">
                           {getActivityTypeDisplay(activity.type)}
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 flex-shrink-0 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
+                    
+                    {/* Chevron Arrow */}
+                    <div className="flex-shrink-0 self-center">
+                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
+                    </div>
                   </div>
                 </div>
               );
             })}
             
+            {/* View More Activities Link */}
             {activities && activities.length > 3 && (
-              <div className="text-center pt-4 sm:pt-6">
+              <div className="text-center pt-3 sm:pt-4 md:pt-6">
                 <button
                   onClick={() => router.push('/dashboard/activities')}
-                  className="inline-flex items-center text-xs sm:text-sm text-gradient hover:text-white font-bold transition-colors duration-300"
+                  className="inline-flex items-center text-xs sm:text-sm md:text-base text-gradient hover:text-white font-bold transition-colors duration-300 group"
                 >
-                  <Heart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <Heart className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2 flex-shrink-0" />
                   <span className="hidden sm:inline">View {activities.length - 3} more epic activities</span>
                   <span className="sm:hidden">View {activities.length - 3} more</span>
-                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-1 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" />
                 </button>
               </div>
             )}

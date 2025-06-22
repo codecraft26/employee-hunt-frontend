@@ -18,7 +18,7 @@ import {
   Trash2,
   MoreVertical
 } from 'lucide-react';
-import { useQuizzes, Quiz, CreateQuizRequest, UpdateQuizRequest, UpdateQuestionRequest } from '../../hooks/useQuizzes';
+import { useQuizzes, Quiz, CreateQuizRequest, UpdateQuizRequest, UpdateQuestionRequest, TeamRankingItem } from '../../hooks/useQuizzes';
 
 interface QuizzesTabProps {
   onCreateQuiz?: () => void;
@@ -39,6 +39,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     fetchQuizzes,
     getQuizById,
     declareWinner,
+    getTeamRankings,
     updateQuiz,
     updateQuestion,
     deleteQuiz,
@@ -53,9 +54,13 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null);
+  const [quizForWinner, setQuizForWinner] = useState<Quiz | null>(null);
+  const [teamRankings, setTeamRankings] = useState<TeamRankingItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingRankings, setIsLoadingRankings] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [createQuizData, setCreateQuizData] = useState<CreateQuizRequest>({
@@ -94,7 +99,16 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
 
   // Fetch quizzes on component mount
   useEffect(() => {
-    fetchQuizzes();
+    const loadQuizzes = async () => {
+      try {
+        await fetchQuizzes();
+      } catch (err) {
+        // Error is already handled in the hook, but we can add component-level logic here if needed
+        console.warn('Failed to load quizzes in QuizzesTab:', err);
+      }
+    };
+    
+    loadQuizzes();
   }, [fetchQuizzes]);
 
   // Close dropdown when clicking outside
@@ -331,16 +345,67 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     });
   };
 
-  const handleDeclareWinner = async (quizId: string) => {
-    if (!window.confirm('Are you sure you want to declare the winner for this quiz?')) {
+  const handleDeclareWinner = async (quiz: Quiz) => {
+    setQuizForWinner(quiz);
+    setIsSubmitting(true);
+    setIsLoadingRankings(true);
+    setTeamRankings([]); // Clear previous rankings
+    setShowWinnerModal(true); // Show modal immediately with loading state
+    
+    try {
+      console.log('Attempting to fetch team rankings for quiz:', quiz.id); // Debug log
+      
+      // Fetch team rankings for this quiz
+      const rankings = await getTeamRankings(quiz.id);
+      console.log('Received rankings:', rankings); // Debug log
+      
+      if (rankings && rankings.length > 0) {
+        setTeamRankings(rankings);
+      } else {
+        console.warn('No rankings received or empty rankings array');
+        // Keep modal open but show no rankings message
+        setTeamRankings([]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load team rankings:', err);
+      
+      let errorMessage = 'Failed to load team rankings. ';
+      if (err.response?.status === 404) {
+        errorMessage += 'Rankings endpoint not found. Please check if the quiz rankings are available.';
+      } else if (err.response?.status === 403) {
+        errorMessage += 'Access denied. Admin permissions required.';
+      } else if (err.response?.status === 500) {
+        errorMessage += 'Server error. Please contact support.';
+      } else {
+        errorMessage += err.message || 'Please try again.';
+      }
+      
+      // Show error but keep modal open
+      alert(errorMessage);
+      setTeamRankings([]);
+    } finally {
+      setIsSubmitting(false);
+      setIsLoadingRankings(false);
+    }
+  };
+
+  const handleConfirmWinner = async (teamId: string) => {
+    if (!quizForWinner) return;
+    
+    if (!window.confirm('Are you sure you want to declare this team as the winner?')) {
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await declareWinner(quizId);
+      await declareWinner(quizForWinner.id, teamId);
+      setShowWinnerModal(false);
+      setQuizForWinner(null);
+      setTeamRankings([]);
+      alert('Winner declared successfully!');
     } catch (err) {
       console.error('Failed to declare winner:', err);
+      alert('Failed to declare winner. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1013,7 +1078,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeclareWinner(quiz.id);
+                          handleDeclareWinner(quiz);
                         }}
                         disabled={isSubmitting}
                         className="text-yellow-600 hover:text-yellow-700 font-medium text-sm flex items-center space-x-1 disabled:opacity-50"
@@ -1315,7 +1380,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                 <div className="flex space-x-2">
                   {selectedQuiz.status === 'COMPLETED' && !selectedQuiz.winningTeam && (
                     <button 
-                      onClick={() => handleDeclareWinner(selectedQuiz.id)}
+                      onClick={() => handleDeclareWinner(selectedQuiz)}
                       disabled={isSubmitting}
                       className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 flex items-center space-x-2"
                     >
@@ -1345,6 +1410,134 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* Winner Selection Modal */}
+      {showWinnerModal && quizForWinner && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <Trophy className="h-6 w-6 text-yellow-600" />
+                <h3 className="text-xl font-semibold text-gray-900">Declare Winner</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowWinnerModal(false);
+                  setQuizForWinner(null);
+                  setTeamRankings([]);
+                  setIsLoadingRankings(false);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={isLoadingRankings}
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-lg font-medium text-gray-900 mb-2">{quizForWinner.title}</h4>
+              <p className="text-gray-600 mb-4">Select the winning team from the leaderboard below:</p>
+              
+              {/* Loading State */}
+              {isLoadingRankings && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mb-4"></div>
+                    <p className="text-gray-600">Loading team rankings...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Rankings List */}
+              {!isLoadingRankings && teamRankings.length > 0 && (
+                <div className="space-y-3">
+                  {teamRankings.map((ranking, index) => (
+                    <div 
+                      key={ranking.team.id}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:border-yellow-300 hover:bg-yellow-50 ${
+                        index === 0 ? 'border-yellow-200 bg-yellow-50' : 'border-gray-200'
+                      }`}
+                      onClick={() => handleConfirmWinner(ranking.team.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
+                            index === 0 ? 'bg-yellow-500' : 
+                            index === 1 ? 'bg-gray-400' : 
+                            index === 2 ? 'bg-orange-400' : 'bg-gray-300'
+                          }`}>
+                            {ranking.rank}
+                          </div>
+                          <div>
+                            <h5 className="font-semibold text-gray-900">{ranking.team.name}</h5>
+                            <p className="text-sm text-gray-600">{ranking.team.description}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">{ranking.score} pts</div>
+                          <div className="text-sm text-gray-500">
+                            {ranking.correctAnswers}/{ranking.totalQuestions} correct
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Avg: {ranking.averageTime.toFixed(1)}s
+                          </div>
+                        </div>
+                      </div>
+                      {index === 0 && (
+                        <div className="mt-2 text-xs font-medium text-yellow-700 flex items-center">
+                          <Trophy className="h-3 w-3 mr-1" />
+                          Recommended Winner (Highest Score)
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* No Rankings State */}
+              {!isLoadingRankings && teamRankings.length === 0 && (
+                <div className="text-center py-12">
+                  <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Team Rankings Available</h3>
+                  <p className="text-gray-500 mb-4">
+                    This could mean:
+                  </p>
+                  <ul className="text-sm text-gray-500 space-y-1 text-left max-w-md mx-auto">
+                    <li>• No teams have participated in this quiz yet</li>
+                    <li>• Quiz results haven't been calculated</li>
+                    <li>• Teams haven't completed enough questions</li>
+                    <li>• There's a temporary server issue</li>
+                  </ul>
+                  <button
+                    onClick={() => handleDeclareWinner(quizForWinner)}
+                    disabled={isLoadingRankings}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowWinnerModal(false);
+                  setQuizForWinner(null);
+                  setTeamRankings([]);
+                  setIsLoadingRankings(false);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={isSubmitting || isLoadingRankings}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ...existing modals... */}
     </div>
   );
 };

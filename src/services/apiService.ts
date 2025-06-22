@@ -83,6 +83,26 @@ const apiService = {
     }
   },
 
+  async patch(endpoint: string, data?: any) {
+    try {
+      const token = getAuthToken();
+      const headers: any = {
+        Authorization: token ? `Bearer ${token}` : undefined
+      };
+      
+      // Don't set Content-Type for FormData, let browser set it with boundary
+      if (!(data instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+      }
+      
+      const response = await axios.patch(`${API_BASE_URL}${endpoint}`, data, { headers });
+      return response.data;
+    } catch (error) {
+      console.error('API PATCH Error:', error);
+      throw error;
+    }
+  },
+
   // Dashboard methods
   getDashboardStats: () => apiService.get('/admin/dashboard/stats'),
   getTeams: () => apiService.get('/admin/teams'),
@@ -112,4 +132,4 @@ const apiService = {
   getAllRooms: () => apiService.get('/users/rooms'),
 };
 
-export { apiService }; 
+export { apiService };

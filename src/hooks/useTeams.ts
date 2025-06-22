@@ -356,7 +356,7 @@ export const useTeams = () => {
     setError(null);
     
     try {
-      const response = await apiRequest('/users');
+      const response = await apiRequest('/users/all');
       
       if (response.success) {
         setUsers(response.data);
@@ -377,7 +377,7 @@ export const useTeams = () => {
     setError(null);
     
     try {
-      const response = await apiRequest('/teams/members/add', {
+      const response = await apiRequest('/teams/members', {
         method: 'POST',
         body: JSON.stringify(memberData),
       });
@@ -408,7 +408,7 @@ export const useTeams = () => {
       };
 
       const response = await apiRequest('/teams/members/remove', {
-        method: 'DELETE',
+        method: 'POST',
         body: JSON.stringify(requestData),
       });
 

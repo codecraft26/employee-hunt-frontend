@@ -231,6 +231,15 @@ export default function RegisterPage() {
     }
   };
 
+  // Allowed email domains for registration
+  const allowedDomains = [
+    '@innovatiview.com',
+    '@innovatiview.in',
+    '@infraview.in',
+    '@getitrent.com',
+    '@avagtpl.com'
+  ];
+
   // Validate current step
   const validateCurrentStep = () => {
     const errors: string[] = [];
@@ -243,6 +252,15 @@ export default function RegisterPage() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (formData.email && !emailRegex.test(formData.email)) {
           errors.push('Please enter a valid email address');
+        }
+        // Domain validation
+        if (formData.email) {
+          const isAllowedDomain = allowedDomains.some(domain => 
+            formData.email.toLowerCase().endsWith(domain.toLowerCase())
+          );
+          if (!isAllowedDomain) {
+            errors.push('Registration is only allowed for employees with company email domains');
+          }
         }
         break;
       

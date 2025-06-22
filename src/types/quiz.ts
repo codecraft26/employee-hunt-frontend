@@ -114,7 +114,7 @@ export interface UpdateQuestionRequest {
 }
 
 export interface SubmitAnswerRequest {
-  answer: number;
+  selectedOption: number;
   timeTaken: number;
 }
 
@@ -172,6 +172,10 @@ export interface DeclareWinnerResponse {
     quiz: Quiz;
     rankings: TeamRanking[];
   };
+}
+
+export interface DeclareWinnerRequest {
+  teamId: string;
 }
 
 // Quiz Status Types
