@@ -1,13 +1,13 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import axios from "axios";
+import Cookies from "js-cookie";
 
 // Types
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'admin';
+  role: "user" | "admin";
   employeeCode?: string;
   gender?: string;
   profileImage?: string;
@@ -72,7 +72,7 @@ const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = Cookies.get('token');
+  const token = Cookies.get("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -81,104 +81,138 @@ api.interceptors.request.use((config) => {
 
 // Async thunks
 export const registerUser = createAsyncThunk(
-  'auth/registerUser',
+  "auth/registerUser",
   async (userData: FormData, { rejectWithValue }) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/register', userData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
+      const response = await api.post<AuthResponse>(
+        "/auth/register",
+        userData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
       // Don't automatically log in the user after registration
       // Just return success message
       return { success: true, message: response.data.message };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+      return rejectWithValue(
+        error.response?.data?.message || "Registration failed"
+      );
     }
   }
 );
 
 export const registerAdmin = createAsyncThunk(
-  'auth/registerAdmin',
+  "auth/registerAdmin",
   async (userData: RegisterData, { rejectWithValue }) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/register/admin', userData);
+      const response = await api.post<AuthResponse>(
+        "/auth/register/admin",
+        userData
+      );
       const { token, user } = response.data.data;
-      
-      Cookies.set('token', token, { expires: 7, secure: true, sameSite: 'strict' });
-      
+
+      Cookies.set("token", token, {
+        expires: 7,
+        secure: true,
+        sameSite: "strict",
+      });
+
       return { token, user };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Admin registration failed');
+      return rejectWithValue(
+        error.response?.data?.message || "Admin registration failed"
+      );
     }
   }
 );
 
 export const loginUser = createAsyncThunk(
-  'auth/loginUser',
+  "auth/loginUser",
   async (loginData: LoginData, { rejectWithValue }) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', loginData);
+      const response = await api.post<AuthResponse>("/auth/login", loginData);
       const { token, user } = response.data.data;
-      
-      Cookies.set('token', token, { expires: 7, secure: true, sameSite: 'strict' });
-      
+
+      Cookies.set("token", token, {
+        expires: 7,
+        secure: true,
+        sameSite: "strict",
+      });
+
       return { token, user };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      return rejectWithValue(error.response?.data?.message || "Login failed");
     }
   }
 );
 
 export const loginWithOTP = createAsyncThunk(
-  'auth/loginWithOTP',
+  "auth/loginWithOTP",
   async (email: string, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/login/otp', { email });
+      const response = await api.post("/auth/login/otp", { email });
       return response.data.message;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'OTP request failed');
+      return rejectWithValue(
+        error.response?.data?.message || "OTP request failed"
+      );
     }
   }
 );
 
 export const verifyOTPLogin = createAsyncThunk(
-  'auth/verifyOTPLogin',
+  "auth/verifyOTPLogin",
   async (otpData: OTPVerifyData, { rejectWithValue }) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/login/otp/verify', otpData);
+      const response = await api.post<AuthResponse>(
+        "/auth/login/otp/verify",
+        otpData
+      );
       const { token, user } = response.data.data;
-      
-      Cookies.set('token', token, { expires: 7, secure: true, sameSite: 'strict' });
-      
+
+      Cookies.set("token", token, {
+        expires: 7,
+        secure: true,
+        sameSite: "strict",
+      });
+
       return { token, user };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'OTP verification failed');
+      return rejectWithValue(
+        error.response?.data?.message || "OTP verification failed"
+      );
     }
   }
 );
 
 export const getProfile = createAsyncThunk(
-  'auth/getProfile',
+  "auth/getProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('/auth/profile');
+      const response = await api.get("/auth/profile");
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch profile');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch profile"
+      );
     }
   }
 );
 
 export const updateDeviceToken = createAsyncThunk(
-  'auth/updateDeviceToken',
+  "auth/updateDeviceToken",
   async (deviceToken: string, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/device-token', { deviceToken });
+      const response = await api.post("/auth/device-token", { deviceToken });
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update device token');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update device token"
+      );
     }
   }
 );
@@ -194,7 +228,7 @@ const initialState: AuthState = {
 
 // Auth slice
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     clearError: (state) => {
@@ -205,9 +239,12 @@ const authSlice = createSlice({
       state.token = null;
       state.isAuthenticated = false;
       state.error = null;
-      Cookies.remove('token');
+      Cookies.remove("token");
     },
-    setAuthFromToken: (state, action: PayloadAction<{ user: User; token: string }>) => {
+    setAuthFromToken: (
+      state,
+      action: PayloadAction<{ user: User; token: string }>
+    ) => {
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
@@ -229,7 +266,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
+
       // Register Admin
       .addCase(registerAdmin.pending, (state) => {
         state.isLoading = true;
@@ -246,7 +283,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
+
       // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
@@ -263,7 +300,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
+
       // OTP Login
       .addCase(loginWithOTP.pending, (state) => {
         state.isLoading = true;
@@ -277,7 +314,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
+
       // Verify OTP
       .addCase(verifyOTPLogin.pending, (state) => {
         state.isLoading = true;
@@ -294,7 +331,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
-      
+
       // Get Profile
       .addCase(getProfile.pending, (state) => {
         state.isLoading = true;
@@ -309,7 +346,7 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.isAuthenticated = false;
       })
-      
+
       // Update Device Token
       .addCase(updateDeviceToken.pending, (state) => {
         state.isLoading = true;

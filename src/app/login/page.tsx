@@ -1,44 +1,100 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAppDispatch, useAppSelector } from '../../hooks/redux';
-import { loginUser, loginWithOTP, verifyOTPLogin, clearError } from '../../store/authSlice';
-import { Eye, EyeOff, Mail, Lock, Smartphone, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
-import Image from 'next/image';
-import { Gamepad2 } from 'lucide-react';
-import PendingApprovalMessage from '../../components/PendingApprovalMessage';
-
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAppDispatch, useAppSelector } from "../../hooks/redux";
+import {
+  loginUser,
+  loginWithOTP,
+  verifyOTPLogin,
+  clearError,
+} from "../../store/authSlice";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Smartphone,
+  ArrowRight,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import Image from "next/image";
+import { Gamepad2 } from "lucide-react";
+import PendingApprovalMessage from "../../components/PendingApprovalMessage";
+import NotificationHandler from "../../components/NotificationHandler";
+import NotificationButton from "../../components/NotificationButton";
 // Add SVG as a React component
 const TeamPlayBanner = () => (
   <div className="w-full flex justify-center">
-    <svg width="100%" height="180" viewBox="0 0 414 220" fill="none" xmlns="http://www.w3.org/2000/svg" style={{maxWidth: 414, height: 220}}>
+    <svg
+      width="100%"
+      height="180"
+      viewBox="0 0 414 220"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ maxWidth: 414, height: 220 }}
+    >
       <defs>
-        <linearGradient id="bannerGradient" x1="0" y1="0" x2="414" y2="220" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#a18aff"/>
-          <stop offset="1" stopColor="#6f55ff"/>
+        <linearGradient
+          id="bannerGradient"
+          x1="0"
+          y1="0"
+          x2="414"
+          y2="220"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#a18aff" />
+          <stop offset="1" stopColor="#6f55ff" />
         </linearGradient>
         <clipPath id="roundedBanner">
           <rect width="414" height="220" rx="24" />
         </clipPath>
       </defs>
       <g clipPath="url(#roundedBanner)">
-        <rect width="414" height="220" fill="url(#bannerGradient)"/>
-        <circle cx="207" cy="110" r="75" fill="white" fillOpacity="0.22"/>
-        <image href="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" x="0" y="0" height="220" width="414" opacity="0.55"/>
+        <rect width="414" height="220" fill="url(#bannerGradient)" />
+        <circle cx="207" cy="110" r="75" fill="white" fillOpacity="0.22" />
+        <image
+          href="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80"
+          x="0"
+          y="0"
+          height="220"
+          width="414"
+          opacity="0.55"
+        />
         <g>
-          <circle cx="207" cy="110" r="48" fill="white"/>
+          <circle cx="207" cy="110" r="48" fill="white" />
           <g>
-            <path d="M197 110 h20 m-10-10 v20" stroke="#a18aff" strokeWidth="2" strokeLinecap="round"/>
-            <circle cx="202" cy="115" r="2" fill="#a18aff"/>
-            <circle cx="212" cy="115" r="2" fill="#a18aff"/>
+            <path
+              d="M197 110 h20 m-10-10 v20"
+              stroke="#a18aff"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            <circle cx="202" cy="115" r="2" fill="#a18aff" />
+            <circle cx="212" cy="115" r="2" fill="#a18aff" />
           </g>
         </g>
-        <text x="207" y="180" textAnchor="middle" fill="white" fontSize="26" fontFamily="Inter,sans-serif" fontWeight="bold">
+        <text
+          x="207"
+          y="180"
+          textAnchor="middle"
+          fill="white"
+          fontSize="26"
+          fontFamily="Inter,sans-serif"
+          fontWeight="bold"
+        >
           Welcome to TeamPlay
         </text>
-        <text x="207" y="200" textAnchor="middle" fill="#e0e0ff" fontSize="16" fontFamily="Inter,sans-serif">
+        <text
+          x="207"
+          y="200"
+          textAnchor="middle"
+          fill="#e0e0ff"
+          fontSize="16"
+          fontFamily="Inter,sans-serif"
+        >
           Sign in to join your squad
         </text>
       </g>
@@ -48,12 +104,12 @@ const TeamPlayBanner = () => (
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [otpData, setOtpData] = useState({
-    email: '',
-    otp: ''
+    email: "",
+    otp: "",
   });
   const [isOTPMode, setIsOTPMode] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -64,12 +120,14 @@ export default function LoginPage() {
 
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { isLoading, error, isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const { isLoading, error, isAuthenticated, user } = useAppSelector(
+    (state) => state.auth
+  );
 
   useEffect(() => {
     // Check if user was redirected from registration
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('registered') === 'true') {
+    if (urlParams.get("registered") === "true") {
       setShowRegistrationSuccess(true);
       // Clear the URL parameter
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -78,10 +136,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (user?.role === 'admin') {
-        router.push('/admin');
+      if (user?.role === "admin") {
+        router.push("/admin");
       } else {
-        router.push('/dashboard');
+        router.push("/dashboard");
       }
     }
   }, [isAuthenticated, user, router]);
@@ -95,9 +153,9 @@ export default function LoginPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (isOTPMode) {
-      setOtpData(prev => ({ ...prev, [name]: value }));
+      setOtpData((prev) => ({ ...prev, [name]: value }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -105,23 +163,23 @@ export default function LoginPage() {
     e.preventDefault();
     setIsSubmitting(true);
     setIsPendingApproval(false);
-    
+
     try {
       if (isOTPMode) {
         if (otpSent) {
           const result = await dispatch(verifyOTPLogin(otpData));
-          if (result.payload?.message?.includes('pending approval')) {
+          if (result.payload?.message?.includes("pending approval")) {
             setIsPendingApproval(true);
           }
         } else {
           const result = await dispatch(loginWithOTP(otpData.email));
-          if (result.meta.requestStatus === 'fulfilled') {
+          if (result.meta.requestStatus === "fulfilled") {
             setOtpSent(true);
           }
         }
       } else {
         const result = await dispatch(loginUser(formData));
-        if (result.payload?.message?.includes('pending approval')) {
+        if (result.payload?.message?.includes("pending approval")) {
           setIsPendingApproval(true);
         }
       }
@@ -137,16 +195,16 @@ export default function LoginPage() {
     // Clear form data when switching modes
     if (!isOTPMode) {
       // Switching to OTP mode, copy email if available
-      setOtpData(prev => ({ ...prev, email: formData.email, otp: '' }));
+      setOtpData((prev) => ({ ...prev, email: formData.email, otp: "" }));
     } else {
       // Switching to password mode, copy email if available
-      setFormData(prev => ({ ...prev, email: otpData.email }));
+      setFormData((prev) => ({ ...prev, email: otpData.email }));
     }
   };
 
   const resetOTP = () => {
     setOtpSent(false);
-    setOtpData({ email: '', otp: '' });
+    setOtpData({ email: "", otp: "" });
     dispatch(clearError());
   };
 
@@ -163,14 +221,22 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => setIsOTPMode(false)}
-            className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${!isOTPMode ? 'border-purple-500 text-black' : 'border-transparent text-gray-400'}`}
+            className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${
+              !isOTPMode
+                ? "border-purple-500 text-black"
+                : "border-transparent text-gray-400"
+            }`}
           >
             Password
           </button>
           <button
             type="button"
             onClick={() => setIsOTPMode(true)}
-            className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${isOTPMode ? 'border-purple-500 text-black' : 'border-transparent text-gray-400'}`}
+            className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${
+              isOTPMode
+                ? "border-purple-500 text-black"
+                : "border-transparent text-gray-400"
+            }`}
           >
             OTP
           </button>
@@ -187,8 +253,12 @@ export default function LoginPage() {
           <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
             <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm text-green-700 font-medium">Registration successful!</p>
-              <p className="text-sm text-green-600">Please log in with your credentials to continue.</p>
+              <p className="text-sm text-green-700 font-medium">
+                Registration successful!
+              </p>
+              <p className="text-sm text-green-600">
+                Please log in with your credentials to continue.
+              </p>
             </div>
           </div>
         )}
@@ -229,7 +299,7 @@ export default function LoginPage() {
               <input
                 id="password"
                 name="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
                 required
                 value={formData.password}
@@ -280,7 +350,13 @@ export default function LoginPage() {
               {isSubmitting ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto" />
               ) : (
-                <span>{isOTPMode ? (otpSent ? 'Verify OTP' : 'Send OTP') : 'SIGN IN TO PLAY'}</span>
+                <span>
+                  {isOTPMode
+                    ? otpSent
+                      ? "Verify OTP"
+                      : "Send OTP"
+                    : "SIGN IN TO PLAY"}
+                </span>
               )}
             </button>
           </div>
@@ -312,7 +388,7 @@ export default function LoginPage() {
         {/* Register Link */}
         <div className="text-center pb-6">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            Don't have an account?
             <Link
               href="/register"
               className="font-medium text-purple-600 hover:underline"

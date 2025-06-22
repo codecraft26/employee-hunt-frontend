@@ -1,25 +1,46 @@
 // pages/user/dashboard/page.tsx
-'use client';
+"use client";
 
-import { useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAppDispatch, useAppSelector } from '../../../hooks/redux';
-import { logout } from '../../../store/authSlice';
-import ProtectedRoute from '../../../components/ProtectedRoute';
-import OptimizedHeader from '../../../components/shared/OptimizedHeader';
-import LazyWrapper from '../../../components/shared/LazyWrapper';
-import { useOptimizedData } from '../../../hooks/useOptimizedData';
-import { Trophy } from 'lucide-react';
-import { lazy } from 'react';
+import { useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "../../../hooks/redux";
+import { logout } from "../../../store/authSlice";
+import ProtectedRoute from "../../../components/ProtectedRoute";
+import OptimizedHeader from "../../../components/shared/OptimizedHeader";
+import LazyWrapper from "../../../components/shared/LazyWrapper";
+import { useOptimizedData } from "../../../hooks/useOptimizedData";
+import { Trophy } from "lucide-react";
+import { lazy } from "react";
+import NotificationButton from "@/components/NotificationButton";
 
 // Lazy load the UserOverviewTab component
-const UserOverviewTab = lazy(() => import('../../../components/user/UserOverviewTab'));
+const UserOverviewTab = lazy(
+  () => import("../../../components/user/UserOverviewTab")
+);
 
 // Static notifications data - moved outside component to prevent re-creation
 const STATIC_NOTIFICATIONS = [
-  { id: 1, title: 'New Quiz Available', message: 'Team Alpha has a new quiz to complete', time: '2 hours ago', type: 'quiz' },
-  { id: 2, title: 'Treasure Hunt Update', message: 'Your clue has been approved!', time: '4 hours ago', type: 'treasure' },
-  { id: 3, title: 'Voting Ends Soon', message: 'Office Event voting ends in 2 hours', time: '6 hours ago', type: 'vote' }
+  {
+    id: 1,
+    title: "New Quiz Available",
+    message: "Team Alpha has a new quiz to complete",
+    time: "2 hours ago",
+    type: "quiz",
+  },
+  {
+    id: 2,
+    title: "Treasure Hunt Update",
+    message: "Your clue has been approved!",
+    time: "4 hours ago",
+    type: "treasure",
+  },
+  {
+    id: 3,
+    title: "Voting Ends Soon",
+    message: "Office Event voting ends in 2 hours",
+    time: "6 hours ago",
+    type: "vote",
+  },
 ];
 
 export default function UserDashboardUI() {
@@ -29,7 +50,7 @@ export default function UserDashboardUI() {
 
   // Optimized data fetching with caching
   const { data: activities, loading: activitiesLoading } = useOptimizedData(
-    'user-activities',
+    "user-activities",
     async () => {
       if (!user) return [];
       // This will be handled by the UserOverviewTab component
@@ -39,7 +60,7 @@ export default function UserDashboardUI() {
   );
 
   const { data: teamData, loading: teamLoading } = useOptimizedData(
-    'user-team',
+    "user-team",
     async () => {
       if (!user) return null;
       // This will be handled by the UserOverviewTab component
@@ -51,17 +72,17 @@ export default function UserDashboardUI() {
   // Memoized handlers to prevent re-renders
   const handleLogout = useCallback(() => {
     dispatch(logout());
-    router.push('/login');
+    router.push("/login");
   }, [dispatch, router]);
 
   // Memoized redirect logic
   const shouldRedirectToAdmin = useMemo(() => {
-    return !isLoading && user?.role === 'admin';
+    return !isLoading && user?.role === "admin";
   }, [isLoading, user?.role]);
 
   // Handle admin redirect
   if (shouldRedirectToAdmin) {
-    router.push('/admin');
+    router.push("/admin");
     return null;
   }
 
@@ -94,8 +115,12 @@ export default function UserDashboardUI() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           <div className="relative z-10 px-6 pt-8 pb-4 flex flex-col h-full justify-between">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow">Trip Games</h1>
-              <p className="text-white text-base sm:text-lg opacity-90">Let's play together!</p>
+              <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow">
+                Trip Games
+              </h1>
+              <p className="text-white text-base sm:text-lg opacity-90">
+                Let's play together!
+              </p>
             </div>
           </div>
         </div>
@@ -110,6 +135,7 @@ export default function UserDashboardUI() {
           notificationCount={STATIC_NOTIFICATIONS.length}
           onLogout={handleLogout}
         />
+        <NotificationButton />
 
         {/* Main Content with Lazy Loading */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -125,7 +151,10 @@ export default function UserDashboardUI() {
                     </div>
                     <div className="grid grid-cols-2 gap-3 lg:gap-4">
                       {[...Array(4)].map((_, i) => (
-                        <div key={i} className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border animate-pulse">
+                        <div
+                          key={i}
+                          className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border animate-pulse"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="h-3 bg-gray-300 rounded w-2/3 mb-2"></div>
@@ -145,7 +174,10 @@ export default function UserDashboardUI() {
                     <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border p-4 lg:p-6">
                       <div className="grid grid-cols-2 gap-3 lg:gap-4">
                         {[...Array(6)].map((_, i) => (
-                          <div key={i} className="h-20 bg-gray-300 rounded-lg animate-pulse"></div>
+                          <div
+                            key={i}
+                            className="h-20 bg-gray-300 rounded-lg animate-pulse"
+                          ></div>
                         ))}
                       </div>
                     </div>
