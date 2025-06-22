@@ -1,12 +1,10 @@
 'use client';
 
-import React, { lazy } from 'react';
+import React from 'react';
 import { Vote } from 'lucide-react';
 import OptimizedPageLayout from '../../../../components/shared/OptimizedPageLayout';
 import HeroSection from '../../../../components/shared/HeroSection';
-
-// Lazy load the UserPollsTab component
-const UserPollsTab = lazy(() => import('../../../../components/user/UserPollsTab'));
+import UserPollsTab from '../../../../components/user/UserPollsTab';
 
 export default function UserPollsPage() {
   return (

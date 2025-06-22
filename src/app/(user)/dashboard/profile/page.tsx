@@ -1,12 +1,10 @@
 'use client';
 
-import React, { lazy } from 'react';
+import React from 'react';
 import { User } from 'lucide-react';
 import { useAppSelector } from '../../../../hooks/redux';
 import OptimizedPageLayout from '../../../../components/shared/OptimizedPageLayout';
-
-// Lazy load the UserProfileTab component
-const UserProfileTab = lazy(() => import('../../../../components/user/UserProfileTab'));
+import UserProfileTab from '../../../../components/user/UserProfileTab';
 
 export default function UserProfilePage() {
   const { user } = useAppSelector((state) => state.auth);

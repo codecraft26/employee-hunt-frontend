@@ -6,9 +6,7 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
   compress: true,
-  experimental: {
-    serverComponentsExternalPackages: ['sharp']
-  },
+  serverExternalPackages: ['sharp'],
   async headers() {
     return [
       {
@@ -60,7 +58,7 @@ export default withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
+  disable: false, // Enable PWA in all environments
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/backend\.banndhann\.com\/.*$/,

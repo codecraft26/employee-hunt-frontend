@@ -1,11 +1,9 @@
 'use client';
 
-import React, { lazy } from 'react';
+import React from 'react';
 import { Zap } from 'lucide-react';
 import OptimizedPageLayout from '../../../../components/shared/OptimizedPageLayout';
-
-// Lazy load the UserActivitiesTab component
-const UserActivitiesTab = lazy(() => import('../../../../components/user/UserActivitiesTab'));
+import UserActivitiesTab from '../../../../components/user/UserActivitiesTab';
 
 export default function UserActivitiesPage() {
   return (

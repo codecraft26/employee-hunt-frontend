@@ -1,17 +1,17 @@
 {
-  "name": "Bann Dhann",
+  "name": "Bann Dhann - Team Activities & Games",
   "short_name": "Bann Dhann",
   "description": "Engage in team activities, quizzes, treasure hunts, and polls with your colleagues",
-  "start_url": "/",
-  "id": "/",
+  "start_url": "/?utm_source=pwa",
+  "id": "/?utm_source=pwa",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#4f46e5",
   "theme_color": "#4f46e5",
-  "orientation": "portrait",
+  "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en",
   "dir": "ltr",
-  "categories": ["productivity", "business", "social"],
+  "categories": ["productivity", "business", "social", "games"],
   "prefer_related_applications": false,
   "icons": [
     {

@@ -1,12 +1,10 @@
 'use client';
 
-import React, { lazy } from 'react';
+import React from 'react';
 import { MapPin } from 'lucide-react';
 import OptimizedPageLayout from '../../../../components/shared/OptimizedPageLayout';
 import HeroSection from '../../../../components/shared/HeroSection';
-
-// Lazy load the UserTreasureHuntTab component
-const UserTreasureHuntTab = lazy(() => import('../../../../components/user/UserTreasureHuntTab'));
+import UserTreasureHuntTab from '../../../../components/user/UserTreasureHuntTab';
 
 export default function UserTreasureHuntPage() {
   return (

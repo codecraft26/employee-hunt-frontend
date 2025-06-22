@@ -1,12 +1,10 @@
 'use client';
 
-import React, { lazy } from 'react';
+import React from 'react';
 import { Shield } from 'lucide-react';
 import OptimizedPageLayout from '../../../../components/shared/OptimizedPageLayout';
 import HeroSection from '../../../../components/shared/HeroSection';
-
-// Lazy load the UserQuizTab component
-const UserQuizTab = lazy(() => import('../../../../components/user/UserQuizTab'));
+import UserQuizTab from '../../../../components/user/UserQuizTab';
 
 export default function UserQuizPage() {
   return (

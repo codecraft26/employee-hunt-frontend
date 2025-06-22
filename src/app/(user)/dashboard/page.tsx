@@ -10,10 +10,7 @@ import OptimizedHeader from '../../../components/shared/OptimizedHeader';
 import LazyWrapper from '../../../components/shared/LazyWrapper';
 import { useOptimizedData } from '../../../hooks/useOptimizedData';
 import { Trophy, Sparkles, Zap, Crown } from 'lucide-react';
-import { lazy } from 'react';
-
-// Lazy load the UserOverviewTab component
-const UserOverviewTab = lazy(() => import('../../../components/user/UserOverviewTab'));
+import UserOverviewTab from '../../../components/user/UserOverviewTab';
 
 export default function UserDashboardUI() {
   const dispatch = useAppDispatch();

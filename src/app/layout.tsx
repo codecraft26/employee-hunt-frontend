@@ -4,7 +4,6 @@ import { Provider } from 'react-redux';
 import { store } from '../store';
 import AuthProvider from '../components/AuthProvider';
 
-import PWAStatus from '../components/PWAStatus';
 import PWAInstaller from '../components/PWAInstaller';
 import OfflineIndicator from '../components/OfflineIndicator';
 import { ToastProvider } from '../components/shared/ToastContainer';
@@ -17,33 +16,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   useEffect(() => {
-    // Register service worker with better error handling for development
+    // Register service worker with enhanced mobile support
     if ('serviceWorker' in navigator) {
-      // Clear any existing registrations if in development and port changed
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      
       const registerServiceWorker = async () => {
         try {
-          // In development, clear existing registrations to prevent port conflicts
-          if (isDevelopment) {
+          // Clear any stale registrations in development
+          if (process.env.NODE_ENV === 'development') {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (const registration of registrations) {
-              // Check if registration is from a different origin/port
               if (registration.scope !== window.location.origin + '/') {
                 await registration.unregister();
               }
             }
           }
 
-          const registration = await navigator.serviceWorker.register('/sw.js');
+          const registration = await navigator.serviceWorker.register('/sw.js', {
+            scope: '/',
+            updateViaCache: 'none'
+          });
           
-          // Check for updates
+          console.log('Service Worker registered successfully:', registration);
+          
+          // Enhanced update checking
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New content is available, show update notification
+                  // New content is available
                   if (confirm('New version available! Reload to update?')) {
                     newWorker.postMessage({ type: 'SKIP_WAITING' });
                     window.location.reload();
@@ -52,11 +52,12 @@ export default function RootLayout({
               });
             }
           });
+
+          // Force update check
+          registration.update();
+          
         } catch (error) {
-          // In development, provide helpful error message
-          if (isDevelopment) {
-            // Development tip: Clear browser cache and try again if ServiceWorker errors persist
-          }
+          console.error('Service Worker registration failed:', error);
         }
       };
 
@@ -142,10 +143,8 @@ export default function RootLayout({
           <AuthProvider>
             <ToastProvider>
               <OfflineIndicator />
-            
-              <PWAStatus />
-              {children}
               <PWAInstaller />
+              {children}
             </ToastProvider>
           </AuthProvider>
         </Provider>
