@@ -12,6 +12,8 @@ import {
   Download
 } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
+import { generateCollageAction } from '../../app/actions/collageActions';
+
 
 interface AdminCollageCreatorProps {
   onCollageCreated?: () => void;
@@ -96,51 +98,19 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
     setError(null); // Clear previous errors
     
     try {
-      // Prepare data for the Sharp-based API
-      const collageData = {
+      console.log('Starting collage generation with', selectedPhotos.length, 'images');
+
+      // Use the server action
+      const result = await generateCollageAction({
         title: collageTitle,
         description: collageDescription,
         imageUrls: selectedPhotos.map(photo => photo.imageUrl),
         layout: 'grid',
         width: 1200,
         height: 800
-      };
-
-      console.log('Starting collage generation with', selectedPhotos.length, 'images');
-
-      // Call the Sharp-based API endpoint with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch('/api/collage/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(collageData),
-        signal: controller.signal
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        
-        if (response.status === 413) {
-          throw new Error('Request too large - try with fewer images');
-        } else if (response.status === 504) {
-          throw new Error('Request timeout - the server took too long to respond');
-        } else if (response.status === 502) {
-          throw new Error('Server error - please try again in a few moments');
-        } else {
-          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-        }
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
+      if (result.success && 'data' in result) {
         console.log('Collage generated successfully, uploading...');
         
         // Convert base64 image to blob for upload
@@ -169,7 +139,8 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
           throw new Error('Failed to upload collage image');
         }
       } else {
-        throw new Error(result.message || 'Failed to generate collage');
+        const errorMessage = 'message' in result ? result.message : 'Failed to generate collage';
+        throw new Error(errorMessage);
       }
 
     } catch (error) {
@@ -177,10 +148,8 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
       
       let errorMessage = 'Failed to generate collage';
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          errorMessage = 'Request timed out - please try again with fewer images';
-        } else if (error.message.includes('timeout')) {
-          errorMessage = 'Request timeout - please try again';
+        if (error.message.includes('timeout')) {
+          errorMessage = 'Request timeout - please try again with fewer images';
         } else if (error.message.includes('memory')) {
           errorMessage = 'Memory limit exceeded - try with fewer images';
         } else if (error.message.includes('network')) {
