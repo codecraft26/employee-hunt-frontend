@@ -16,7 +16,9 @@ import {
   Shield,
   Zap,
   Camera,
-  Crown
+  Crown,
+  ChevronRight,
+  Activity as ActivityIcon
 } from 'lucide-react';
 import { useOptimizedData } from '../../hooks/useOptimizedData';
 import { useActivities } from '../../hooks/useActivities';
@@ -123,6 +125,71 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
     return userTeam.leaderId === user.id || userTeam.leader?.id === user.id;
   }, [userTeam, user]);
 
+  // Helper functions for activity display
+  const getIconComponent = useCallback((iconName: string) => {
+    const iconMap: { [key: string]: any } = {
+      Target,
+      Vote,
+      MapPin,
+      Trophy,
+      ActivityIcon,
+    };
+    return iconMap[iconName] || ActivityIcon;
+  }, []);
+
+  const getActivityTypeIcon = useCallback((type: string) => {
+    switch (type.toUpperCase()) {
+      case 'QUIZ_UPLOADED':
+        return 'Target';
+      case 'POLL_CREATED':
+        return 'Vote';
+      case 'POLL_VOTE_CAST':
+        return 'Vote';
+      case 'TREASURE_HUNT':
+        return 'MapPin';
+      case 'CHALLENGE':
+        return 'Trophy';
+      default:
+        return 'Activity';
+    }
+  }, []);
+
+  const getActivityTypeDisplay = useCallback((type: string) => {
+    switch (type.toUpperCase()) {
+      case 'QUIZ_UPLOADED':
+        return 'Quiz';
+      case 'POLL_CREATED':
+        return 'Poll';
+      case 'POLL_VOTE_CAST':
+        return 'Vote';
+      case 'TREASURE_HUNT':
+        return 'Treasure Hunt';
+      case 'CHALLENGE':
+        return 'Challenge';
+      default:
+        return 'Activity';
+    }
+  }, []);
+
+  const getActivityGradient = useCallback((type: string) => {
+    switch (type.toLowerCase()) {
+      case 'quiz':
+      case 'quiz_uploaded':
+        return 'from-blue-500 to-blue-600';
+      case 'poll':
+      case 'poll_created':
+      case 'poll_vote_cast':
+        return 'from-green-500 to-green-600';
+      case 'treasure_hunt':
+      case 'treasure-hunt':
+        return 'from-orange-500 to-orange-600';
+      case 'challenge':
+        return 'from-purple-500 to-purple-600';
+      default:
+        return 'from-gray-500 to-gray-600';
+    }
+  }, []);
+
   return (
     <div className="space-y-8">
       {/* Horizontal Layout with Team Info and Quick Actions */}
@@ -222,6 +289,104 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Recent Activities Section */}
+      <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border p-4 lg:p-6">
+        <div className="flex items-center justify-between mb-4 lg:mb-6">
+          <div>
+            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">Recent Activities</h2>
+            <p className="text-sm lg:text-base text-gray-600">Stay updated with the latest announcements and activities</p>
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/activities')}
+            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            View All Activities
+          </button>
+        </div>
+
+        {activitiesLoading ? (
+          <div className="space-y-4">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : !activities || activities.length === 0 ? (
+          <div className="text-center py-8">
+            <Zap className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Recent Activities</h3>
+            <p className="text-gray-600 mb-4">Check back later for new announcements and activities</p>
+            <button
+              onClick={() => router.push('/dashboard/activities')}
+              className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+            >
+              Check Activities
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {activities.slice(0, 3).map((activity) => {
+              const IconComponent = getIconComponent(getActivityTypeIcon(activity.type));
+              const gradient = getActivityGradient(activity.type);
+              
+              return (
+                <div
+                  key={activity.id}
+                  className="flex items-start space-x-4 p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                  onClick={() => router.push('/dashboard/activities')}
+                >
+                  <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center flex-shrink-0`}>
+                    <IconComponent className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm lg:text-base font-semibold text-gray-900 truncate">
+                      {activity.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {activity.description}
+                    </p>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <span className="text-xs text-gray-500">
+                        {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                        {getActivityTypeDisplay(activity.type)}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                </div>
+              );
+            })}
+            
+            {activities && activities.length > 3 && (
+              <div className="text-center pt-4">
+                <button
+                  onClick={() => router.push('/dashboard/activities')}
+                  className="inline-flex items-center text-sm text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  View {activities.length - 3} more activities
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
