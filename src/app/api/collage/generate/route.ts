@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 
+// Explicitly export all HTTP methods to ensure Vercel recognizes the route
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ message: 'Collage generation API is working' }, { status: 200 });
+}
+
 export async function POST(request: NextRequest) {
+  console.log('POST request received for collage generation');
+  
   try {
     const body = await request.json();
     const { 
@@ -12,6 +19,8 @@ export async function POST(request: NextRequest) {
       width = 1200,
       height = 800 
     } = body;
+
+    console.log('Request body received:', { title, description, imageCount: imageUrls?.length });
 
     if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
       return NextResponse.json(
@@ -218,6 +227,15 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Also export other methods to ensure route recognition
+export async function PUT(request: NextRequest) {
+  return NextResponse.json({ message: 'PUT method not supported' }, { status: 405 });
+}
+
+export async function DELETE(request: NextRequest) {
+  return NextResponse.json({ message: 'DELETE method not supported' }, { status: 405 });
 }
 
 // Helper function to calculate layout positions
