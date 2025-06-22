@@ -12,8 +12,6 @@ import {
   Download
 } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
-import { generateCollageAction } from '../../app/actions/collageActions';
-
 
 interface AdminCollageCreatorProps {
   onCollageCreated?: () => void;
@@ -27,7 +25,7 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
   const {
     getApprovedPhotosForCollage,
     createCollage,
-    uploadCollageImage,
+    generateAndUploadCollage,
     publishCollage,
     loading,
     error,
@@ -100,8 +98,9 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
     try {
       console.log('Starting collage generation with', selectedPhotos.length, 'images');
 
-      // Use the server action
-      const result = await generateCollageAction({
+      // Use the hook function for complete collage generation workflow
+      const success = await generateAndUploadCollage({
+        collageId,
         title: collageTitle,
         description: collageDescription,
         imageUrls: selectedPhotos.map(photo => photo.imageUrl),
@@ -110,56 +109,16 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
         height: 800
       });
 
-      if (result.success && 'data' in result) {
-        console.log('Collage generated successfully, uploading...');
-        
-        // Convert base64 image to blob for upload
-        const base64Data = result.data.imageUrl.split(',')[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'image/jpeg' });
-
-        // Upload the generated collage
-        const uploadSuccess = await uploadCollageImage(collageId, blob);
-        if (uploadSuccess) {
-          setStep(3);
-          
-          // Show success message with processing details
-          if (result.data.failedImages > 0) {
-            console.warn(`${result.data.failedImages} images failed to process and were replaced with placeholders`);
-            // You could show a toast notification here about failed images
-          }
-        } else {
-          throw new Error('Failed to upload collage image');
-        }
+      if (success) {
+        setStep(3);
+        console.log('Collage generation and upload completed successfully');
       } else {
-        const errorMessage = 'message' in result ? result.message : 'Failed to generate collage';
-        throw new Error(errorMessage);
+        throw new Error('Failed to generate and upload collage');
       }
 
     } catch (error) {
       console.error('Failed to generate collage image:', error);
-      
-      let errorMessage = 'Failed to generate collage';
-      if (error instanceof Error) {
-        if (error.message.includes('timeout')) {
-          errorMessage = 'Request timeout - please try again with fewer images';
-        } else if (error.message.includes('memory')) {
-          errorMessage = 'Memory limit exceeded - try with fewer images';
-        } else if (error.message.includes('network')) {
-          errorMessage = 'Network error - please check your connection and try again';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      
-      setError(errorMessage);
+      setError(error instanceof Error ? error.message : 'Failed to generate collage');
     } finally {
       setGenerating(false);
     }
@@ -362,7 +321,7 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
           <div className="mb-6">
             <h3 className="text-md font-medium text-gray-900 mb-2">Generate Collage Image</h3>
             <p className="text-sm text-gray-600">
-              The photos will be automatically arranged using Sharp image processing. Click generate to create the collage image.
+              The photos will be automatically arranged using external image processing. Click generate to create the collage image.
             </p>
           </div>
 
@@ -419,7 +378,7 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">🎉 Collage Ready!</h3>
             <p className="text-gray-600 mb-6">
-              Your collage has been created and the image has been generated using Sharp. Ready to publish?
+              Your collage has been created and the image has been generated using external image processing. Ready to publish?
             </p>
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

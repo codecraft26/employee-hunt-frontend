@@ -2,21 +2,68 @@ import { useState, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// Unified API Configuration
+const API_CONFIG = {
+  // Main API base URL
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  
+  // External collage generation API endpoint
+  COLLAGE_API_URL: process.env.NEXT_PUBLIC_COLLAGE_API_URL || 'http://localhost:5000/api/collage/generate',
+  
+  // API timeout in milliseconds
+  TIMEOUT: 60000, // 60 seconds
+  
+  // Request headers for main API
+  getMainHeaders: () => {
+    const token = Cookies.get('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  },
+  
+  // Request headers for external collage API
+  getCollageHeaders: () => {
+    const adminToken = Cookies.get('adminToken') || Cookies.get('token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`
+    };
+  }
+};
 
 // Create axios instance with interceptors
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_CONFIG.BASE_URL,
 });
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = Cookies.get('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const headers = API_CONFIG.getMainHeaders();
+  if (headers.Authorization) {
+    config.headers.Authorization = headers.Authorization;
   }
   return config;
 });
+
+// Collage generation request interface
+interface ExternalCollageRequest {
+  title?: string;
+  description?: string;
+  imageUrls: string[];
+  layout?: string;
+  width?: number;
+  height?: number;
+}
+
+// Collage generation response interface
+interface ExternalCollageResponse {
+  success: boolean;
+  data?: {
+    imageUrl: string;
+    processedImages: number;
+    failedImages: number;
+    failedImageErrors: Array<{ index: number; error: string }>;
+  };
+  message?: string;
+}
 
 export interface Photo {
   id: string;
@@ -367,6 +414,175 @@ export const usePhotoWall = () => {
     }
   }, []);
 
+  // New collage generation function
+  const generateCollageImage = useCallback(async (params: {
+    title: string;
+    description: string;
+    imageUrls: string[];
+    layout?: string;
+    width?: number;
+    height?: number;
+  }): Promise<{ success: boolean; data?: any; message?: string }> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Starting collage generation with', params.imageUrls.length, 'images');
+
+      // Prepare request data
+      const requestData: ExternalCollageRequest = {
+        title: params.title,
+        description: params.description,
+        imageUrls: params.imageUrls,
+        layout: params.layout || 'grid',
+        width: params.width || 1200,
+        height: params.height || 800
+      };
+
+      console.log('Request data:', requestData);
+
+      // Use external API endpoint for collage generation
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+
+      const response = await fetch(API_CONFIG.COLLAGE_API_URL, {
+        method: 'POST',
+        headers: API_CONFIG.getCollageHeaders(),
+        body: JSON.stringify(requestData),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        
+        if (response.status === 401) {
+          throw new Error('Authentication failed - please check your admin token');
+        } else if (response.status === 413) {
+          throw new Error('Request too large - try with fewer images');
+        } else if (response.status === 504) {
+          throw new Error('Request timeout - the server took too long to respond');
+        } else if (response.status === 502) {
+          throw new Error('Server error - please try again in a few moments');
+        } else {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+      }
+
+      const result: ExternalCollageResponse = await response.json();
+
+      if (result.success && result.data) {
+        console.log('Collage generated successfully');
+        console.log('Processing stats:', {
+          processedImages: result.data.processedImages,
+          failedImages: result.data.failedImages
+        });
+        
+        return {
+          success: true,
+          data: result.data
+        };
+      } else {
+        throw new Error(result.message || 'Failed to generate collage');
+      }
+
+    } catch (error) {
+      console.error('Failed to generate collage image:', error);
+      
+      let errorMessage = 'Failed to generate collage';
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = 'Request timed out - please try again with fewer images';
+        } else if (error.message.includes('Authentication failed')) {
+          errorMessage = 'Authentication failed - please check your admin token';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Request timeout - please try again with fewer images';
+        } else if (error.message.includes('memory')) {
+          errorMessage = 'Memory limit exceeded - try with fewer images';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Network error - please check your connection and try again';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
+      return {
+        success: false,
+        message: errorMessage
+      };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Helper function to convert base64 to blob
+  const convertBase64ToBlob = useCallback((base64Image: string): Blob => {
+    const base64Data = base64Image.split(',')[1];
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: 'image/jpeg' });
+  }, []);
+
+  // Complete collage generation workflow
+  const generateAndUploadCollage = useCallback(async (params: {
+    collageId: string;
+    title: string;
+    description: string;
+    imageUrls: string[];
+    layout?: string;
+    width?: number;
+    height?: number;
+  }): Promise<boolean> => {
+    try {
+      // Step 1: Generate collage image
+      const generationResult = await generateCollageImage({
+        title: params.title,
+        description: params.description,
+        imageUrls: params.imageUrls,
+        layout: params.layout,
+        width: params.width,
+        height: params.height
+      });
+
+      if (!generationResult.success || !generationResult.data) {
+        return false;
+      }
+
+      // Step 2: Convert base64 to blob
+      const imageBlob = convertBase64ToBlob(generationResult.data.imageUrl);
+
+      // Step 3: Upload the generated collage
+      const uploadSuccess = await uploadCollageImage(params.collageId, imageBlob);
+      
+      if (uploadSuccess) {
+        console.log('Collage generated and uploaded successfully');
+        
+        // Log processing details
+        if (generationResult.data.failedImages > 0) {
+          console.warn(`${generationResult.data.failedImages} images failed to process and were replaced with placeholders`);
+        }
+        
+        return true;
+      } else {
+        console.error('Failed to upload collage image');
+        return false;
+      }
+
+    } catch (error) {
+      console.error('Failed in collage generation workflow:', error);
+      return false;
+    }
+  }, [generateCollageImage, convertBase64ToBlob, uploadCollageImage]);
+
   return {
     loading,
     error,
@@ -391,5 +607,9 @@ export const usePhotoWall = () => {
     getAllCollages,
     getCollageById,
     deleteCollage,
+    
+    // New collage generation functions
+    generateCollageImage,
+    generateAndUploadCollage,
   };
 }; 
