@@ -9,7 +9,7 @@ import ProtectedRoute from '../../../components/ProtectedRoute';
 import OptimizedHeader from '../../../components/shared/OptimizedHeader';
 import LazyWrapper from '../../../components/shared/LazyWrapper';
 import { useOptimizedData } from '../../../hooks/useOptimizedData';
-import { Trophy } from 'lucide-react';
+import { Trophy, Sparkles, Zap, Crown } from 'lucide-react';
 import { lazy } from 'react';
 
 // Lazy load the UserOverviewTab component
@@ -58,11 +58,15 @@ export default function UserDashboardUI() {
     return null;
   }
 
-  // Loading state
+  // Loading state with gaming theme
   if (!user && isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="gaming-bg min-h-screen flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="loading-gaming mx-auto mb-6"></div>
+          <div className="text-gradient text-xl sm:text-2xl font-bold mb-2">Loading Adventure...</div>
+          <div className="text-slate-400 text-sm">Preparing your gaming experience</div>
+        </div>
       </div>
     );
   }
@@ -74,70 +78,126 @@ export default function UserDashboardUI() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        {/* Banner - Optimized with better image loading */}
-        <div className="relative w-full h-40 sm:h-56 md:h-64 rounded-b-3xl overflow-hidden mb-2">
-          <img
-            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80"
-            alt="Trip Games Banner"
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-            decoding="async"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-          <div className="relative z-10 px-6 pt-8 pb-4 flex flex-col h-full justify-between">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-white drop-shadow">Trip Games</h1>
-              <p className="text-white text-base sm:text-lg opacity-90">Let's play together!</p>
+      <div className="gaming-bg min-h-screen relative overflow-hidden">
+        {/* Animated background particles - Mobile optimized */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-10 sm:top-20 left-4 sm:left-10 w-1.5 sm:w-2 h-1.5 sm:h-2 bg-blue-400 rounded-full animate-pulse opacity-60"></div>
+          <div className="absolute top-20 sm:top-40 right-4 sm:right-20 w-1 sm:w-1 h-1 sm:h-1 bg-indigo-400 rounded-full animate-pulse opacity-40"></div>
+          <div className="absolute bottom-20 sm:bottom-40 left-4 sm:left-20 w-1 sm:w-1.5 h-1 sm:h-1.5 bg-orange-400 rounded-full animate-pulse opacity-50"></div>
+          <div className="absolute bottom-10 sm:bottom-20 right-4 sm:right-10 w-1 sm:w-1 h-1 sm:h-1 bg-green-400 rounded-full animate-pulse opacity-30"></div>
+        </div>
+
+        {/* Hero Banner with Video Background */}
+        <div className="relative w-full h-40 sm:h-48 md:h-56 lg:h-64 xl:h-72 overflow-hidden">
+          {/* Video Background with Bluish Filter */}
+          <div className="absolute inset-0">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              style={{
+                filter: 'brightness(0.7) contrast(1.2) saturate(1.3) hue-rotate(200deg)',
+              }}
+            >
+              <source src="/videos/7550567-hd_1920_1080_30fps.mp4" type="video/mp4" />
+              {/* Fallback for browsers that don't support video */}
+              <div className="w-full h-full gradient-animate opacity-80"></div>
+            </video>
+            
+            {/* Enhanced overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/60 to-slate-900/30"></div>
+            
+            {/* Additional bluish filter overlay */}
+            <div className="absolute inset-0 bg-blue-500/10 mix-blend-multiply"></div>
+          </div>
+          
+          {/* Floating elements - Mobile responsive */}
+          <div className="absolute top-4 sm:top-10 left-4 sm:left-10 float">
+            <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400 drop-shadow-lg" />
+          </div>
+          <div className="absolute top-8 sm:top-20 right-4 sm:right-20 float" style={{ animationDelay: '2s' }}>
+            <Sparkles className="h-4 w-4 sm:h-6 sm:w-6 text-indigo-400 drop-shadow-lg" />
+          </div>
+          <div className="absolute bottom-8 sm:bottom-20 left-4 sm:left-20 float" style={{ animationDelay: '4s' }}>
+            <Zap className="h-5 w-5 sm:h-7 sm:w-7 text-blue-400 drop-shadow-lg" />
+          </div>
+          
+          {/* Content overlay - Mobile responsive */}
+          <div className="relative z-10 px-4 sm:px-6 pt-4 sm:pt-8 pb-4 flex flex-col h-full justify-between">
+            <div className="animate-bounce-in">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-2xl mb-2">
+                <span className="text-gradient">Trip</span> Games
+              </h1>
+              <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl opacity-90 font-medium">
+                Ready for an epic adventure? Let's play together! 🎮
+              </p>
+            </div>
+            
+            {/* User welcome with gaming flair - Mobile responsive */}
+            <div className="glass rounded-xl sm:rounded-2xl p-3 sm:p-4 backdrop-blur-sm">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base lg:text-lg">
+                  {user.name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-semibold text-sm sm:text-base lg:text-lg truncate">
+                    Welcome back, {user.name}!
+                  </div>
+                  <div className="text-slate-300 text-xs sm:text-sm truncate">Your adventure awaits...</div>
+                </div>
+                <div className="ml-auto">
+                  <Crown className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-yellow-400 animate-pulse" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Optimized Header */}
-        <OptimizedHeader
-          title="Dashboard"
-          subtitle="Welcome back"
-          icon={Trophy}
-          iconGradient="from-indigo-600 to-purple-600"
-          userName={user.name}
-          onLogout={handleLogout}
-        />
+        {/* Enhanced Header with Gaming Theme */}
+        <div className="relative z-20">
+          <OptimizedHeader
+            title="Gaming Dashboard"
+            subtitle="Your epic journey"
+            icon={Trophy}
+            iconGradient="from-yellow-400 to-orange-500"
+            userName={user.name}
+            onLogout={handleLogout}
+          />
+        </div>
 
-        {/* Main Content with Lazy Loading */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Main Content with Gaming Aesthetics - Mobile responsive */}
+        <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
           <LazyWrapper
             fallback={
-              <div className="space-y-8">
-                {/* Loading skeleton */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-                  <div className="space-y-4 lg:space-y-6">
+              <div className="space-y-6 sm:space-y-8">
+                {/* Gaming-themed loading skeleton - Mobile responsive */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+                  <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                     <div className="animate-pulse">
-                      <div className="h-6 bg-gray-300 rounded w-1/3 mb-2"></div>
-                      <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                      <div className="h-6 sm:h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg w-1/3 mb-2 opacity-20"></div>
+                      <div className="h-3 sm:h-4 bg-slate-600 rounded w-1/2 opacity-20"></div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 lg:gap-4">
-                      {[...Array(4)].map((_, i) => (
-                        <div key={i} className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 shadow-sm border animate-pulse">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="h-3 bg-gray-300 rounded w-2/3 mb-2"></div>
-                              <div className="h-8 bg-gray-300 rounded w-1/2"></div>
-                            </div>
-                            <div className="w-10 h-10 bg-gray-300 rounded-lg"></div>
-                          </div>
+                    <div className="gaming-card p-4 sm:p-6 animate-pulse">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="h-3 sm:h-4 bg-slate-600 rounded w-2/3 mb-2 opacity-20"></div>
+                          <div className="h-6 sm:h-8 bg-slate-600 rounded w-1/2 opacity-20"></div>
                         </div>
-                      ))}
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg opacity-20"></div>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-4 lg:space-y-6">
+                  <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                     <div className="animate-pulse">
-                      <div className="h-6 bg-gray-300 rounded w-1/3 mb-2"></div>
-                      <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                      <div className="h-6 sm:h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg w-1/3 mb-2 opacity-20"></div>
+                      <div className="h-3 sm:h-4 bg-slate-600 rounded w-1/2 opacity-20"></div>
                     </div>
-                    <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border p-4 lg:p-6">
-                      <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                    <div className="gaming-card p-4 sm:p-6">
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4">
                         {[...Array(6)].map((_, i) => (
-                          <div key={i} className="h-20 bg-gray-300 rounded-lg animate-pulse"></div>
+                          <div key={i} className="h-16 sm:h-20 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg opacity-20 animate-pulse"></div>
                         ))}
                       </div>
                     </div>
@@ -148,6 +208,18 @@ export default function UserDashboardUI() {
           >
             <UserOverviewTab user={user} />
           </LazyWrapper>
+        </div>
+
+        {/* Floating action button for quick access - Mobile responsive */}
+        <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50">
+          <button 
+            onClick={() => router.push('/dashboard/activities')}
+            className="btn-gaming neon-glow hover-lift text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
+          >
+            <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Quick Play</span>
+            <span className="sm:hidden">Play</span>
+          </button>
         </div>
       </div>
     </ProtectedRoute>

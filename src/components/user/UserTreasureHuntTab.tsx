@@ -9,7 +9,8 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
-  Calendar
+  Calendar,
+  MapPin
 } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import { useTeams } from '../../hooks/useTeams';
@@ -90,15 +91,15 @@ export default function UserTreasureHuntTab() {
   // Get status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'IN_PROGRESS': 
-      case 'ACTIVE': 
-        return 'bg-green-100 text-green-800';
-      case 'UPCOMING': 
-        return 'bg-blue-100 text-blue-800';
-      case 'COMPLETED': 
-        return 'bg-gray-100 text-gray-800';
-      default: 
-        return 'bg-gray-100 text-gray-800';
+      case 'IN_PROGRESS':
+      case 'ACTIVE':
+        return 'bg-green-500/20 text-green-300';
+      case 'UPCOMING':
+        return 'bg-blue-500/20 text-blue-300';
+      case 'COMPLETED':
+        return 'bg-slate-500/20 text-slate-300';
+      default:
+        return 'bg-slate-600/20 text-slate-400';
     }
   };
 
@@ -130,20 +131,18 @@ export default function UserTreasureHuntTab() {
   // Error display
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Error Loading Treasure Hunts</h3>
-          <p className="mt-1 text-sm text-gray-500">{error}</p>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="mt-3 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-          >
-            {refreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-            Try Again
-          </button>
-        </div>
+      <div className="text-center py-12 gaming-card">
+        <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+        <h3 className="mt-4 text-xl font-bold text-white">Error Loading Hunts</h3>
+        <p className="mt-2 text-base text-slate-400">{error}</p>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="mt-6 btn-gaming inline-flex items-center"
+        >
+          {refreshing ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <RefreshCw className="h-5 w-5 mr-2" />}
+          Try Again
+        </button>
       </div>
     );
   }
@@ -151,11 +150,15 @@ export default function UserTreasureHuntTab() {
   // Loading state
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-12 w-12 text-blue-500 animate-spin" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Loading Treasure Hunts...</h3>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="gaming-card p-4 sm:p-6 animate-pulse">
+            <div className="h-6 bg-slate-700 rounded w-3/4 mb-4"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/3"></div>
+            <div className="mt-4 h-10 bg-slate-700 rounded-lg"></div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -163,51 +166,49 @@ export default function UserTreasureHuntTab() {
   // No team error
   if (!myTeam) {
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-yellow-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No Team Assigned</h3>
-          <p className="mt-1 text-sm text-gray-500">You need to be assigned to a team to participate in treasure hunts.</p>
-        </div>
+      <div className="text-center py-12 gaming-card">
+        <AlertCircle className="mx-auto h-12 w-12 text-yellow-500" />
+        <h3 className="mt-4 text-xl font-bold text-white">No Team Assigned</h3>
+        <p className="mt-2 text-base text-slate-400">You need to be in a team to participate in treasure hunts.</p>
       </div>
     );
   }
 
   // Main UI
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Trophy className="h-6 w-6 text-yellow-500" />
+          <h2 className="text-2xl sm:text-3xl font-bold text-gradient flex items-center gap-3">
+            <Trophy className="h-7 w-7 sm:h-8 sm:w-8 text-yellow-400" />
             Treasure Hunts
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Team: {myTeam.name} • {treasureHunts.length} hunts available
+          <p className="text-slate-300 mt-1">
+            Team: <span className="font-bold text-white">{myTeam.name}</span> • {treasureHunts.length} hunts available
           </p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+          className="btn-gaming-secondary"
         >
-          {refreshing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          {refreshing ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <RefreshCw className="h-5 w-5 mr-2" />}
           Refresh
         </button>
       </div>
 
       {/* No hunts message */}
       {treasureHunts.length === 0 ? (
-        <div className="text-center py-12">
-          <Target className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No Treasure Hunts</h3>
-          <p className="mt-1 text-sm text-gray-500">No treasure hunts are currently available for your team.</p>
+        <div className="text-center py-12 gaming-card">
+          <Target className="mx-auto h-12 w-12 text-blue-400" />
+          <h3 className="mt-4 text-xl font-bold text-white">No Treasure Hunts</h3>
+          <p className="mt-2 text-base text-slate-400">No hunts are currently available. Check back later!</p>
         </div>
       ) : (
-        <>
-          {/* Hunt List */}
-          <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Hunt List - Takes 1 column on mobile, 1 column on desktop */}
+          <div className="lg:col-span-1 space-y-4">
             {treasureHunts.map((hunt) => {
               const timingStatus = getHuntTimingStatus(hunt);
               const isSelected = selectedHunt?.id === hunt.id;
@@ -217,52 +218,37 @@ export default function UserTreasureHuntTab() {
                 <div
                   key={hunt.id}
                   onClick={() => setSelectedHunt(hunt)}
-                  className={`relative p-4 rounded-lg border cursor-pointer transition-all ${
-                    isSelected 
-                      ? 'border-blue-500 ring-2 ring-blue-200 bg-blue-50' 
-                      : 'border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50'
+                  className={`gaming-card p-4 sm:p-5 cursor-pointer transition-all duration-300 hover-lift ${
+                    isSelected ? 'ring-2 ring-blue-500 bg-slate-800/50' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{hunt.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{hunt.description}</p>
+                      <h3 className="font-semibold text-white text-lg">{hunt.title}</h3>
+                      <p className="text-sm text-slate-400 mt-1 line-clamp-2">{hunt.description}</p>
                       
-                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(hunt.startTime)} - {formatDate(hunt.endTime)}
+                      <div className="flex items-center flex-wrap gap-x-4 gap-y-2 mt-3 text-xs text-slate-300">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(hunt.startTime)}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Target className="h-3 w-3" />
+                        <span className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5" />
                           {isMultiStage ? 'Multi-Stage' : 'Single Stage'}
                         </span>
                       </div>
                     </div>
                     
-                    <div className="flex flex-col items-end gap-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(hunt.status)}`}>
+                    <div className="flex flex-col items-end gap-2 ml-4">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getStatusColor(hunt.status)}`}>
                         {hunt.status}
                       </span>
                       
                       {timingStatus.status === 'active' && (
                         <TimerDisplay 
-                          variant="compact" 
+                          variant="compact"
                           status="active"
-                          timeText="Active"
-                          urgency={timingStatus.urgency}
-                          startTime={hunt.startTime}
-                          endTime={hunt.endTime}
-                          showCountdown={true}
-                        />
-                      )}
-                      
-                      {timingStatus.status === 'upcoming' && (
-                        <TimerDisplay 
-                          variant="compact" 
-                          status="upcoming"
-                          timeText="Upcoming"
-                          urgency={timingStatus.urgency}
+                          urgency="normal"
                           startTime={hunt.startTime}
                           endTime={hunt.endTime}
                           showCountdown={true}
@@ -274,25 +260,30 @@ export default function UserTreasureHuntTab() {
               );
             })}
           </div>
-
-          {/* Selected Hunt Details */}
-          {selectedHunt && (
-            <div className="mt-6">
-              {isMultiStageHunt(selectedHunt) ? (
-                <TreasureHuntStages 
-                  hunt={selectedHunt}
-                  teamId={myTeam.id}
-                />
+          
+          {/* Hunt Details - Takes 1 column on mobile, 2 columns on desktop */}
+          <div className="lg:col-span-2">
+            {selectedHunt ? (
+              isMultiStageHunt(selectedHunt) ? (
+                <TreasureHuntStages hunt={selectedHunt} teamId={myTeam.id} />
               ) : (
                 <SimplifiedTreasureHuntTab 
-                  treasureHunt={selectedHunt}
-                  team={myTeam}
-                  user={user}
+                  treasureHunt={selectedHunt} 
+                  team={myTeam} 
+                  user={user} 
                 />
-              )}
-            </div>
-          )}
-        </>
+              )
+            ) : (
+              <div className="gaming-card p-6 h-full flex items-center justify-center">
+                <div className="text-center">
+                  <Trophy className="mx-auto h-12 w-12 text-yellow-400" />
+                  <h3 className="mt-4 text-xl font-bold text-white">Select a Hunt</h3>
+                  <p className="mt-2 text-base text-slate-400">Choose a treasure hunt from the list to view details.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -18,7 +18,12 @@ import {
   Camera,
   Crown,
   ChevronRight,
-  Activity as ActivityIcon
+  Activity as ActivityIcon,
+  Sparkles,
+  Flame,
+  Sword,
+  Heart,
+  Gem
 } from 'lucide-react';
 import { useOptimizedData } from '../../hooks/useOptimizedData';
 import { useActivities } from '../../hooks/useActivities';
@@ -34,17 +39,67 @@ interface QuickAction {
   icon: any;
   color: string;
   type: string;
+  description: string;
+  bgImage?: string;
 }
 
-// Static quick actions - moved outside component to prevent re-creation
+// Enhanced quick actions with background images and dark blue gaming theme
 const QUICK_ACTIONS: QuickAction[] = [
-  { title: 'Take Quiz', icon: Shield, color: 'from-blue-500 to-blue-600', type: 'quiz' },
-  { title: 'Join Treasure Hunt', icon: MapPin, color: 'from-green-500 to-green-600', type: 'treasure-hunt' },
-  { title: 'Vote in Polls', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'polls' },
-  { title: 'Photo Wall', icon: Camera, color: 'from-teal-500 to-teal-600', type: 'photo-wall' },
-    { title: 'View Activities', icon: Zap, color: 'from-orange-500 to-orange-600', type: 'activities' },
-  { title: 'My Team', icon: Users, color: 'from-indigo-500 to-indigo-600', type: 'team' },
-  { title: 'My Profile', icon: Medal, color: 'from-pink-500 to-pink-600', type: 'profile' }
+  { 
+    title: 'Take Quiz', 
+    icon: Shield, 
+    color: 'from-blue-500/70 via-blue-600/70 to-cyan-500/70', 
+    type: 'quiz',
+    description: 'Test your knowledge',
+    bgImage: '/dashboard_tiles/take_quiz.jpg'
+  },
+  { 
+    title: 'Treasure Hunt', 
+    icon: MapPin, 
+    color: 'from-green-500/70 via-emerald-600/70 to-teal-500/70', 
+    type: 'treasure-hunt',
+    description: 'Find hidden treasures',
+    bgImage: '/dashboard_tiles/treaure_hunt.jpg'
+  },
+  { 
+    title: 'Vote in Polls', 
+    icon: Vote, 
+    color: 'from-indigo-500/70 via-indigo-600/70 to-purple-500/70', 
+    type: 'polls',
+    description: 'Make your voice heard',
+    bgImage: '/dashboard_tiles/polls.jpg'
+  },
+  { 
+    title: 'Photo Wall', 
+    icon: Camera, 
+    color: 'from-pink-500/70 via-rose-600/70 to-red-500/70', 
+    type: 'photo-wall',
+    description: 'Share your moments',
+    bgImage: '/dashboard_tiles/photo_wall.jpg'
+  },
+  { 
+    title: 'Activities', 
+    icon: Zap, 
+    color: 'from-yellow-500/70 via-orange-600/70 to-red-500/70', 
+    type: 'activities',
+    description: 'Join epic challenges',
+    bgImage: '/dashboard_tiles/activities.jpg'
+  },
+  { 
+    title: 'My Team', 
+    icon: Users, 
+    color: 'from-blue-500/70 via-indigo-600/70 to-purple-500/70', 
+    type: 'team',
+    description: 'Lead your squad',
+    bgImage: '/dashboard_tiles/my_team.jpg'
+  },
+  { 
+    title: 'My Profile', 
+    icon: Crown, 
+    color: 'from-amber-500 via-yellow-600 to-orange-500', 
+    type: 'profile',
+    description: 'Level up your stats',
+  }
 ];
 
 const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
@@ -175,115 +230,190 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
     switch (type.toLowerCase()) {
       case 'quiz':
       case 'quiz_uploaded':
-        return 'from-blue-500 to-blue-600';
+        return 'from-blue-500 to-cyan-500';
       case 'poll':
       case 'poll_created':
       case 'poll_vote_cast':
-        return 'from-green-500 to-green-600';
+        return 'from-green-500 to-emerald-500';
       case 'treasure_hunt':
       case 'treasure-hunt':
-        return 'from-orange-500 to-orange-600';
+        return 'from-orange-500 to-red-500';
       case 'challenge':
-        return 'from-purple-500 to-purple-600';
+        return 'from-indigo-500 to-purple-500';
       default:
-        return 'from-gray-500 to-gray-600';
+        return 'from-slate-500 to-slate-600';
     }
   }, []);
 
   return (
-    <div className="space-y-8">
-      {/* Horizontal Layout with Team Info and Quick Actions */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
-        {/* Left Block - Team Info */}
-        <div className="space-y-4 lg:space-y-6">
-          <div>
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">My Dashboard</h2>
-            <p className="text-sm lg:text-base text-gray-600">Your team and progress</p>
+    <div className="space-y-6 sm:space-y-8">
+      {/* Enhanced Team Info Section - Mobile responsive */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+        {/* Left Block - Team Info with Gaming Theme */}
+        <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+          <div className="animate-bounce-in">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gradient mb-2 flex items-center">
+              <Sword className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mr-2 sm:mr-3 text-blue-400" />
+              My Gaming Hub
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base">Your team and epic progress</p>
           </div>
 
-          {/* Team Info - Optimized rendering */}
-          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h3 className="text-lg lg:text-xl font-bold text-white">
-                    {userTeam?.name || 'No Team'}
-                  </h3>
-                  {isCurrentUserLeader && (
-                    <div className="flex items-center space-x-1 bg-yellow-500 bg-opacity-20 px-2 py-1 rounded-full">
-                      <Crown className="h-3 w-3 lg:h-4 lg:w-4 text-yellow-300" />
-                      <span className="text-yellow-100 text-xs lg:text-sm font-medium">Leader</span>
+          {/* Enhanced Team Card - Mobile responsive */}
+          <div className="gaming-card p-4 sm:p-6 lg:p-8 hover-lift group">
+            <div className="relative">
+              {/* Animated background elements */}
+              <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-full blur-xl group-hover:scale-110 transition-transform duration-300"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 sm:space-x-3 mb-2 sm:mb-3">
+                      <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
+                        {userTeam?.name || 'No Team'}
+                      </h3>
+                      {isCurrentUserLeader && (
+                        <div className="flex items-center space-x-1 sm:space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 px-2 sm:px-3 py-1 rounded-full flex-shrink-0">
+                          <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                          <span className="text-white text-xs sm:text-sm font-bold">LEADER</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <p className="opacity-90 text-indigo-100 text-sm lg:text-base mb-3">
-                  {isCurrentUserLeader ? 
-                    "You're leading an amazing team!" :
-                    userTeam && 'description' in userTeam ? 
-                      `You're part of an amazing team! ${userTeam.description || ''}` : 
-                      userTeam ?
-                      "You're part of an amazing team!" :
-                      "You haven't been assigned to a team yet."
-                  }
-                </p>
-                
-                {/* Team Leader Info */}
-                {userTeam?.leader && !isCurrentUserLeader && (
-                  <div className="bg-white bg-opacity-10 rounded-lg p-2 mb-3">
-                    <div className="flex items-center space-x-2">
-                      <Crown className="h-3 w-3 text-yellow-300" />
-                      <span className="text-xs text-indigo-100">
-                        Led by {userTeam.leader.name}
-                      </span>
+                    
+                    <p className="text-slate-300 text-sm sm:text-base mb-3 sm:mb-4 leading-relaxed">
+                      {isCurrentUserLeader ? 
+                        "You're leading an epic team to victory! 🏆" :
+                        userTeam && 'description' in userTeam ? 
+                          `You're part of an amazing team! ${userTeam.description || ''}` : 
+                          userTeam ?
+                          "You're part of an amazing team! Ready to conquer challenges together!" :
+                          "Join a team to start your epic adventure! 🚀"
+                      }
+                    </p>
+                    
+                    {/* Team Leader Info - Mobile responsive */}
+                    {userTeam?.leader && !isCurrentUserLeader && (
+                      <div className="glass-dark rounded-lg sm:rounded-xl p-2 sm:p-3 mb-3 sm:mb-4">
+                        <div className="flex items-center space-x-2 sm:space-x-3">
+                          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-white text-xs sm:text-sm font-semibold truncate block">
+                              Led by {userTeam.leader.name}
+                            </span>
+                            <div className="text-slate-400 text-xs">Team Captain</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Team Stats - Mobile responsive */}
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg sm:rounded-xl mx-auto mb-1 sm:mb-2">
+                          <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                        </div>
+                        <div className="text-white font-bold text-sm sm:text-lg">{userTeam ? teamMembers.length : 0}</div>
+                        <div className="text-slate-400 text-xs">Members</div>
+                      </div>
+                      
+                      {userTeam && 'score' in userTeam && (
+                        <>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg sm:rounded-xl mx-auto mb-1 sm:mb-2">
+                              <Award className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                            </div>
+                            <div className="text-white font-bold text-sm sm:text-lg">{userTeam.score}</div>
+                            <div className="text-slate-400 text-xs">Points</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg sm:rounded-xl mx-auto mb-1 sm:mb-2">
+                              <Star className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                            </div>
+                            <div className="text-white font-bold text-sm sm:text-lg">#1</div>
+                            <div className="text-slate-400 text-xs">Rank</div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
-                )}
-                
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-1">
-                    <Users className="h-3 w-3 lg:h-4 lg:w-4 text-indigo-200" />
-                    <span className="text-xs lg:text-sm text-indigo-100">
-                      {userTeam ? `${teamMembers.length} Members` : 'No team'}
-                    </span>
+                  
+                  {/* Floating Trophy - Mobile responsive */}
+                  <div className="relative flex-shrink-0">
+                    <Trophy className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 text-yellow-400 drop-shadow-lg animate-rotate" />
+                    <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2">
+                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-400 animate-pulse" />
+                    </div>
                   </div>
-                  {userTeam && 'score' in userTeam && (
-                    <>
-                      <div className="flex items-center space-x-1">
-                        <Award className="h-3 w-3 lg:h-4 lg:w-4 text-indigo-200" />
-                        <span className="text-xs lg:text-sm text-indigo-100">{userTeam.score} Points</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-3 w-3 lg:h-4 lg:w-4 text-indigo-200" />
-                        <span className="text-xs lg:text-sm text-indigo-100">Team Rank #1</span>
-                      </div>
-                    </>
-                  )}
                 </div>
               </div>
-              <Trophy className="h-12 w-12 lg:h-16 lg:w-16 opacity-20" />
             </div>
           </div>
         </div>
 
-        {/* Right Block - Quick Actions */}
-        <div className="space-y-4 lg:space-y-6">
-          <div>
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-2">Quick Actions</h2>
-            <p className="text-sm lg:text-base text-gray-600">Jump into activities and manage your profile</p>
+        {/* Right Block - Enhanced Quick Actions - Mobile responsive */}
+        <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+          <div className="animate-bounce-in" style={{ animationDelay: '0.2s' }}>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gradient mb-2 flex items-center">
+              <Zap className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mr-2 sm:mr-3 text-yellow-400" />
+              Quick Actions
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base">Jump into epic activities</p>
           </div>
-          <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border p-4 lg:p-6">
-            <div className="grid grid-cols-2 gap-3 lg:gap-4">
+          
+          <div className="gaming-card p-4 sm:p-6 lg:p-8">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
               {QUICK_ACTIONS.map((action, index) => (
                 <button
                   key={action.type}
                   onClick={() => handleQuickAction(action.type)}
-                  className={`group relative overflow-hidden rounded-lg lg:rounded-xl p-4 lg:p-6 text-white hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl bg-gradient-to-r ${action.color}`}
+                  className={`group relative overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 text-white hover-lift transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 ${
+                    action.bgImage ? 'bg-cover bg-center' : `bg-gradient-to-br ${action.color}`
+                  }`}
+                  style={{
+                    backgroundImage: action.bgImage ? `url(${action.bgImage})` : 'none',
+                    animationDelay: `${index * 0.1}s`,
+                  }}
                 >
-                  <div className="flex flex-col items-center text-center">
-                    <action.icon className="h-6 w-6 lg:h-8 lg:w-8 mb-2 lg:mb-3 opacity-90" />
-                    <h3 className="font-semibold text-xs lg:text-sm leading-tight">{action.title}</h3>
+                  {action.bgImage && (
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${action.color} transition-opacity duration-300 group-hover:opacity-90`}
+                    ></div>
+                  )}
+                  
+                  {/* Animated background */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  
+                  <div className="relative z-10 flex flex-col items-center text-center">
+                    <div
+                      className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 xl:w-16 xl:h-16 bg-white/20 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300 ${
+                        action.bgImage ? 'backdrop-blur-sm border border-white/20' : ''
+                      }`}
+                    >
+                      <action.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-8 xl:w-8 text-white" />
+                    </div>
+                    <h3
+                      className={`font-bold text-xs sm:text-sm lg:text-base leading-tight mb-1 ${
+                        action.bgImage ? 'drop-shadow-lg' : ''
+                      }`}
+                    >
+                      {action.title}
+                    </h3>
+                    <p
+                      className={`text-white/80 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:block ${
+                        action.bgImage ? 'drop-shadow-md' : ''
+                      }`}
+                    >
+                      {action.description}
+                    </p>
                   </div>
-                  <Plus className="absolute top-2 right-2 lg:top-3 lg:right-3 h-3 w-3 lg:h-4 lg:w-4 opacity-70 group-hover:rotate-90 transition-transform duration-200" />
+                  
+                  {/* Floating plus icon */}
+                  <Plus className="absolute top-2 right-2 sm:top-3 sm:right-3 h-3 w-3 sm:h-4 sm:w-4 text-white/70 group-hover:rotate-90 transition-transform duration-300" />
+                  
+                  {/* Glow effect on hover */}
+                  <div className="absolute inset-0 rounded-lg sm:rounded-xl lg:rounded-2xl bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </button>
               ))}
             </div>
@@ -291,97 +421,111 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
         </div>
       </div>
 
-      {/* Recent Activities Section */}
-      <div className="bg-white rounded-xl lg:rounded-2xl shadow-sm border p-4 lg:p-6">
-        <div className="flex items-center justify-between mb-4 lg:mb-6">
+      {/* Enhanced Recent Activities Section - Mobile responsive */}
+      <div className="gaming-card p-4 sm:p-6 lg:p-8 animate-bounce-in" style={{ animationDelay: '0.4s' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 lg:mb-8 space-y-3 sm:space-y-0">
           <div>
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">Recent Activities</h2>
-            <p className="text-sm lg:text-base text-gray-600">Stay updated with the latest announcements and activities</p>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gradient mb-2 flex items-center">
+              <Flame className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 mr-2 sm:mr-3 text-orange-400" />
+              Recent Activities
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base">Stay updated with epic announcements</p>
           </div>
           <button
             onClick={() => router.push('/dashboard/activities')}
-            className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg"
+            className="btn-gaming neon-glow-orange hover-lift text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 self-start sm:self-auto inline-flex items-center"
           >
-            <Zap className="h-4 w-4 mr-2" />
-            View All Activities
+            <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">View All Activities</span>
+            <span className="sm:hidden">View All</span>
           </button>
         </div>
 
         {activitiesLoading ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {Array.from({ length: 3 }).map((_, index) => (
               <div key={index} className="animate-pulse">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                <div className="gaming-card p-3 sm:p-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg sm:rounded-xl opacity-20"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 sm:h-4 bg-slate-600 rounded w-3/4 opacity-20"></div>
+                      <div className="h-2 sm:h-3 bg-slate-600 rounded w-1/2 opacity-20"></div>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : !activities || activities.length === 0 ? (
-          <div className="text-center py-8">
-            <Zap className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Recent Activities</h3>
-            <p className="text-gray-600 mb-4">Check back later for new announcements and activities</p>
+          <div className="text-center py-8 sm:py-12">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Zap className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-white" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3">No Recent Activities</h3>
+            <p className="text-slate-400 mb-4 sm:mb-6 text-sm sm:text-base">Check back later for epic announcements and challenges</p>
             <button
               onClick={() => router.push('/dashboard/activities')}
-              className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              className="btn-gaming text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3 inline-flex items-center"
             >
+              <Gem className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
               Check Activities
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {activities.slice(0, 3).map((activity) => {
+          <div className="space-y-3 sm:space-y-4">
+            {activities.slice(0, 3).map((activity, index) => {
               const IconComponent = getIconComponent(getActivityTypeIcon(activity.type));
               const gradient = getActivityGradient(activity.type);
               
               return (
                 <div
                   key={activity.id}
-                  className="flex items-start space-x-4 p-4 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all duration-200 cursor-pointer"
+                  className="gaming-card p-3 sm:p-4 lg:p-6 hover-lift cursor-pointer group"
                   onClick={() => router.push('/dashboard/activities')}
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${gradient} flex items-center justify-center flex-shrink-0`}>
-                    <IconComponent className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm lg:text-base font-semibold text-gray-900 truncate">
-                      {activity.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      {activity.description}
-                    </p>
-                    <div className="flex items-center space-x-4 mt-2">
-                      <span className="text-xs text-gray-500">
-                        {new Date(activity.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                        {getActivityTypeDisplay(activity.type)}
-                      </span>
+                  <div className="flex items-start space-x-3 sm:space-x-4">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 text-white" />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm sm:text-base lg:text-lg font-bold text-white truncate group-hover:text-gradient transition-colors duration-300">
+                        {activity.title}
+                      </h3>
+                      <p className="text-slate-300 text-xs sm:text-sm lg:text-base line-clamp-2 mt-1">
+                        {activity.description}
+                      </p>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 mt-2 sm:mt-3">
+                        <span className="text-xs text-slate-400">
+                          {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        <span className="text-xs px-2 sm:px-3 py-1 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 rounded-full border border-blue-500/30 self-start">
+                          {getActivityTypeDisplay(activity.type)}
+                        </span>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 flex-shrink-0 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 </div>
               );
             })}
             
             {activities && activities.length > 3 && (
-              <div className="text-center pt-4">
+              <div className="text-center pt-4 sm:pt-6">
                 <button
                   onClick={() => router.push('/dashboard/activities')}
-                  className="inline-flex items-center text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  className="inline-flex items-center text-xs sm:text-sm text-gradient hover:text-white font-bold transition-colors duration-300"
                 >
-                  View {activities.length - 3} more activities
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <Heart className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">View {activities.length - 3} more epic activities</span>
+                  <span className="sm:hidden">View {activities.length - 3} more</span>
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
                 </button>
               </div>
             )}
