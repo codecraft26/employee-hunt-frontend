@@ -203,16 +203,16 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     return (
       <div
         key={option.id}
-        className={`border rounded-lg p-4 transition-all ${
+        className={`border rounded-lg p-4 transition-all bg-slate-700 border-slate-600 ${
           canVote ? 'cursor-pointer' : ''
         } ${
           canVote
             ? isSelected
-              ? 'border-indigo-500 bg-indigo-50'
-              : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+              ? 'ring-2 ring-indigo-500 shadow-lg'
+              : 'hover:ring-1 hover:ring-indigo-400'
             : shouldShowUserVoteOnly && isUserSelection
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-200'
+              ? 'ring-2 ring-green-500'
+              : ''
         }`}
         onClick={() => canVote && handleOptionSelect(option.id)}
       >
@@ -222,13 +222,13 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
             <div className="flex-shrink-0">
               {poll.type === VoteType.SINGLE_CHOICE ? (
                 <div className={`w-4 h-4 rounded-full border-2 ${
-                  isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300'
+                  isSelected ? 'border-indigo-400 bg-indigo-600' : 'border-slate-500 bg-slate-800'
                 }`}>
                   {isSelected && <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />}
                 </div>
               ) : (
                 <div className={`w-4 h-4 rounded border-2 ${
-                  isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-gray-300'
+                  isSelected ? 'border-indigo-400 bg-indigo-600' : 'border-slate-500 bg-slate-800'
                 }`}>
                   {isSelected && (
                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -261,8 +261,8 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                   className="h-12 w-12 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-12 w-12 bg-gray-200 rounded-full flex items-center justify-center">
-                  <Users className="h-6 w-6 text-gray-400" />
+                <div className="h-12 w-12 bg-slate-700 rounded-full flex items-center justify-center">
+                  <Users className="h-6 w-6 text-slate-400" />
                 </div>
               )}
             </div>
@@ -272,9 +272,9 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">{option.name}</h4>
+                <h4 className="font-medium text-white">{option.name}</h4>
                 {(poll.votingOptionType === VotingOptionType.USER_SPECIFIC || poll.votingOptionType === VotingOptionType.CATEGORY_USER_BASED) && option.targetUser && (
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-sm text-slate-300 mt-1">
                     <span>{option.targetUser.email}</span>
                     {option.targetUser.employeeCode && (
                       <span> • {option.targetUser.employeeCode}</span>
@@ -289,10 +289,10 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               {/* Vote Count and Percentage - only show in full results mode */}
               {shouldShowResults && shouldShowFullResults && (
                 <div className="text-right">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-white">
                     {option.voteCount} votes
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-slate-300">
                     {votePercentage.toFixed(1)}%
                   </div>
                 </div>
@@ -301,7 +301,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               {/* User Selection Indicator */}
               {shouldShowUserVoteOnly && isUserSelection && (
                 <div className="text-right">
-                  <div className="text-sm font-medium text-green-700">
+                  <div className="text-sm font-medium text-green-400">
                     ✓ Your Choice
                   </div>
                 </div>
@@ -311,9 +311,9 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
             {/* Progress Bar - only show in full results mode */}
             {shouldShowResults && shouldShowFullResults && (
               <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-slate-600 rounded-full h-2">
                   <div
-                    className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${votePercentage}%` }}
                   />
                 </div>
@@ -326,25 +326,25 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+    <div className="bg-slate-800 rounded-xl shadow-sm border overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-slate-600">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
-              <h2 className="text-xl font-semibold text-gray-900">{poll.title}</h2>
+              <h2 className="text-xl font-semibold text-white">{poll.title}</h2>
               {getStatusBadge()}
             </div>
             {poll.description && (
-              <p className="text-gray-600 mb-3">{poll.description}</p>
+              <p className="text-slate-300 mb-3">{poll.description}</p>
             )}
             {poll.createdBy && (
-              <p className="text-sm text-gray-500">Created by {poll.createdBy.name}</p>
+              <p className="text-sm text-slate-400">Created by {poll.createdBy.name}</p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center space-x-6 text-sm text-gray-600 flex-wrap gap-2">
+        <div className="flex items-center space-x-6 text-sm text-slate-500 flex-wrap gap-2">
           <div className="flex items-center space-x-1">
             <Calendar className="h-4 w-4" />
             <span>{poll.type === VoteType.SINGLE_CHOICE ? 'Single Choice' : 'Multiple Choice'}</span>
@@ -394,7 +394,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
         <div className="mt-4">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            className="flex items-center space-x-2 text-sm text-slate-500 hover:text-slate-200 transition-colors"
           >
             <span>Poll Timeline</span>
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -403,16 +403,16 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           {isExpanded && (
             <div className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600">Starts:</span>
+                <span className="text-slate-500">Starts:</span>
                 <span className="font-medium">{new Date(poll.startTime).toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Ends:</span>
+                <span className="text-slate-500">Ends:</span>
                 <span className="font-medium">{new Date(poll.endTime).toLocaleString()}</span>
               </div>
               {poll.resultDisplayTime && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Results Display:</span>
+                  <span className="text-slate-500">Results Display:</span>
                   <span className="font-medium">{new Date(poll.resultDisplayTime).toLocaleString()}</span>
                 </div>
               )}

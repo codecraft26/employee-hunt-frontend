@@ -15,6 +15,7 @@ interface OptimizedPageLayoutProps {
   backPath?: string;
   children: React.ReactNode;
   fallback?: React.ReactNode;
+  customBackground?: React.ReactNode;
 }
 
 // Static notifications data - shared across all pages
@@ -47,7 +48,8 @@ const OptimizedPageLayout: React.FC<OptimizedPageLayoutProps> = memo(({
   iconGradient,
   backPath = '/dashboard',
   children,
-  fallback = <DefaultFallback />
+  fallback = <DefaultFallback />,
+  customBackground
 }) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -74,19 +76,23 @@ const OptimizedPageLayout: React.FC<OptimizedPageLayoutProps> = memo(({
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 relative overflow-x-hidden">
+        {/* Thematic/Custom Background */}
+        {customBackground && (
+          <div className="absolute inset-0 w-full h-full z-0 pointer-events-none select-none">
+            {customBackground}
+          </div>
+        )}
         {/* Optimized Header */}
         <OptimizedHeader
           title={title}
           subtitle={subtitle}
           icon={icon}
           iconGradient={iconGradient}
-          notificationCount={STATIC_NOTIFICATIONS.length}
           onLogout={handleLogout}
         />
-
         {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
           {/* Back Button */}
           <div className="mb-6">
             <button
@@ -97,7 +103,6 @@ const OptimizedPageLayout: React.FC<OptimizedPageLayoutProps> = memo(({
               <span>Back to Dashboard</span>
             </button>
           </div>
-          
           {/* Page Content with Lazy Loading */}
           <LazyWrapper fallback={fallback}>
             {children}
