@@ -6,10 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test:pwa": "node scripts/test-pwa.js",
-    "test:collage": "node scripts/test-collage.js",
-    "postinstall": "sharp --install"
+    "lint": "next lint"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
