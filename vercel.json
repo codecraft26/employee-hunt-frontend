@@ -1,8 +1,5 @@
 {
   "functions": {
-    "src/app/api/collage/generate/route.ts": {
-      "maxDuration": 30
-    },
     "src/app/api/test/route.ts": {
       "maxDuration": 10
     }
