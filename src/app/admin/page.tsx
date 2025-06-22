@@ -22,6 +22,7 @@ const WinnerSelectionModal = lazy(() => import('../../components/modals/WinnerSe
 const AdminApprovalsTab = lazy(() => import('../../components/tabs/AdminApprovalsTab'));
 const PhotoWallTab = lazy(() => import('../../components/tabs/PhotoWallTab'));
 const CreateQuizModal = lazy(() => import('../../components/modals/CreateQuizModal'));
+const RoomAllotmentTab = lazy(() => import('../../components/tabs/RoomAllotmentTab'));
 import UserManagementTab from '../../components/tabs/UserManagementTab';
 
 import { 
@@ -35,7 +36,7 @@ import {
 } from '../../types/admin';
 
 // Extended TabView type to include clue, submission management, categories, and photo wall
-type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall' | 'user-management' | 'activities';
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall' | 'user-management' | 'activities' | 'room-allotment';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -166,7 +167,7 @@ export default function AdminDashboard() {
   // Handle URL parameters for tab navigation
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'quizzes', 'treasure-hunts', 'polls', 'teams', 'categories', 'photo-wall', 'user-management', 'activities', 'approve-users'].includes(tabParam)) {
+    if (tabParam && ['overview', 'quizzes', 'treasure-hunts', 'polls', 'teams', 'categories', 'photo-wall', 'user-management', 'activities', 'approve-users', 'room-allotment'].includes(tabParam)) {
       setActiveView(tabParam as ExtendedTabView);
     }
   }, [searchParams]);
@@ -193,6 +194,10 @@ export default function AdminDashboard() {
         break;
       case 'create-category': // NEW CASE
         setActiveView('categories');
+        break;
+      case 'room-allotment':
+      case 'assign-room':
+        setActiveView('room-allotment');
         break;
       case 'view-approvals':
         setActiveView('approvals');
@@ -493,6 +498,13 @@ export default function AdminDashboard() {
       case 'user-management':
         return (
           <UserManagementTab />
+        );
+     
+      case 'room-allotment':
+        return (
+          <LazyWrapper>
+            <RoomAllotmentTab />
+          </LazyWrapper>
         );
      
       default:

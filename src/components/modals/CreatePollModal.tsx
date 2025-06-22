@@ -117,7 +117,7 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
       });
 
       const params = formData.categoryType === 'SPECIFIC' && formData.allowedCategories.length > 0
-        ? { categoryIds: formData.allowedCategories }
+        ? { categoryId: formData.allowedCategories[0] }
         : undefined;
       
       console.log('📋 API params:', params);

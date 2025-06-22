@@ -14,7 +14,8 @@ import {
   User,
   RefreshCw,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Key
 } from 'lucide-react';
 import { useAdminStats } from '../../hooks/useAdminStats';
 import UserManagementModal from '../modals/UserManagementModal';
@@ -57,6 +58,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onQuickAction }) => {
     { title: 'Create Poll/Vote', icon: Vote, color: 'from-purple-500 to-purple-600', type: 'create-poll' },
     { title: 'Manage Teams', icon: Users, color: 'from-orange-500 to-orange-600', type: 'create-team' },
     { title: 'Manage Categories', icon: Building2, color: 'from-indigo-500 to-indigo-600', type: 'create-category' },
+    { title: 'Room Allotment', icon: Key, color: 'from-cyan-500 to-cyan-600', type: 'room-allotment' },
     { title: 'User Management', icon: User, color: 'from-teal-500 to-teal-600', type: 'user-management' },
     { title: 'Manage Approval', icon: User, color: 'from-pink-500 to-pink-600', type: 'approve-user' }
   ];
@@ -96,6 +98,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onQuickAction }) => {
         break;
       case 'create-category':
         router.push('/admin/categories');
+        break;
+      case 'room-allotment':
+        router.push('/admin?tab=room-allotment');
         break;
       case 'approve-user':
         router.push('/admin/approveUser');

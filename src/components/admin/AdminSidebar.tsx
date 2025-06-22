@@ -11,7 +11,8 @@ import {
   Building2, 
   Image as ImageIcon,
   UserCog,
-  Activity
+  Activity,
+  Key
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -26,6 +27,7 @@ const SIDEBAR_ITEMS = [
   { id: 'polls', label: 'Polls & Voting', icon: Vote, href: '/admin/polls' },
   { id: 'teams', label: 'Teams', icon: Users, href: '/admin/teams' },
   { id: 'categories', label: 'Categories', icon: Building2, href: '/admin/categories' },
+  { id: 'room-allotment', label: 'Room Allotment', icon: Key, href: '/admin?tab=room-allotment' },
   { id: 'activities', label: 'Activities', icon: Activity, href: '/admin?tab=activities' },
   { id: 'photo-wall', label: 'Photo Wall', icon: ImageIcon, href: '/admin?tab=photo-wall' },
   { id: 'user-management', label: 'User Management', icon: UserCog, href: '/admin?tab=user-management' },

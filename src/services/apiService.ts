@@ -104,7 +104,12 @@ const apiService = {
   getApprovedUsersForPolls: () => apiService.get('/users/approved-for-polls'),
   assignRoomToUser: (userId: string, roomNumber: string) => 
     apiService.post(`/users/${userId}/assign-room`, { roomNumber }),
-  createAdminUser: (data: FormData) => apiService.post('/auth/register/admin', data)
+  createAdminUser: (data: FormData) => apiService.post('/auth/register/admin', data),
+
+  // Room management methods
+  getMyRoom: () => apiService.get('/users/my-room'),
+  getUserRoom: (userId: string) => apiService.get(`/users/rooms/${userId}`),
+  getAllRooms: () => apiService.get('/users/rooms'),
 };
 
 export { apiService }; 

@@ -1,7 +1,7 @@
 // components/user/UserProfileTab.tsx
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { 
   Camera, 
   Edit, 
@@ -14,10 +14,25 @@ import {
   Crown,
   Shield,
   Trophy,
-  Home
+  Home,
+  Key
 } from 'lucide-react';
 import { useCategories } from '../../hooks/useCategories';
 import { useTeams } from '../../hooks/useTeams';
+import { apiService } from '../../services/apiService';
+
+interface HotelRoom {
+  id: string;
+  roomNumber: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    employeeCode?: string;
+    department?: string;
+    profileImage?: string;
+  } | null;
+}
 
 interface UserProfileTabProps {
   user: any; // Replace with proper User type
@@ -26,12 +41,47 @@ interface UserProfileTabProps {
 const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
   const { categories, fetchCategories, loading: categoriesLoading } = useCategories();
   const { myTeam, fetchMyTeam, loading: teamLoading } = useTeams();
+  const [userRoom, setUserRoom] = useState<HotelRoom | null>(null);
+  const [roomLoading, setRoomLoading] = useState(false);
 
-  // Fetch categories and team when component mounts
+  // Fetch categories, team, and room when component mounts
   useEffect(() => {
     fetchCategories();
     fetchMyTeam();
+    fetchUserRoom();
   }, [fetchCategories, fetchMyTeam]);
+
+  const fetchUserRoom = async () => {
+    setRoomLoading(true);
+    try {
+      // Try the user-specific endpoint first
+      const response = await apiService.getMyRoom();
+      if (response.success && response.data) {
+        setUserRoom(response.data);
+      } else {
+        // Fallback: check if user object has roomNumber
+        if (user?.roomNumber) {
+          setUserRoom({
+            id: 'user-room',
+            roomNumber: user.roomNumber,
+            user: user
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user room:', error);
+      // Fallback: check if user object has roomNumber
+      if (user?.roomNumber) {
+        setUserRoom({
+          id: 'user-room',
+          roomNumber: user.roomNumber,
+          user: user
+        });
+      }
+    } finally {
+      setRoomLoading(false);
+    }
+  };
 
   // Get user's category from the categories list
   const userCategory = useMemo(() => {
@@ -90,6 +140,12 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                 {user.employeeCode && (
                   <span className="text-sm text-gray-600">{user.employeeCode}</span>
                 )}
+                {userRoom && (
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                    <Key className="inline h-3 w-3 mr-1" />
+                    Room {userRoom.roomNumber}
+                  </span>
+                )}
                 {isTeamLeader && (
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
                     <Shield className="inline h-3 w-3 mr-1" />
@@ -104,6 +160,75 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Room Information */}
+      {userRoom && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-full">
+              <Key className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Hotel Room Assignment</h3>
+              <p className="text-blue-700">Your assigned accommodation</p>
+            </div>
+          </div>
+          <div className="bg-white bg-opacity-60 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Home className="h-8 w-8 text-blue-600" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800">Room Number</p>
+                  <p className="text-2xl font-bold text-blue-900">{userRoom.roomNumber}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-blue-600">Room ID</p>
+                <p className="text-xs text-blue-500 font-mono">{userRoom.id.slice(0, 8)}...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Room Loading State */}
+      {roomLoading && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-full">
+              <Key className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Hotel Room Assignment</h3>
+              <p className="text-blue-700">Loading your room information...</p>
+            </div>
+          </div>
+          <div className="bg-white bg-opacity-60 rounded-lg p-4">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Room Assigned */}
+      {!roomLoading && !userRoom && (
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gray-400 p-3 rounded-full">
+              <Home className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Hotel Room Assignment</h3>
+              <p className="text-gray-600">No room assigned yet</p>
+            </div>
+          </div>
+          <div className="bg-white bg-opacity-60 rounded-lg p-4 text-center">
+            <p className="text-gray-500">Contact your administrator to get assigned a room</p>
+          </div>
+        </div>
+      )}
 
       {/* Leadership Status */}
       {isTeamLeader && myTeam && (
@@ -164,15 +289,6 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                 <div>
                   <p className="text-sm font-medium text-gray-700">Gender</p>
                   <p className="text-gray-900 capitalize">{user.gender}</p>
-                </div>
-              </div>
-            )}
-            {user.roomNumber && (
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <Home className="h-5 w-5 text-gray-400" />
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Room Number</p>
-                  <p className="text-gray-900">{user.roomNumber}</p>
                 </div>
               </div>
             )}
