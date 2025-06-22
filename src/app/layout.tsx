@@ -101,22 +101,22 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
 
         {/* Favicon and Icons */}
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/app-icon.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/app-icon.png" />
-        <link rel="shortcut icon" href="/icons/app-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
 
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" href="/icons/app-icon.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/app-icon.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon.png" />
-        <link rel="apple-touch-icon" sizes="167x167" href="/icons/app-icon.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167x167.png" />
 
         {/* Splash Screens for iOS */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <link rel="apple-touch-startup-image" href="/icons/app-icon.png" />
+        <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
 
         {/* Microsoft Tiles */}
-        <meta name="msapplication-TileImage" content="/icons/app-icon.png" />
+        <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
 
         {/* Preconnect for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -128,12 +128,12 @@ export default function RootLayout({
         <meta property="og:description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
         <meta property="og:site_name" content="Bann Dhann" />
         <meta property="og:url" content="https://employeehunt.com" />
-        <meta property="og:image" content="/icons/app-icon.png" />
+        <meta property="og:image" content="/icons/icon-512x512.png" />
 
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Bann Dhann - Team Activities & Contests" />
         <meta name="twitter:description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
-        <meta name="twitter:image" content="/icons/app-icon.png" />
+        <meta name="twitter:image" content="/icons/icon-512x512.png" />
 
         <title>Bann Dhann - Team Activities & Contests</title>
       </head>

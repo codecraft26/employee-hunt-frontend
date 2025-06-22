@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next export",
+    "pwa:analyze": "npx webpack-bundle-analyzer .next/static/chunks/",
+    "pwa:lighthouse": "npx lighthouse http://localhost:3000 --chrome-flags='--headless' --output-path=./lighthouse-report.html"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
@@ -16,6 +19,7 @@
     "lucide-react": "^0.513.0",
     "next": "15.3.3",
     "next-auth": "^4.24.11",
+    "next-pwa": "^5.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-photo-album": "^3.1.0",

@@ -34,6 +34,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# PWA build artifacts
+/public/sw.js
+/public/workbox-*.js
+/public/worker-*.js
+lighthouse-report.html
+*.lighthouse.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
