@@ -296,7 +296,7 @@ input[type="time"],
 input[type="week"],
 textarea,
 select {
-  color: #1f2937 !important; /* Dark gray text for light backgrounds */
+  color: #1f2937 ; /* Dark gray text for light backgrounds */
 }
 
 /* For inputs with dark/gaming backgrounds */
