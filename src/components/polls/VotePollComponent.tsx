@@ -17,6 +17,7 @@ import {
 import { Vote, VoteStatus, VoteType, VotingOptionType } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 import { useAuth } from '../../hooks/useAuth';
+import TimerDisplay from '../shared/TimerDisplay';
 
 interface VotePollComponentProps {
   poll: Vote;
@@ -173,6 +174,25 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     if (days > 0) return `Starts in ${days}d ${hours}h`;
     if (hours > 0) return `Starts in ${hours}h ${minutes}m`;
     return `Starts in ${minutes}m`;
+  };
+
+  // Get poll timing status for TimerDisplay
+  const getPollTimingStatus = () => {
+    const now = new Date().getTime();
+    const start = new Date(poll.startTime).getTime();
+    const end = new Date(poll.endTime).getTime();
+    
+    if (now < start) {
+      return { status: 'upcoming' as const, urgency: 'normal' as const };
+    } else if (now >= start && now < end) {
+      const timeRemaining = end - now;
+      return { 
+        status: 'active' as const, 
+        urgency: timeRemaining < 60 * 60 * 1000 ? 'high' as const : timeRemaining < 24 * 60 * 60 * 1000 ? 'medium' as const : 'normal' as const 
+      };
+    } else {
+      return { status: 'ended' as const, urgency: 'none' as const };
+    }
   };
 
   const timeUntilStart = getTimeUntilStart();
@@ -379,13 +399,29 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           {poll.status === VoteStatus.ACTIVE && (
             <div className="flex items-center space-x-1 text-orange-600">
               <Clock className="h-4 w-4" />
-              <span>{getTimeRemaining()}</span>
+              <TimerDisplay 
+                variant="compact"
+                status={getPollTimingStatus().status}
+                urgency={getPollTimingStatus().urgency}
+                startTime={poll.startTime}
+                endTime={poll.endTime}
+                showCountdown={true}
+                className="text-orange-600"
+              />
             </div>
           )}
           {isUpcoming && timeUntilStart && (
             <div className="flex items-center space-x-1 text-blue-600">
               <Timer className="h-4 w-4" />
-              <span>{timeUntilStart}</span>
+              <TimerDisplay 
+                variant="compact"
+                status={getPollTimingStatus().status}
+                urgency={getPollTimingStatus().urgency}
+                startTime={poll.startTime}
+                endTime={poll.endTime}
+                showCountdown={true}
+                className="text-blue-600"
+              />
             </div>
           )}
         </div>
@@ -420,6 +456,70 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           )}
         </div>
       </div>
+
+      {/* Prominent Timer Display for Active Polls */}
+      {poll.status === VoteStatus.ACTIVE && (
+        <div className="px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch w-full">
+            {/* Info Card */}
+            <div className="flex-1 flex items-center">
+              <div className="w-12 h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center shadow-lg mr-4">
+                <Clock className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Poll Active</h3>
+                <p className="text-sm text-purple-100">Voting ends soon!</p>
+              </div>
+            </div>
+            {/* Timer Card */}
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-full h-full">
+                <TimerDisplay 
+                  variant="detailed"
+                  status={getPollTimingStatus().status}
+                  urgency={getPollTimingStatus().urgency}
+                  startTime={poll.startTime}
+                  endTime={poll.endTime}
+                  showCountdown={true}
+                  className="bg-transparent text-white font-bold h-full w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timer Display for Upcoming Polls */}
+      {poll.status === VoteStatus.UPCOMING && (
+        <div className="px-6 py-4 bg-gradient-to-r from-orange-500 to-yellow-500">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch w-full">
+            {/* Info Card */}
+            <div className="flex-1 flex items-center">
+              <div className="w-12 h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center shadow-lg mr-4">
+                <Calendar className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Poll Starting Soon</h3>
+                <p className="text-sm text-orange-100">Get ready to vote!</p>
+              </div>
+            </div>
+            {/* Timer Card */}
+            <div className="flex-1 flex items-center justify-center">
+              <div className="w-full h-full">
+                <TimerDisplay 
+                  variant="detailed"
+                  status={getPollTimingStatus().status}
+                  urgency={getPollTimingStatus().urgency}
+                  startTime={poll.startTime}
+                  endTime={poll.endTime}
+                  showCountdown={true}
+                  className="bg-transparent text-white font-bold h-full w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Poll Content */}
       <div className="p-6">

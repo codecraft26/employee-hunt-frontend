@@ -5,6 +5,7 @@ import { Vote, VoteStatus, VoteType } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
 import VotePollComponent from '../polls/VotePollComponent';
 import PollsFilter from '../polls/PollsFilter';
+import TimerDisplay from '../shared/TimerDisplay';
 
 interface UserPollsTabProps {
   onVoteSuccess?: () => void;
@@ -90,6 +91,25 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
     
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${minutes}m remaining`;
+  };
+
+  // Get poll timing status for TimerDisplay
+  const getPollTimingStatus = (poll: Vote) => {
+    const now = new Date().getTime();
+    const start = new Date(poll.startTime).getTime();
+    const end = new Date(poll.endTime).getTime();
+    
+    if (now < start) {
+      return { status: 'upcoming' as const, urgency: 'normal' as const };
+    } else if (now >= start && now < end) {
+      const timeRemaining = end - now;
+      return { 
+        status: 'active' as const, 
+        urgency: timeRemaining < 60 * 60 * 1000 ? 'high' as const : timeRemaining < 24 * 60 * 60 * 1000 ? 'medium' as const : 'normal' as const 
+      };
+    } else {
+      return { status: 'ended' as const, urgency: 'none' as const };
+    }
   };
 
   if (loading && polls.length === 0) {
