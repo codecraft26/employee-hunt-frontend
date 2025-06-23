@@ -828,7 +828,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
       {/* My Submissions */}
       {mySubmissions.length > 0 && (
         <div className="bg-slate-800 rounded-2xl p-6 shadow-[0_0_24px_0_rgba(0,255,180,0.08)]">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">My Submissions</h3>
+          <h3 className="text-lg font-semibold text-white-900 mb-4">My Submissions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {mySubmissions.map((submission) => (
               <div key={submission.id} className="border border-gray-200 rounded-lg p-4">
@@ -837,7 +837,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                   alt="My submission"
                   className="w-full h-32 object-cover rounded-lg mb-3"
                 />
-                <p className="text-sm text-gray-700 mb-2">{submission.description}</p>
+                <p className="text-sm text-white-700 mb-2">{submission.description}</p>
                 <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(submission.status)}`}>
                   {getStatusIcon(submission.status)}
                   <span className="ml-1">{submission.status}</span>
