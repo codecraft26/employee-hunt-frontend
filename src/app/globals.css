@@ -307,7 +307,9 @@ input[class*="bg-blue-"],
 input[class*="bg-purple-"]:not([class*="bg-purple-50"]),
 input[class*="bg-indigo-"]:not([class*="bg-indigo-50"]),
 input[class*="bg-black"],
-input[class*="bg-transparent"] {
+input[class*="bg-transparent"],
+textarea
+ {
   color: white !important;
 }
 
