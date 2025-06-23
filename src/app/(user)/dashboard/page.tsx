@@ -11,6 +11,7 @@ import LazyWrapper from '../../../components/shared/LazyWrapper';
 import { useOptimizedData } from '../../../hooks/useOptimizedData';
 import { Trophy, Sparkles, Zap, Crown } from 'lucide-react';
 import UserOverviewTab from '../../../components/user/UserOverviewTab';
+import NotificationButton from '@/components/NotificationButton';
 
 export default function UserDashboardUI() {
   const dispatch = useAppDispatch();
@@ -166,6 +167,7 @@ export default function UserDashboardUI() {
 
         {/* Main Content with Gaming Aesthetics - Mobile responsive */}
         <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6">
+          <NotificationButton/>
           <LazyWrapper
             fallback={
               <div className="space-y-6 sm:space-y-8">

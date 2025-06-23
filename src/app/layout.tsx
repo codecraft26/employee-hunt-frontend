@@ -9,6 +9,8 @@ import OfflineIndicator from '../components/OfflineIndicator';
 import { ToastProvider } from '../components/shared/ToastContainer';
 import './globals.css';
 import { useEffect } from 'react';
+import NotificationHandler from "../components/NotificationHandler";
+
 
 export default function RootLayout({
   children,
@@ -142,6 +144,7 @@ export default function RootLayout({
         <Provider store={store}>
           <AuthProvider>
             <ToastProvider>
+            <NotificationHandler />
               <OfflineIndicator />
               <PWAInstaller />
               {children}

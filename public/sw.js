@@ -1,1 +1,278 @@
-if(!self.define){let e,s={};const n=(n,c)=>(n=new URL(n+".js",c).href,s[n]||new Promise((s=>{if("document"in self){const e=document.createElement("script");e.src=n,e.onload=s,document.head.appendChild(e)}else e=n,importScripts(n),s()})).then((()=>{let e=s[n];if(!e)throw new Error(`Module ${n} didn’t register its module`);return e})));self.define=(c,i)=>{const a=e||("document"in self?document.currentScript.src:"")||location.href;if(s[a])return;let t={};const r=e=>n(e,a),u={module:{uri:a},exports:t,require:r};s[a]=Promise.all(c.map((e=>u[e]||r(e)))).then((e=>(i(...e),t)))}}define(["./workbox-14aa2a4a"],(function(e){"use strict";importScripts(),self.skipWaiting(),e.clientsClaim(),e.precacheAndRoute([{url:"/_next/app-build-manifest.json",revision:"fc60056dfe0bdc36bfed51da34439f7b"},{url:"/_next/static/LIqCSlOKuNHGn5NbRKVpz/_buildManifest.js",revision:"901e58d9b138ee4cba9548c552a8ad99"},{url:"/_next/static/LIqCSlOKuNHGn5NbRKVpz/_ssgManifest.js",revision:"b6652df95db52feb4daf4eca35380933"},{url:"/_next/static/chunks/1110.5ba896ac299865cd.js",revision:"5ba896ac299865cd"},{url:"/_next/static/chunks/1207.8041a423c5341dc4.js",revision:"8041a423c5341dc4"},{url:"/_next/static/chunks/1684-c73509f66a86e3ac.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/1990-7dc2be364a0486bd.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/2656.f44ef6b6c5f55f19.js",revision:"f44ef6b6c5f55f19"},{url:"/_next/static/chunks/275.5561ddeaf6fd72d6.js",revision:"5561ddeaf6fd72d6"},{url:"/_next/static/chunks/3047.406e583789b6134e.js",revision:"406e583789b6134e"},{url:"/_next/static/chunks/3291-94e89fe5978e13c4.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/3410-4275c259c760368d.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/4097-c10e34be0c81d7a0.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/4205-bfacd42300b76fd8.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/4240.6bffc98eb49bcd76.js",revision:"6bffc98eb49bcd76"},{url:"/_next/static/chunks/4540-97acfe14b0abf52e.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/4601-f8d08997fddad2b1.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/4741.cbba98e6d0c103ec.js",revision:"cbba98e6d0c103ec"},{url:"/_next/static/chunks/4907.d4352dadb212eb5d.js",revision:"d4352dadb212eb5d"},{url:"/_next/static/chunks/4bd1b696-e588a46d64ff7657.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/5012.e9fc4a7b881fbe19.js",revision:"e9fc4a7b881fbe19"},{url:"/_next/static/chunks/5339.ce8d2f77901672ae.js",revision:"ce8d2f77901672ae"},{url:"/_next/static/chunks/5512-485ed5d9663c4d69.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/5620.9011ebaf97ccf1c6.js",revision:"9011ebaf97ccf1c6"},{url:"/_next/static/chunks/5712-d32ddc53479b9a62.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/6044-6d6cc20e77057dcd.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/6264-320a5be95db912d2.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/6671.919c31914ae3f081.js",revision:"919c31914ae3f081"},{url:"/_next/static/chunks/6874-0838fdce4cfd3894.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/7098.bfdc582b93da923f.js",revision:"bfdc582b93da923f"},{url:"/_next/static/chunks/7224.6b0c5b15cab8c8af.js",revision:"6b0c5b15cab8c8af"},{url:"/_next/static/chunks/7469.a5dd20923b303ddd.js",revision:"a5dd20923b303ddd"},{url:"/_next/static/chunks/7699-8a4f8abe408783b1.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/7793.2ad82efcbeea2c01.js",revision:"2ad82efcbeea2c01"},{url:"/_next/static/chunks/7946-c231117aaf1b8440.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/8729.b42c0d3dc0b71f33.js",revision:"b42c0d3dc0b71f33"},{url:"/_next/static/chunks/9210.88e1772208ca2a9f.js",revision:"88e1772208ca2a9f"},{url:"/_next/static/chunks/9514.d4a019ef972e5f45.js",revision:"d4a019ef972e5f45"},{url:"/_next/static/chunks/9595-b4abdc033734188b.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/activities/page-299409d4b8aeaf4f.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/page-36040cf80406397e.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/photo-wall/page-41a8c81cc5a42ae5.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/polls/page-488a4e7715bc2658.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/profile/page-8ba10615bd19b03e.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/quiz/page-dd49d17c48fbe49f.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/team/page-77682dd6001e0344.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/(user)/dashboard/treasure-hunt/page-90a23df5a06a51f4.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/_not-found/page-ae513f5b08ef4d37.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/approveUser/page-f2d875b6ac0e5026.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/categories/page-3896bec25a62d97c.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/layout-63557c0556380831.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/page-442bfc14ed297bd3.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/polls/page-ee925a5e37247f8c.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/quizzes/page-6228b2463f3f430f.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/teams/page-50c3f2abba34524e.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/admin/treasure-hunts/page-4ab47bdc4eab9529.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/layout-e77873dd9b3acd32.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/login/page-541ef94a73e6fb9a.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/page-9712f41cb3c8d046.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/pwa-settings/page-9b82f58c9d3bcde3.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/register/page-815590e5571e7cc9.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/test-pwa/page-8f4fdd77e3bec8c3.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/app/unauthorized/page-8a3e13b0bf61cc51.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/framework-fda66049c8bbcca5.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/main-1e753b57dbbad697.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/main-app-fcd49173dd767e31.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/pages/_app-eb694f3fd49020c8.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/pages/_error-2b3482c094a540b4.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/chunks/polyfills-42372ed130431b0a.js",revision:"846118c33b2c0e922d7b3a7676f81f6f"},{url:"/_next/static/chunks/webpack-88df0903636dbfa0.js",revision:"LIqCSlOKuNHGn5NbRKVpz"},{url:"/_next/static/css/49e96bdd58ceeb7b.css",revision:"49e96bdd58ceeb7b"},{url:"/clear-sw.js",revision:"767dbc38e9950c1089afa531c867bfb3"},{url:"/dashboard_tiles/activities.jpg",revision:"489a891e772ba223ffeea0648d600a82"},{url:"/dashboard_tiles/my_team.jpg",revision:"d159046faaef6a160099d54d46e11b65"},{url:"/dashboard_tiles/photo_wall.jpg",revision:"c5b447a13f95ee9508a656de6b2fd5f8"},{url:"/dashboard_tiles/polls.jpg",revision:"f881920a0fd4ce9b5b356fe4cfc3ee53"},{url:"/dashboard_tiles/take_quiz.jpg",revision:"b0ca34aa72929a1f1866df0b19a55779"},{url:"/dashboard_tiles/treaure_hunt.jpg",revision:"4027f5d38e6bc744dc3a34ca31a70a8a"},{url:"/favicon.ico",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/file.svg",revision:"d09f95206c3fa0bb9bd9fefabfd0ea71"},{url:"/globe.svg",revision:"2aaafa6a49b6563925fe440891e32717"},{url:"/icons/icon-128x128.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-144x144.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-152x152.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-167x167.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-16x16.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-180x180.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-192x192.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-32x32.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-384x384.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-512x512.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-72x72.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon-96x96.png",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/icons/icon.svg",revision:"346c75241e20fcac7706b1d6317bc652"},{url:"/manifest.json",revision:"4a16a6788233ea5bd143f9b8314b2e14"},{url:"/next.svg",revision:"8e061864f388b47f33a1c3780831193e"},{url:"/offline.html",revision:"da3ffe685a2d9d36b1896ecb56063525"},{url:"/screenshots/dashboard-narrow.png",revision:"a8fc975694e403edb97cbc1bce2bded3"},{url:"/screenshots/dashboard-wide.png",revision:"91369f72b2bc2da27284bc293dfb3f13"},{url:"/screenshots/image1.jpeg",revision:"bd481b6bc2c4d33390c60853fa2cc4d8"},{url:"/screenshots/image2.jpeg",revision:"a925c07dcf034a3d881fd894bbe853cf"},{url:"/sw-custom.js",revision:"93bb0dbfe369316be2a688eb58505a72"},{url:"/vercel.svg",revision:"c0af2f507b369b085b35ef4bbe3bcf1e"},{url:"/videos/7550567-hd_1920_1080_30fps.mp4",revision:"69170ec9f741de291de9a559ee205bd9"},{url:"/window.svg",revision:"a2760511c65806022ad20adf74370ff3"}],{ignoreURLParametersMatching:[]}),e.cleanupOutdatedCaches(),e.registerRoute("/",new e.NetworkFirst({cacheName:"start-url",plugins:[{cacheWillUpdate:async({request:e,response:s,event:n,state:c})=>s&&"opaqueredirect"===s.type?new Response(s.body,{status:200,statusText:"OK",headers:s.headers}):s}]}),"GET"),e.registerRoute(/^https:\/\/backend\.banndhann\.com\/.*$/,new e.NetworkFirst({cacheName:"api-cache",networkTimeoutSeconds:3,plugins:[new e.ExpirationPlugin({maxEntries:100,maxAgeSeconds:86400})]}),"GET"),e.registerRoute(/\.(?:png|jpg|jpeg|svg|webp|gif)$/,new e.CacheFirst({cacheName:"images",plugins:[new e.ExpirationPlugin({maxEntries:100,maxAgeSeconds:2592e3})]}),"GET"),e.registerRoute(/\.(?:js|css)$/,new e.StaleWhileRevalidate({cacheName:"static-resources",plugins:[]}),"GET")}));
+const CACHE_NAME = 'employee-hunt-v1';
+const STATIC_CACHE_NAME = 'employee-hunt-static-v1';
+const DYNAMIC_CACHE_NAME = 'employee-hunt-dynamic-v1';
+
+// Assets to cache immediately
+const STATIC_ASSETS = [
+  '/',
+  '/dashboard',
+  '/admin',
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  // Add your critical CSS and JS files here
+];
+
+// API endpoints to cache with network-first strategy
+const API_CACHE_PATTERNS = [
+  /^https:\/\/api\.employeehunt\.com\/.*$/,
+  /^\/api\/.*$/,
+];
+
+// Install event - cache static assets
+self.addEventListener('install', (event) => {
+  console.log('Service Worker: Installing...');
+  
+  event.waitUntil(
+    caches.open(STATIC_CACHE_NAME)
+      .then((cache) => {
+        console.log('Service Worker: Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
+      })
+      .then(() => {
+        console.log('Service Worker: Static assets cached');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('Service Worker: Error caching static assets', error);
+      })
+  );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Activating...');
+  
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== STATIC_CACHE_NAME && cacheName !== DYNAMIC_CACHE_NAME) {
+              console.log('Service Worker: Deleting old cache', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        console.log('Service Worker: Activated');
+        return self.clients.claim();
+      })
+  );
+});
+
+// Fetch event - implement caching strategies
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Handle API requests with network-first strategy
+  if (API_CACHE_PATTERNS.some(pattern => pattern.test(request.url))) {
+    event.respondWith(networkFirstStrategy(request));
+    return;
+  }
+
+  // Handle navigation requests
+  if (request.mode === 'navigate') {
+    event.respondWith(navigationStrategy(request));
+    return;
+  }
+
+  // Handle static assets with cache-first strategy
+  if (request.destination === 'image' || 
+      request.destination === 'style' || 
+      request.destination === 'script' ||
+      request.destination === 'font') {
+    event.respondWith(cacheFirstStrategy(request));
+    return;
+  }
+
+  // Default to network-first for other requests
+  event.respondWith(networkFirstStrategy(request));
+});
+
+// Network-first strategy (good for API calls and dynamic content)
+async function networkFirstStrategy(request) {
+  try {
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.log('Network failed, trying cache:', request.url);
+    const cachedResponse = await caches.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Return offline page for navigation requests
+    if (request.mode === 'navigate') {
+      return caches.match('/offline.html') || new Response('Offline', { status: 503 });
+    }
+    
+    throw error;
+  }
+}
+
+// Cache-first strategy (good for static assets)
+async function cacheFirstStrategy(request) {
+  const cachedResponse = await caches.match(request);
+  
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+  
+  try {
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE_NAME);
+      cache.put(request, networkResponse.clone());
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    console.error('Failed to fetch resource:', request.url, error);
+    throw error;
+  }
+}
+
+// Navigation strategy (for page requests)
+async function navigationStrategy(request) {
+  try {
+    const networkResponse = await fetch(request);
+    return networkResponse;
+  } catch (error) {
+    console.log('Navigation failed, trying cache:', request.url);
+    
+    // Try to find cached version of the page
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Try to serve the main app shell
+    const appShell = await caches.match('/');
+    if (appShell) {
+      return appShell;
+    }
+    
+    // Fallback to offline page
+    return caches.match('/offline.html') || new Response('Offline', { status: 503 });
+  }
+}
+
+// Background sync for offline actions
+self.addEventListener('sync', (event) => {
+  console.log('Service Worker: Background sync triggered', event.tag);
+  
+  if (event.tag === 'background-sync') {
+    event.waitUntil(handleBackgroundSync());
+  }
+});
+
+async function handleBackgroundSync() {
+  try {
+    // Handle any queued offline actions here
+    console.log('Service Worker: Handling background sync');
+    
+    // Example: Send queued form submissions, sync data, etc.
+    const queuedActions = await getQueuedActions();
+    
+    for (const action of queuedActions) {
+      try {
+        await processQueuedAction(action);
+        await removeQueuedAction(action.id);
+      } catch (error) {
+        console.error('Failed to process queued action:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Background sync failed:', error);
+  }
+}
+
+// Helper functions for background sync
+async function getQueuedActions() {
+  // Implement logic to retrieve queued actions from IndexedDB
+  return [];
+}
+
+async function processQueuedAction(action) {
+  // Implement logic to process individual queued actions
+  console.log('Processing action:', action);
+}
+
+async function removeQueuedAction(actionId) {
+  // Implement logic to remove processed actions from queue
+  console.log('Removing action:', actionId);
+}
+
+// Push notification handling
+self.addEventListener('push', (event) => {
+  console.log('Service Worker: Push notification received');
+  
+  const options = {
+    body: event.data ? event.data.text() : 'New activity available!',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      primaryKey: 1
+    },
+    actions: [
+      {
+        action: 'explore',
+        title: 'View Activity',
+        icon: '/icons/icon-96x96.png'
+      },
+      {
+        action: 'close',
+        title: 'Close',
+        icon: '/icons/icon-96x96.png'
+      }
+    ]
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification('Employee Hunt', options)
+  );
+});
+
+// Notification click handling
+self.addEventListener('notificationclick', (event) => {
+  console.log('Service Worker: Notification clicked');
+  
+  event.notification.close();
+  
+  if (event.action === 'explore') {
+    event.waitUntil(
+      clients.openWindow('/dashboard')
+    );
+  }
+});
+
+// Message handling for communication with main thread
+self.addEventListener('message', (event) => {
+  console.log('Service Worker: Message received', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({ version: CACHE_NAME });
+  }
+}); 
