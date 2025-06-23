@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { UserQuizWithCompletion, QuizCompletionStatus } from '../types/quizCompletion';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -106,52 +107,23 @@ api.interceptors.request.use((config) => {
 export const useUserQuizzes = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quizzes, setQuizzes] = useState<UserQuiz[]>([]);
+  // quizzesWithCompletion: [{ quiz, completionStatus, canAccess, message }]
+  const [quizzesWithCompletion, setQuizzesWithCompletion] = useState<UserQuizWithCompletion[]>([]);
   const [currentQuiz, setCurrentQuiz] = useState<UserQuiz | null>(null);
   const [assignedQuestions, setAssignedQuestions] = useState<UserQuizQuestion[]>([]);
   const [teamRankings, setTeamRankings] = useState<TeamRanking[]>([]);
 
-  // Fetch user's assigned quizzes
+  // Fetch user's quizzes with completion status and access control
   const fetchMyQuizzes = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Try to fetch all quizzes including completed ones
-      let allQuizzes: UserQuiz[] = [];
-      
-      try {
-        const response = await api.get('/quizzes/my-quizzes?includeCompleted=true');
-        if (response.data.success) {
-          allQuizzes = response.data.data;
-        }
-      } catch (firstErr) {
-        // If includeCompleted param doesn't work, try without it and fetch completed separately
-        console.log('Trying fallback approach for completed quizzes...');
-        
-        // Fetch active/upcoming quizzes
-        const activeResponse = await api.get('/quizzes/my-quizzes');
-        if (activeResponse.data.success) {
-          allQuizzes = activeResponse.data.data;
-        }
-        
-        // Try to fetch completed quizzes separately
-        try {
-          const completedResponse = await api.get('/quizzes/my-quizzes/completed');
-          if (completedResponse.data.success) {
-            // Merge completed quizzes with active ones, avoiding duplicates
-            const completedQuizzes = completedResponse.data.data;
-            const existingIds = new Set(allQuizzes.map(q => q.id));
-            const newCompletedQuizzes = completedQuizzes.filter((q: UserQuiz) => !existingIds.has(q.id));
-            allQuizzes = [...allQuizzes, ...newCompletedQuizzes];
-          }
-        } catch (completedErr) {
-          console.log('No separate completed quizzes endpoint available');
-        }
+      const response = await api.get('/quizzes/my-quizzes');
+      if (response.data.success) {
+        setQuizzesWithCompletion(response.data.data);
+      } else {
+        setError(response.data.message || 'Failed to fetch quizzes');
       }
-      
-      console.log('Fetched quizzes:', allQuizzes.length, 'quizzes');
-      console.log('Quiz statuses:', allQuizzes.map(q => ({ id: q.id, title: q.title, status: q.status })));
-      setQuizzes(allQuizzes);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch quizzes');
     } finally {
@@ -448,7 +420,7 @@ export const useUserQuizzes = () => {
   return {
     loading,
     error,
-    quizzes,
+    quizzesWithCompletion,
     currentQuiz,
     assignedQuestions,
     teamRankings,

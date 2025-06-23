@@ -50,6 +50,32 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
     clearError: clearLeadershipError
   } = useTeamLeadership();
 
+  // Debug leadership detection
+  console.log('🔍 Leadership Debug:', {
+    isTeamLeader,
+    leadershipLoading,
+    leadershipError,
+    lastChecked,
+    user: user?.id,
+    team: myTeam?.id,
+    teamLeaderId: myTeam?.leaderId,
+    teamLeader: myTeam?.leader?.id
+  });
+
+  // Fallback leadership detection using team data
+  const isLeaderFromTeam = user?.id && myTeam?.leaderId && user.id === myTeam.leaderId;
+  const isLeaderFromTeamLeader = user?.id && myTeam?.leader?.id && user.id === myTeam.leader.id;
+  
+  // Use the most reliable leadership detection
+  const isActuallyLeader = isTeamLeader || isLeaderFromTeam || isLeaderFromTeamLeader;
+  
+  console.log('👑 Leadership Status:', {
+    isTeamLeader,
+    isLeaderFromTeam,
+    isLeaderFromTeamLeader,
+    isActuallyLeader
+  });
+
   // State
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -108,11 +134,22 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
     // Load my submissions for all users (including leaders)
     loadMySubmissions();
     
-    // Load member submissions for leaders regardless of hunt status
-    if (isTeamLeader) {
-      loadMemberSubmissions();
-    }
-  }, [hunt.id, canAccessHunt, isTeamLeader]);
+    // Always try to load member submissions (will be filtered by API if not leader)
+    console.log('🔄 Attempting to load member submissions...');
+    loadMemberSubmissions();
+  }, [hunt.id, canAccessHunt]);
+
+  // Debug member submissions
+  useEffect(() => {
+    console.log('📊 Member Submissions Updated:', {
+      count: memberSubmissions.length,
+      submissions: memberSubmissions,
+      isActuallyLeader,
+      isTeamLeader,
+      isLeaderFromTeam,
+      isLeaderFromTeamLeader
+    });
+  }, [memberSubmissions, isActuallyLeader, isTeamLeader, isLeaderFromTeam, isLeaderFromTeamLeader]);
 
   // Handle image selection
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -325,7 +362,46 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
   return (
     <div className="space-y-6">
 
-      
+      {/* Leadership Status Banner */}
+      {isActuallyLeader && (
+        <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Crown className="h-6 w-6 text-white" />
+              <div>
+                <h3 className="text-lg font-bold text-white">👑 Team Leader Active</h3>
+                <p className="text-yellow-100 text-sm">You have leader privileges for {myTeam?.name}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-white text-sm">
+                <div>Leadership: {isTeamLeader ? 'API Confirmed' : 'Team Data'}</div>
+                <div>Last Check: {lastChecked ? new Date(lastChecked).toLocaleTimeString() : 'Never'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Debug Information (Development Only) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 text-xs">
+          <h4 className="font-semibold mb-2">🔍 Leadership Debug Info:</h4>
+          <div className="grid grid-cols-2 gap-2">
+            <div>User ID: {user?.id}</div>
+            <div>Team ID: {myTeam?.id}</div>
+            <div>Team Leader ID: {myTeam?.leaderId}</div>
+            <div>Team Leader User ID: {myTeam?.leader?.id}</div>
+            <div>API Leader: {isTeamLeader ? 'Yes' : 'No'}</div>
+            <div>Team Data Leader: {isLeaderFromTeam ? 'Yes' : 'No'}</div>
+            <div>Leader Object Match: {isLeaderFromTeamLeader ? 'Yes' : 'No'}</div>
+            <div>Final Leader Status: {isActuallyLeader ? 'Yes' : 'No'}</div>
+            <div>Leadership Loading: {leadershipLoading ? 'Yes' : 'No'}</div>
+            <div>Leadership Error: {leadershipError || 'None'}</div>
+          </div>
+        </div>
+      )}
+
       {/* Leadership Error Display */}
       {leadershipError && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -361,7 +437,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
                 <Users className="h-4 w-4 mr-1" />
                 Team: {myTeam?.name || 'Not assigned'}
               </span>
-              {isTeamLeader && (
+              {isActuallyLeader && (
                 <span className="flex items-center bg-yellow-500 bg-opacity-20 px-2 py-1 rounded">
                   <Crown className="h-4 w-4 mr-1" />
                   Team Leader
@@ -380,6 +456,23 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
               endTime={hunt.endTime}
               showCountdown={true}
             />
+            
+            {/* Leadership Debug Info - Remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-2 text-xs text-white bg-black bg-opacity-20 p-2 rounded">
+                <div>Leadership Debug:</div>
+                <div>Hook: {isTeamLeader ? 'Yes' : 'No'}</div>
+                <div>Team ID: {isLeaderFromTeam ? 'Yes' : 'No'}</div>
+                <div>Team Leader: {isLeaderFromTeamLeader ? 'Yes' : 'No'}</div>
+                <div>Final: {isActuallyLeader ? 'Yes' : 'No'}</div>
+                <button 
+                  onClick={refreshLeadership}
+                  className="mt-1 px-2 py-1 bg-blue-600 text-white rounded text-xs"
+                >
+                  Refresh
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -543,7 +636,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
                               <div className="bg-white rounded-lg border p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                   <Camera className="h-5 w-5 mr-2" />
-                  Submit Your Photo {isTeamLeader && <span className="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm font-medium flex items-center"><Crown className="h-3 w-3 mr-1" />Leader</span>}
+                  Submit Your Photo {isActuallyLeader && <span className="ml-2 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm font-medium flex items-center"><Crown className="h-3 w-3 mr-1" />Leader</span>}
                 </h3>
               
                 <div className="space-y-4">
@@ -726,7 +819,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <p className="text-sm text-blue-800">
-                        💡 <strong>Tip:</strong> You can submit multiple photos! {isTeamLeader ? 'As a team leader, you can submit your own photos AND review all team submissions to select the best ones for admin approval.' : 'Your team leader will review all submissions and select the best ones to send to the admin.'}
+                        💡 <strong>Tip:</strong> You can submit multiple photos! {isActuallyLeader ? 'As a team leader, you can submit your own photos AND review all team submissions to select the best ones for admin approval.' : 'Your team leader will review all submissions and select the best ones to send to the admin.'}
                       </p>
                     </div>
                   </div>
@@ -738,7 +831,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
       )}
 
       {/* Separator for Leaders */}
-      {isTeamLeader && (
+      {isActuallyLeader && (
         <div className="border-t border-gray-200 pt-6">
           <div className="flex items-center justify-center mb-6">
             <div className="flex items-center space-x-3 bg-yellow-50 px-4 py-2 rounded-lg border border-yellow-200">
@@ -750,13 +843,18 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
       )}
 
       {/* Leader Review Section - Available regardless of hunt status */}
-      {isTeamLeader && (
+      {(isActuallyLeader || memberSubmissions.length > 0) && (
         <div className="bg-white rounded-lg border p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Crown className="h-5 w-5 mr-2 text-yellow-500" />
               Review All Team Submissions ({memberSubmissions.length})
               <span className="ml-2 text-sm text-gray-500 font-normal">(Including your own)</span>
+              {!isActuallyLeader && memberSubmissions.length > 0 && (
+                <span className="ml-2 text-sm text-orange-600 bg-orange-100 px-2 py-1 rounded">
+                  Fallback Mode
+                </span>
+              )}
             </h3>
             <button
               onClick={loadMemberSubmissions}
@@ -792,11 +890,36 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
             </p>
           </div>
 
-          {memberSubmissions.length === 0 ? (
+          {refreshing ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <RefreshCw className="h-12 w-12 text-gray-400 mx-auto mb-4 animate-spin" />
+              <h4 className="text-lg font-medium text-gray-900 mb-2">Loading Submissions...</h4>
+              <p className="text-gray-500">Please wait while we fetch team submissions.</p>
+            </div>
+          ) : memberSubmissions.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
               <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <h4 className="text-lg font-medium text-gray-900 mb-2">No Submissions Yet</h4>
-              <p className="text-gray-500">Team members haven't submitted any photos yet.</p>
+              <p className="text-gray-500 mb-4">
+                {isActuallyLeader 
+                  ? "Team members haven't submitted any photos yet, or there might be an issue loading submissions."
+                  : "Team members haven't submitted any photos yet."
+                }
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={loadMemberSubmissions}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Check Again
+                </button>
+                {isActuallyLeader && (
+                  <div className="text-xs text-gray-500">
+                    Leadership detected: {isTeamLeader ? 'API' : 'Team Data'} | 
+                    User: {user?.id} | Team Leader: {myTeam?.leaderId}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-6">

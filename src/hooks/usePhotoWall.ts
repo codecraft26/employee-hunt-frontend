@@ -91,7 +91,8 @@ export interface Collage {
   layoutConfig?: any;
   viewCount: number;
   likeCount: number;
-  selectedPhotos: Photo[];
+  selectedPhotos?: Photo[];
+  isGenerated: boolean;
   createdBy: {
     id: string;
     name: string;
@@ -103,6 +104,13 @@ export interface Collage {
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateCollageRequest {
+  title: string;
+  description?: string;
+  selectedPhotoIds: string[];
+  layoutConfig?: any;
 }
 
 export interface PhotoUploadResponse {
@@ -611,5 +619,162 @@ export const usePhotoWall = () => {
     // New collage generation functions
     generateCollageImage,
     generateAndUploadCollage,
+  };
+};
+
+// Collage management functions
+export const useCollageManagement = () => {
+  const [collageLoading, setCollageLoading] = useState(false);
+  const [collageError, setCollageError] = useState<string | null>(null);
+
+  const clearCollageError = () => setCollageError(null);
+
+  // Get all collages
+  const getAllCollages = async (): Promise<Collage[]> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      const response = await api.get<CollagesResponse>('/photo-wall/admin/collages');
+      return response.data.data || [];
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch collages';
+      setCollageError(errorMessage);
+      return [];
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  // Get only generated collages
+  const getGeneratedCollages = async (): Promise<Collage[]> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      const response = await api.get<CollagesResponse>('/photo-wall/admin/collages/generated');
+      return response.data.data || [];
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch generated collages';
+      setCollageError(errorMessage);
+      return [];
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  // Get specific collage details
+  const getCollageDetails = async (collageId: string): Promise<Collage | null> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      const response = await api.get<CollageResponse>(`/photo-wall/admin/collages/${collageId}`);
+      return response.data.data || null;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch collage details';
+      setCollageError(errorMessage);
+      return null;
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  // Create new collage manually
+  const createCollage = async (collageData: CreateCollageRequest): Promise<Collage | null> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      const response = await api.post<CollageResponse>('/photo-wall/admin/collages', collageData);
+      return response.data.data || null;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to create collage';
+      setCollageError(errorMessage);
+      return null;
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  // Generate collage from URLs
+  const generateCollage = async (urls: string[]): Promise<Collage | null> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      const response = await api.post<CollageResponse>('/photo-wall/generate-collage', { urls });
+      return response.data.data || null;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to generate collage';
+      setCollageError(errorMessage);
+      return null;
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  // Upload collage image
+  const uploadCollageImage = async (collageId: string, imageFile: File): Promise<boolean> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const response = await api.put(`/photo-wall/admin/collages/${collageId}/upload-image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return true;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to upload collage image';
+      setCollageError(errorMessage);
+      return false;
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  // Publish collage
+  const publishCollage = async (collageId: string): Promise<boolean> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      await api.put(`/photo-wall/admin/collages/${collageId}/publish`);
+      return true;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to publish collage';
+      setCollageError(errorMessage);
+      return false;
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  // Delete collage
+  const deleteCollage = async (collageId: string): Promise<boolean> => {
+    setCollageLoading(true);
+    setCollageError(null);
+    try {
+      await api.delete(`/photo-wall/admin/collages/${collageId}`);
+      return true;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to delete collage';
+      setCollageError(errorMessage);
+      return false;
+    } finally {
+      setCollageLoading(false);
+    }
+  };
+
+  return {
+    collageLoading,
+    collageError,
+    clearCollageError,
+    getAllCollages,
+    getGeneratedCollages,
+    getCollageDetails,
+    createCollage,
+    generateCollage,
+    uploadCollageImage,
+    publishCollage,
+    deleteCollage,
   };
 }; 

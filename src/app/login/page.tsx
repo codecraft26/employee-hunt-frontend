@@ -9,6 +9,7 @@ import { Eye, EyeOff, Mail, Lock, Smartphone, ArrowRight, CheckCircle, AlertCirc
 import Image from 'next/image';
 import { Gamepad2 } from 'lucide-react';
 import PendingApprovalMessage from '../../components/PendingApprovalMessage';
+import FCMUtils from '../../utils/fcmUtils';
 
 // Add SVG as a React component
 const TeamPlayBanner = () => (
@@ -107,10 +108,24 @@ export default function LoginPage() {
     setIsPendingApproval(false);
     
     try {
+      // Try to generate FCM token for push notifications, but don't fail login if it fails
+      let deviceToken: string | null = null;
+      try {
+        deviceToken = await FCMUtils.getOrGenerateFCMToken(true);
+        console.log('FCM token generated for login:', deviceToken ? 'Success' : 'Failed');
+      } catch (fcmError) {
+        console.warn('FCM token generation failed, continuing with login:', fcmError);
+        // Continue with login even if FCM fails
+      }
+      
       if (isOTPMode) {
         if (otpSent) {
-          const result = await dispatch(verifyOTPLogin(otpData));
-          if (result.payload?.message?.includes('pending approval')) {
+          const otpDataWithToken = {
+            ...otpData,
+            ...(deviceToken && { deviceToken })
+          };
+          const result = await dispatch(verifyOTPLogin(otpDataWithToken));
+          if (result.type.includes('rejected') && result.payload && typeof result.payload === 'string' && result.payload.includes('pending approval')) {
             setIsPendingApproval(true);
           }
         } else {
@@ -120,11 +135,17 @@ export default function LoginPage() {
           }
         }
       } else {
-        const result = await dispatch(loginUser(formData));
-        if (result.payload?.message?.includes('pending approval')) {
+        const loginDataWithToken = {
+          ...formData,
+          ...(deviceToken && { deviceToken })
+        };
+        const result = await dispatch(loginUser(loginDataWithToken));
+        if (result.type.includes('rejected') && result.payload && typeof result.payload === 'string' && result.payload.includes('pending approval')) {
           setIsPendingApproval(true);
         }
       }
+    } catch (error) {
+      console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }

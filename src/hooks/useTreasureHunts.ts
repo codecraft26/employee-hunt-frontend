@@ -1118,6 +1118,18 @@ export const useTreasureHunts = () => {
       const effectiveRejected = rejectedStages > 0 ? rejectedStages : rejectedClues;
       const effectiveTotal = totalStages > 0 ? totalStages : totalClues;
 
+      const canDeclareWinner = (hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS' || hunt.status === 'COMPLETED') && !hunt.winningTeam;
+      
+      console.log(`🔍 getHuntStats for hunt ${huntId}:`, {
+        huntStatus: hunt.status,
+        hasWinningTeam: !!hunt.winningTeam,
+        winningTeam: hunt.winningTeam,
+        canDeclareWinner,
+        totalTeams: assignedTeams.length,
+        totalClues,
+        totalStages
+      });
+
       return {
         totalTeams: assignedTeams.length,
         totalClues,
@@ -1134,7 +1146,7 @@ export const useTreasureHunts = () => {
         isActive: hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS',
         isCompleted: hunt.status === 'COMPLETED',
         hasWinner: !!(hunt.winningTeam && hunt.winningTeam.id),
-        canDeclareWinner: (hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS' || hunt.status === 'COMPLETED') && !hunt.winningTeam,
+        canDeclareWinner,
       };
     } catch (error) {
       console.error('Error in getHuntStats:', error, { huntId, treasureHunts });

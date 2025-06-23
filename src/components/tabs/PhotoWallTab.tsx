@@ -12,10 +12,12 @@ import {
   Clock,
   Palette,
   Eye,
-  AlertCircle
+  AlertCircle,
+  Settings
 } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
 import AdminCollageCreator from '../photowall/AdminCollageCreator';
+import CollageManagement from '../photowall/CollageManagement';
 
 interface PhotoWallTabProps {
   className?: string;
@@ -35,7 +37,7 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [filter, setFilter] = useState<string>('ALL');
   const [refreshing, setRefreshing] = useState(false);
-  const [activeView, setActiveView] = useState<'photos' | 'collage'>('photos');
+  const [activeView, setActiveView] = useState<'photos' | 'collage' | 'collage-management'>('photos');
   const [processingPhotoId, setProcessingPhotoId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [selectedPhotoForFeedback, setSelectedPhotoForFeedback] = useState<string | null>(null);
@@ -228,6 +230,20 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
             <div className="flex items-center space-x-2">
               <Palette className="h-4 w-4" />
               <span>Create Collage</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveView('collage-management')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeView === 'collage-management'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span>Collage Management</span>
             </div>
           </button>
         </nav>
@@ -458,6 +474,11 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
       {/* Collage Creation View */}
       {activeView === 'collage' && (
         <AdminCollageCreator onCollageCreated={handleCollageCreated} />
+      )}
+
+      {/* Collage Management View */}
+      {activeView === 'collage-management' && (
+        <CollageManagement />
       )}
     </div>
   );

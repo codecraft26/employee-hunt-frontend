@@ -34,25 +34,31 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
   // Load treasure hunt details when modal opens
   useEffect(() => {
     if (isOpen && treasureHuntId) {
+      console.log('🔍 WinnerSelectionModal: Loading data for hunt ID:', treasureHuntId);
+      
       const loadTreasureHuntDetails = async () => {
         try {
+          console.log('🔍 Loading treasure hunt details...');
           const data = await fetchTreasureHuntById(treasureHuntId);
+          console.log('✅ Treasure hunt details loaded:', data);
           if (data && data.assignedTeams) {
             setTreasureHunt(data);
           }
         } catch (error) {
-          // Handle error
+          console.error('❌ Error loading treasure hunt details:', error);
         }
       };
 
       const loadTeamsForWinner = async () => {
         try {
+          console.log('🔍 Loading teams for winner...');
           const data = await fetchTeamsForWinner(treasureHuntId);
+          console.log('✅ Teams for winner loaded:', data);
           if (data && Array.isArray(data)) {
             setTeamsForWinner(data);
           }
         } catch (error) {
-          // Handle error
+          console.error('❌ Error loading teams for winner:', error);
         }
       };
 

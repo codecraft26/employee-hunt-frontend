@@ -320,8 +320,23 @@ export default function AdminDashboard() {
     // TODO: Navigate to poll results page or open modal
   };
 
-  const handleNotifyWinner = (pollId: string) => {
-    // TODO: API call to notify users about poll results
+  const handleNotifyWinner = async (pollId: string) => {
+    console.log(`Notify users about poll results: ${pollId}`);
+    
+    try {
+      // Import the useVotes hook dynamically to avoid circular dependencies
+      const { useVotes } = await import('../../hooks/useVotes');
+      const { notifyUsers } = useVotes();
+      
+      const success = await notifyUsers(pollId);
+      
+      if (!success) {
+        throw new Error('Failed to notify users');
+      }
+    } catch (error) {
+      console.error('Error notifying users:', error);
+      throw error; // Re-throw to let PollsTab handle the error display
+    }
   };
 
   // Team handlers - now handled by the TeamsTab component itself

@@ -358,6 +358,23 @@ export const useVotes = () => {
     }
   }, []);
 
+  // Notify users about poll results
+  const notifyUsers = useCallback(async (voteId: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.post(`/votes/${voteId}/notify-users`);
+      return response.data.success || false;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to notify users about poll results';
+      setError(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const clearError = useCallback(() => {
     setError(null);
   }, []);
@@ -378,6 +395,7 @@ export const useVotes = () => {
     publishResults,
     getVoteStats,
     getUserVoteStatus,
+    notifyUsers,
     clearError,
   };
 };

@@ -6,6 +6,7 @@ import { useVotes } from '../../hooks/useVotes';
 import CreatePollModal from '../modals/CreatePollModal';
 import EditPollModal from '../modals/EditPollModal';
 import PollsFilter from '../polls/PollsFilter';
+import TimerDisplay from '../shared/TimerDisplay';
 
 interface PollsTabProps {
   onViewResults: (pollId: string) => void;
@@ -26,6 +27,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
   const [activeTypeFilter, setActiveTypeFilter] = useState<VoteType | 'ALL'>('ALL');
   const [refreshing, setRefreshing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [notifyingPollId, setNotifyingPollId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPolls();
@@ -63,6 +65,25 @@ const PollsTab: React.FC<PollsTabProps> = ({
     fetchPolls();
     setSuccessMessage('Poll updated successfully!');
     setTimeout(() => setSuccessMessage(null), 5000);
+  };
+
+  const handleNotifyUsers = async (pollId: string) => {
+    console.log('🔍 Poll notification requested for poll ID:', pollId);
+    setNotifyingPollId(pollId);
+    try {
+      // Call the parent's onNotifyWinner function
+      console.log('📤 Calling onNotifyWinner function...');
+      await onNotifyWinner(pollId);
+      console.log('✅ Notification sent successfully');
+      setSuccessMessage('Users have been notified about the poll results successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (error) {
+      console.error('❌ Error notifying users:', error);
+      setSuccessMessage('Failed to notify users about poll results. Please try again.');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } finally {
+      setNotifyingPollId(null);
+    }
   };
 
   const handleDeletePoll = async (pollId: string) => {
@@ -153,6 +174,25 @@ const PollsTab: React.FC<PollsTabProps> = ({
     
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${minutes}m remaining`;
+  };
+
+  // Get poll timing status for TimerDisplay
+  const getPollTimingStatus = (poll: Vote) => {
+    const now = new Date().getTime();
+    const start = new Date(poll.startTime).getTime();
+    const end = new Date(poll.endTime).getTime();
+    
+    if (now < start) {
+      return { status: 'upcoming' as const, urgency: 'normal' as const };
+    } else if (now >= start && now < end) {
+      const timeRemaining = end - now;
+      return { 
+        status: 'active' as const, 
+        urgency: timeRemaining < 60 * 60 * 1000 ? 'high' as const : timeRemaining < 24 * 60 * 60 * 1000 ? 'medium' as const : 'normal' as const 
+      };
+    } else {
+      return { status: 'ended' as const, urgency: 'none' as const };
+    }
   };
 
   if (loading && polls.length === 0) {
@@ -286,7 +326,43 @@ const PollsTab: React.FC<PollsTabProps> = ({
                         {poll.status === VoteStatus.ACTIVE && (
                           <span className="text-sm text-orange-600 flex items-center">
                             <Clock className="h-4 w-4 mr-1" />
-                            {getTimeRemaining(poll.endTime)}
+                            <TimerDisplay 
+                              variant="compact"
+                              status={getPollTimingStatus(poll).status}
+                              urgency={getPollTimingStatus(poll).urgency}
+                              startTime={poll.startTime}
+                              endTime={poll.endTime}
+                              showCountdown={true}
+                              className="text-orange-600"
+                            />
+                          </span>
+                        )}
+                        {poll.status === VoteStatus.UPCOMING && (
+                          <span className="text-sm text-blue-600 flex items-center">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            <TimerDisplay 
+                              variant="compact"
+                              status={getPollTimingStatus(poll).status}
+                              urgency={getPollTimingStatus(poll).urgency}
+                              startTime={poll.startTime}
+                              endTime={poll.endTime}
+                              showCountdown={true}
+                              className="text-blue-600"
+                            />
+                          </span>
+                        )}
+                        {poll.status === VoteStatus.COMPLETED && (
+                          <span className="text-sm text-gray-500 flex items-center">
+                            <Clock className="h-4 w-4 mr-1" />
+                            <TimerDisplay 
+                              variant="compact"
+                              status={getPollTimingStatus(poll).status}
+                              urgency={getPollTimingStatus(poll).urgency}
+                              startTime={poll.startTime}
+                              endTime={poll.endTime}
+                              showCountdown={false}
+                              className="text-gray-500"
+                            />
                           </span>
                         )}
                         {poll.createdBy && (
@@ -316,6 +392,66 @@ const PollsTab: React.FC<PollsTabProps> = ({
                       )}
                     </div>
                   </div>
+
+                  {/* Prominent Timer Display for Active Polls */}
+                  {poll.status === VoteStatus.ACTIVE && (
+                    <div className="mb-6 flex flex-col md:flex-row gap-4 items-stretch w-full">
+                      {/* Info Card */}
+                      <div className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl flex items-center p-4 md:p-6 text-white">
+                        <div className="w-12 h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center shadow-lg mr-4">
+                          <Clock className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold">Poll Active</h3>
+                          <p className="text-sm text-purple-100">Voting ends soon!</p>
+                        </div>
+                      </div>
+                      {/* Timer Card */}
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="w-full h-full">
+                          <TimerDisplay 
+                            variant="detailed"
+                            status={getPollTimingStatus(poll).status}
+                            urgency={getPollTimingStatus(poll).urgency}
+                            startTime={poll.startTime}
+                            endTime={poll.endTime}
+                            showCountdown={true}
+                            className="bg-transparent text-white font-bold h-full w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Timer Display for Upcoming Polls */}
+                  {poll.status === VoteStatus.UPCOMING && (
+                    <div className="mb-6 flex flex-col md:flex-row gap-4 items-stretch w-full">
+                      {/* Info Card */}
+                      <div className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl flex items-center p-4 md:p-6 text-white">
+                        <div className="w-12 h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center shadow-lg mr-4">
+                          <Calendar className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold">Poll Starting Soon</h3>
+                          <p className="text-sm text-orange-100">Get ready to vote!</p>
+                        </div>
+                      </div>
+                      {/* Timer Card */}
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="w-full h-full">
+                          <TimerDisplay 
+                            variant="detailed"
+                            status={getPollTimingStatus(poll).status}
+                            urgency={getPollTimingStatus(poll).urgency}
+                            startTime={poll.startTime}
+                            endTime={poll.endTime}
+                            showCountdown={true}
+                            className="bg-transparent text-white font-bold h-full w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {poll.options.length > 0 && (
                     <div className="space-y-3">
@@ -399,11 +535,12 @@ const PollsTab: React.FC<PollsTabProps> = ({
                     
                     {poll.status === VoteStatus.COMPLETED && poll.isResultPublished && (
                       <button 
-                        onClick={() => onNotifyWinner(poll.id)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                        onClick={() => handleNotifyUsers(poll.id)}
+                        disabled={notifyingPollId === poll.id}
+                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Send className="h-4 w-4" />
-                        <span>Notify Users</span>
+                        <Send className={`h-4 w-4 ${notifyingPollId === poll.id ? 'animate-spin' : ''}`} />
+                        <span>{notifyingPollId === poll.id ? 'Notifying...' : 'Notify Users'}</span>
                       </button>
                     )}
 

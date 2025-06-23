@@ -16,10 +16,13 @@ import {
   Award,
   Target,
   Crown,
-  UserCheck
+  UserCheck,
+  Search,
+  Filter
 } from 'lucide-react';
 import { useTeams, Team, User, CreateTeamRequest } from '../../hooks/useTeams';
 import { useToast } from '../shared/ToastContainer';
+import AddTeamMemberModal from '../modals/AddTeamMemberModal';
 
 interface TeamsTabProps {
   onCreateTeam?: () => void;
@@ -40,9 +43,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
     teams,
     users,
     createTeam,
-    createTeamWithMembers,
+    createTeamWithLeader,
     assignTeamLeader,
-    getAvailableLeaders,
     fetchTeams,
     fetchUsers,
     addMemberToTeam,
@@ -59,6 +61,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showLeaderModal, setShowLeaderModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
@@ -74,6 +77,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLeaderId, setSelectedLeaderId] = useState<string>('');
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
   // Fetch teams and users on component mount
   useEffect(() => {
@@ -166,20 +170,29 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
     if (!selectedTeam) return;
 
     const teamName = selectedTeam.name;
-    setIsSubmitting(true);
+    const teamId = selectedTeam.id;
+    
+    // Close modal immediately for better UX
+    setShowDeleteModal(false);
+    setSelectedTeam(null);
+    
+    // Show immediate success feedback
+    showSuccess(
+      'Team Deleted',
+      `${teamName} has been deleted successfully`,
+      4000
+    );
     
     try {
-      const success = await deleteTeam(selectedTeam.id);
+      const success = await deleteTeam(teamId);
       
-      if (success) {
-        showSuccess(
-          'Team Deleted',
-          `${teamName} has been deleted successfully`,
-          4000
+      if (!success) {
+        // If deletion failed, show error and the team will be restored by the hook
+        showError(
+          'Deletion Failed',
+          `Could not delete ${teamName}. Please try again.`,
+          6000
         );
-        
-        setShowDeleteModal(false);
-        setSelectedTeam(null);
       }
     } catch (err: any) {
       console.error('Failed to delete team:', err);
@@ -189,8 +202,6 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
         `Could not delete ${teamName}: ${err.message || 'Unknown error occurred'}`,
         6000
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -215,17 +226,25 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
     const userToAdd = users.find(user => user.id === userId);
     const userName = userToAdd?.name || 'Unknown user';
 
+    // Show immediate success feedback
+    showSuccess(
+      'Member Added',
+      `${userName} has been added to ${selectedTeam.name}`,
+      4000
+    );
+
     try {
       const success = await addMemberToTeam({
         teamId: selectedTeam.id,
         userId: userId
       });
       
-      if (success) {
-        showSuccess(
-          'Member Added',
-          `${userName} has been added to ${selectedTeam.name}`,
-          4000
+      if (!success) {
+        // If addition failed, show error and the member will be restored by the hook
+        showError(
+          'Addition Failed',
+          `Could not add ${userName}. Please try again.`,
+          6000
         );
       }
     } catch (err: any) {
@@ -246,14 +265,33 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
     const memberToRemove = selectedTeam.members.find(member => member.id === userId);
     const memberName = memberToRemove?.name || 'Unknown member';
 
+    // Show confirmation dialog
+    const isConfirmed = window.confirm(
+      `Are you sure you want to remove "${memberName}" from "${selectedTeam.name}"?\n\nThis action cannot be undone.`
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    setRemovingMemberId(userId);
+    
+    // Show immediate success feedback
+    showSuccess(
+      'Member Removed',
+      `${memberName} has been removed from ${selectedTeam.name}`,
+      4000
+    );
+    
     try {
       const success = await removeMemberFromTeam(selectedTeam.id, userId);
       
-      if (success) {
-        showSuccess(
-          'Member Removed',
-          `${memberName} has been removed from ${selectedTeam.name}`,
-          4000
+      if (!success) {
+        // If removal failed, show error and the member will be restored by the hook
+        showError(
+          'Removal Failed', 
+          `Could not remove ${memberName}. Please try again.`,
+          6000
         );
       }
     } catch (err: any) {
@@ -264,6 +302,8 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
         `Could not remove ${memberName}: ${err.message || 'Unknown error occurred'}`,
         6000
       );
+    } finally {
+      setRemovingMemberId(null);
     }
   };
 
@@ -313,14 +353,14 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
   };
 
   // Enhanced create team function with members and leader
-  const handleCreateTeamWithMembers = async () => {
+  const handleCreateTeamWithLeader = async () => {
     if (!createTeamData.name.trim() || !createTeamData.description.trim()) {
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const newTeam = await createTeamWithMembers(createTeamData);
+      const newTeam = await createTeamWithLeader(createTeamData);
       
       if (newTeam) {
         showSuccess(
@@ -351,6 +391,12 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
 
   // Sort teams by score (highest first)
   const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+
+  const handleAddMemberSuccess = () => {
+    // Refresh teams and users data
+    fetchTeams();
+    fetchUsers();
+  };
 
   return (
     <div className="space-y-6">
@@ -667,13 +713,25 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
               </div>
 
               <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between">
-                <button 
-                  onClick={() => handleManageMembers(team)}
-                  className="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center space-x-1"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Manage Members</span>
-                </button>
+                <div className="flex space-x-4">
+                  <button 
+                    onClick={() => {
+                      setSelectedTeam(team);
+                      setShowAddMemberModal(true);
+                    }}
+                    className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center space-x-1"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    <span>Add Member</span>
+                  </button>
+                  <button 
+                    onClick={() => handleManageMembers(team)}
+                    className="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center space-x-1"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Manage Members</span>
+                  </button>
+                </div>
                 <button 
                   onClick={() => handleViewStats(team)}
                   className="text-orange-600 hover:text-orange-700 font-medium text-sm flex items-center space-x-1"
@@ -733,7 +791,7 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                 Cancel
               </button>
               <button
-                onClick={handleCreateTeam}
+                onClick={handleCreateTeamWithLeader}
                 disabled={!createTeamData.name.trim() || !createTeamData.description.trim() || isSubmitting}
                 className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -744,7 +802,18 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
         </div>
       )}
 
-      {/* Manage Members Modal */}
+      {/* Add Team Member Modal */}
+      {showAddMemberModal && selectedTeam && (
+        <AddTeamMemberModal
+          isOpen={showAddMemberModal}
+          onClose={() => setShowAddMemberModal(false)}
+          onSuccess={handleAddMemberSuccess}
+          teamId={selectedTeam.id}
+          teamName={selectedTeam.name}
+        />
+      )}
+
+      {/* Manage Members Modal - Keep the old one for now but make it simpler */}
       {showMembersModal && selectedTeam && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
@@ -781,10 +850,15 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                         </div>
                         <button
                           onClick={() => handleRemoveMember(member.id)}
-                          className="text-red-600 hover:text-red-700 p-1"
+                          disabled={removingMemberId === member.id}
+                          className="text-red-600 hover:text-red-700 p-1 disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Remove member"
                         >
-                          <UserMinus className="h-4 w-4" />
+                          {removingMemberId === member.id ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
+                          ) : (
+                            <UserMinus className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     ))}
@@ -792,35 +866,18 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                 )}
               </div>
 
-              {/* Available Users */}
-              <div>
-                <h4 className="font-medium text-gray-900 mb-3">Available Users ({availableUsers.length})</h4>
-                {availableUsers.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No users available to add</p>
-                ) : (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {availableUsers.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-medium">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{user.name}</p>
-                            <p className="text-sm text-gray-600">{user.email}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleAddMember(user.id)}
-                          className="text-green-600 hover:text-green-700 p-1"
-                          title="Add to team"
-                        >
-                          <UserPlus className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {/* Add Member Button */}
+              <div className="border-t pt-4">
+                <button
+                  onClick={() => {
+                    setShowMembersModal(false);
+                    setShowAddMemberModal(true);
+                  }}
+                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Add New Member</span>
+                </button>
               </div>
             </div>
 

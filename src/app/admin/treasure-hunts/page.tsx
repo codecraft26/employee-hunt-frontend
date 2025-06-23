@@ -38,15 +38,22 @@ export default function TreasureHuntsPage() {
 
   // Memoized treasure hunt handlers
   const handleViewClues = useCallback((huntId: string) => {
-    // TODO: Navigate to clues management
+    setSelectedHuntId(huntId);
+    setCurrentView('clues');
   }, []);
 
   const handleViewSubmissions = useCallback((huntId: string) => {
-    // TODO: Navigate to submissions management
+    setSelectedHuntId(huntId);
+    setCurrentView('submissions');
   }, []);
 
   const handleDeclareWinner = useCallback((huntId: string) => {
-    // TODO: Open winner declaration modal
+    console.log('🔍 Admin handleDeclareWinner called with hunt ID:', huntId);
+    setWinnerModal({
+      isOpen: true,
+      huntId: huntId
+    });
+    console.log('✅ Winner modal state set to open');
   }, []);
 
   const handleBackToList = useCallback(() => {

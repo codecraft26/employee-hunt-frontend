@@ -372,34 +372,98 @@ export const useTeams = () => {
   }, []);
 
   // Add member to team
-  const addMemberToTeam = useCallback(async (memberData: AddMemberRequest): Promise<boolean> => {
-    setLoading(true);
+  const addMemberToTeam = useCallback(async (request: AddMemberRequest): Promise<boolean> => {
     setError(null);
+    
+    const { teamId, userId } = request;
+    
+    // Find the user to add
+    const userToAdd = users.find(user => user.id === userId);
+    if (!userToAdd) {
+      throw new Error('User not found');
+    }
+    
+    // Convert User to TeamMember format
+    const memberToAdd: TeamMember = {
+      id: userToAdd.id,
+      name: userToAdd.name,
+      email: userToAdd.email,
+      role: userToAdd.role,
+      employeeCode: null,
+      gender: null,
+      profileImage: null,
+      department: null,
+      hobbies: null,
+      createdAt: userToAdd.createdAt,
+      updatedAt: userToAdd.createdAt // Use createdAt as updatedAt for new members
+    };
+    
+    // Optimistic update - add member to team immediately
+    const teamToUpdate = teams.find(team => team.id === teamId);
+    if (teamToUpdate) {
+      setTeams(prevTeams => 
+        prevTeams.map(team => 
+          team.id === teamId 
+            ? { ...team, members: [...team.members, memberToAdd] }
+            : team
+        )
+      );
+    }
     
     try {
       const response = await apiRequest('/teams/members', {
         method: 'POST',
-        body: JSON.stringify(memberData),
+        body: JSON.stringify(request),
       });
 
       if (response.success) {
-        // Refresh teams list
-        await fetchTeams();
+        // Success - no need to refresh since we already updated optimistically
         return response.data;
       } else {
+        // If API call failed, revert the optimistic update
+        if (teamToUpdate) {
+          setTeams(prevTeams => 
+            prevTeams.map(team => 
+              team.id === teamId 
+                ? { ...team, members: team.members.filter(member => member.id !== userId) }
+                : team
+            )
+          );
+        }
         throw new Error(response.message || 'Failed to add member');
       }
     } catch (error) {
+      // If API call failed, revert the optimistic update
+      if (teamToUpdate) {
+        setTeams(prevTeams => 
+          prevTeams.map(team => 
+            team.id === teamId 
+              ? { ...team, members: team.members.filter(member => member.id !== userId) }
+              : team
+          )
+        );
+      }
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, [fetchTeams]);
+  }, [teams, users]);
 
   // Remove member from team
   const removeMemberFromTeam = useCallback(async (teamId: string, userId: string): Promise<boolean> => {
-    setLoading(true);
     setError(null);
+    
+    // Optimistic update - remove member from team immediately
+    const teamToUpdate = teams.find(team => team.id === teamId);
+    const memberToRemove = teamToUpdate?.members.find(member => member.id === userId);
+    
+    if (teamToUpdate && memberToRemove) {
+      setTeams(prevTeams => 
+        prevTeams.map(team => 
+          team.id === teamId 
+            ? { ...team, members: team.members.filter(member => member.id !== userId) }
+            : team
+        )
+      );
+    }
     
     try {
       const requestData = {
@@ -413,18 +477,35 @@ export const useTeams = () => {
       });
 
       if (response.success) {
-        // Refresh teams list
-        await fetchTeams();
+        // Success - no need to refresh since we already updated optimistically
         return response.data;
       } else {
+        // If API call failed, revert the optimistic update
+        if (teamToUpdate && memberToRemove) {
+          setTeams(prevTeams => 
+            prevTeams.map(team => 
+              team.id === teamId 
+                ? { ...team, members: [...team.members, memberToRemove] }
+                : team
+            )
+          );
+        }
         throw new Error(response.message || 'Failed to remove member');
       }
     } catch (error) {
+      // If API call failed, revert the optimistic update
+      if (teamToUpdate && memberToRemove) {
+        setTeams(prevTeams => 
+          prevTeams.map(team => 
+            team.id === teamId 
+              ? { ...team, members: [...team.members, memberToRemove] }
+              : team
+          )
+        );
+      }
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, [fetchTeams]);
+  }, [teams]);
 
   // Remove member from team (alternative method)
   const removeMemberFromTeamAlt = useCallback(async (teamId: string, userId: string, method: 'DELETE' | 'POST' = 'DELETE'): Promise<boolean> => {
@@ -483,8 +564,13 @@ export const useTeams = () => {
 
   // Delete team
   const deleteTeam = useCallback(async (teamId: string): Promise<boolean> => {
-    setLoading(true);
     setError(null);
+    
+    // Optimistic update - remove team from state immediately
+    const teamToDelete = teams.find(team => team.id === teamId);
+    if (teamToDelete) {
+      setTeams(prevTeams => prevTeams.filter(team => team.id !== teamId));
+    }
     
     try {
       const response = await apiRequest(`/teams/${teamId}`, {
@@ -492,18 +578,23 @@ export const useTeams = () => {
       });
 
       if (response.success) {
-        // Refresh teams list
-        await fetchTeams();
+        // Success - no need to refresh since we already updated optimistically
         return response.data;
       } else {
+        // If API call failed, revert the optimistic update
+        if (teamToDelete) {
+          setTeams(prevTeams => [...prevTeams, teamToDelete]);
+        }
         throw new Error(response.message || 'Failed to delete team');
       }
     } catch (error) {
+      // If API call failed, revert the optimistic update
+      if (teamToDelete) {
+        setTeams(prevTeams => [...prevTeams, teamToDelete]);
+      }
       throw error;
-    } finally {
-      setLoading(false);
     }
-  }, [fetchTeams]);
+  }, [teams]);
 
   // Calculate team statistics
   const getTeamStats = useCallback((teamId: string) => {
@@ -569,7 +660,7 @@ export const useTeams = () => {
     setError(null);
     
     try {
-      const response = await apiRequest('/teams/with-leader', {
+      const response = await apiRequest('/teams', {
         method: 'POST',
         body: JSON.stringify(teamData),
       });
