@@ -157,6 +157,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-md bg-white rounded-b-2xl shadow-lg overflow-hidden">
+        {/* App Logo */}
+        <div className="flex justify-center mt-6 mb-2">
+          <img
+            src="/dashboard_tiles/app-logo.jpeg"
+            alt="App Logo"
+            width={80}
+            height={80}
+            className="rounded-xl shadow-lg"
+            style={{ background: 'white' }}
+          />
+        </div>
         <TeamPlayBanner />
         {/* Tabs */}
         <div className="flex justify-center mb-6 border-b border-gray-200">
