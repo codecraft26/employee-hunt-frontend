@@ -120,12 +120,24 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
   };
 
   const handleDeclareWinner = (huntId: string) => {
+    console.log('🔍 Declare Winner button clicked for hunt ID:', huntId);
     const hunt = treasureHunts.find(h => h.id === huntId);
     const stats = getHuntStats(huntId);
     
+    console.log('🔍 Hunt found:', hunt);
+    console.log('🔍 Hunt stats:', stats);
+    
     // Allow declaring winner for ACTIVE or COMPLETED hunts that don't have a winner yet
     if (hunt && stats?.canDeclareWinner) {
+      console.log('✅ Calling onDeclareWinner with hunt ID:', huntId);
       onDeclareWinner(huntId);
+    } else {
+      console.log('❌ Cannot declare winner:', {
+        huntFound: !!hunt,
+        canDeclareWinner: stats?.canDeclareWinner,
+        huntStatus: hunt?.status,
+        hasWinner: !!hunt?.winningTeam
+      });
     }
   };
 
@@ -218,6 +230,8 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
           {treasureHunts.map((hunt) => {
             const stats = getHuntStats(hunt.id);
             const safeAssignedTeams = hunt.assignedTeams || [];
+            
+            console.log(`🔍 Hunt ${hunt.id} (${hunt.title}) stats:`, stats);
             
             return (
               <div key={hunt.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden relative">

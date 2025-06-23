@@ -24,7 +24,7 @@
 
 import { useEffect, useState } from "react";
 import { onMessage } from "firebase/messaging";
-import { messaging } from "../../src/lib/firebase-config";
+import { messaging } from "../lib/firebase-config";
 import InAppNotification from "./InAppNotification";
 
 export default function NotificationHandler() {

@@ -12,7 +12,7 @@ const firebaseConfig = {
 const app =
   getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-let messaging = null;
+let messaging: Messaging | null = null;
 
 // ✅ Safe initialization for client only
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {

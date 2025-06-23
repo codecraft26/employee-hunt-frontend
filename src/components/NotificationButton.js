@@ -1,12 +1,12 @@
 "use client";
 
-import { messaging } from "../../src/lib/firebase-config";
+import { messaging } from "../lib/firebase-config";
 import { getToken } from "firebase/messaging";
 
 export default function NotificationButton() {
   const requestPermission = async () => {
     if (!("Notification" in window)) {
-      alert("Notifications not supported");
+      console.warn("Notifications not supported");
       return;
     }
     try {

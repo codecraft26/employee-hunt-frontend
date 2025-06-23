@@ -61,11 +61,13 @@ interface RegisterData {
 interface LoginData {
   email: string;
   password: string;
+  deviceToken?: string;
 }
 
 interface OTPVerifyData {
   email: string;
   otp: string;
+  deviceToken?: string;
 }
 
 // API base URL - replace with your actual API URL

@@ -26,6 +26,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
   const [activeTypeFilter, setActiveTypeFilter] = useState<VoteType | 'ALL'>('ALL');
   const [refreshing, setRefreshing] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [notifyingPollId, setNotifyingPollId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPolls();
@@ -63,6 +64,25 @@ const PollsTab: React.FC<PollsTabProps> = ({
     fetchPolls();
     setSuccessMessage('Poll updated successfully!');
     setTimeout(() => setSuccessMessage(null), 5000);
+  };
+
+  const handleNotifyUsers = async (pollId: string) => {
+    console.log('🔍 Poll notification requested for poll ID:', pollId);
+    setNotifyingPollId(pollId);
+    try {
+      // Call the parent's onNotifyWinner function
+      console.log('📤 Calling onNotifyWinner function...');
+      await onNotifyWinner(pollId);
+      console.log('✅ Notification sent successfully');
+      setSuccessMessage('Users have been notified about the poll results successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (error) {
+      console.error('❌ Error notifying users:', error);
+      setSuccessMessage('Failed to notify users about poll results. Please try again.');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } finally {
+      setNotifyingPollId(null);
+    }
   };
 
   const handleDeletePoll = async (pollId: string) => {
@@ -399,11 +419,12 @@ const PollsTab: React.FC<PollsTabProps> = ({
                     
                     {poll.status === VoteStatus.COMPLETED && poll.isResultPublished && (
                       <button 
-                        onClick={() => onNotifyWinner(poll.id)}
-                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                        onClick={() => handleNotifyUsers(poll.id)}
+                        disabled={notifyingPollId === poll.id}
+                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Send className="h-4 w-4" />
-                        <span>Notify Users</span>
+                        <Send className={`h-4 w-4 ${notifyingPollId === poll.id ? 'animate-spin' : ''}`} />
+                        <span>{notifyingPollId === poll.id ? 'Notifying...' : 'Notify Users'}</span>
                       </button>
                     )}
 
