@@ -15,6 +15,7 @@ const PWAInstaller: React.FC = () => {
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     // Check if app is already installed (standalone mode)
@@ -152,7 +153,7 @@ const PWAInstaller: React.FC = () => {
   }
 
   // iOS install hint (show after delay)
-  if (isIOS && !isInstalled) {
+  if (isIOS && !isInstalled && !dismissed) {
     return (
       <div className="fixed top-4 left-4 right-4 bg-blue-50 border border-blue-200 rounded-lg p-4 z-40">
         <div className="flex items-center justify-between">
@@ -164,9 +165,16 @@ const PWAInstaller: React.FC = () => {
           </div>
           <button
             onClick={handleInstallClick}
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 transition-colors mr-2"
           >
             Show me how
+          </button>
+          <button
+            onClick={() => setDismissed(true)}
+            className="ml-2 text-blue-900 hover:text-blue-600"
+            aria-label="Close"
+          >
+            <X size={20} />
           </button>
         </div>
       </div>
