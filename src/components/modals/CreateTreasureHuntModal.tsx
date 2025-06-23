@@ -410,6 +410,7 @@ const CreateTreasureHuntModal: React.FC<CreateTreasureHuntModalProps> = ({
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                           errors[`stage-${index}`] ? 'border-red-300' : 'border-gray-300'
                         }`}
+                        style={{color:'black'}}
                         placeholder="Describe what teams need to find or do for this stage..."
                         required
                       />

@@ -383,6 +383,17 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="w-full max-w-md bg-white rounded-b-2xl shadow-lg overflow-hidden">
+        {/* App Logo */}
+        <div className="flex justify-center mt-6 mb-2">
+          <Image
+            src="/dashboard_tiles/app-logo.jpeg"
+            alt="App Logo"
+            width={80}
+            height={80}
+            className="rounded-xl shadow-lg"
+            priority
+          />
+        </div>
         <TeamPlayBanner />
         <div className="p-6">
           

@@ -310,7 +310,7 @@ input[class*="bg-black"],
 input[class*="bg-transparent"],
 textarea
  {
-  color: white !important;
+  color: white;
 }
 
 /* Specific overrides for light backgrounds */
