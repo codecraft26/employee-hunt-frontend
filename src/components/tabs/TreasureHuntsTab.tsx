@@ -317,28 +317,28 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                           <Trophy className="h-4 w-4 mr-1" />
                           Total Clues
                         </p>
-                        <p className="font-medium">{stats?.totalClues || 0}</p>
+                        <p className="font-medium text-gray-600">{stats?.totalClues || 0}</p>
                       </div>
                       <div>
                         <p className="text-gray-600 flex items-center">
                           <Users className="h-4 w-4 mr-1" />
                           Teams
                         </p>
-                        <p className="font-medium">{stats?.totalTeams || safeAssignedTeams.length}</p>
+                        <p className="font-medium text-gray-600">{stats?.totalTeams || safeAssignedTeams.length}</p>
                       </div>
                       <div>
                         <p className="text-gray-600 flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           Start Date
                         </p>
-                        <p className="font-medium text-xs">{formatDate(hunt.startTime)}</p>
+                        <p className="font-medium text-xs text-gray-600">{formatDate(hunt.startTime)}</p>
                       </div>
                       <div>
                         <p className="text-gray-600 flex items-center">
                           <Clock className="h-4 w-4 mr-1" />
                           End Date
                         </p>
-                        <p className="font-medium text-xs">{formatDate(hunt.endTime)}</p>
+                        <p className="font-medium text-xs text-gray-600">{formatDate(hunt.endTime)}</p>
                       </div>
                     </div>
 
