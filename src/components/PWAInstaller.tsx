@@ -78,7 +78,7 @@ const PWAInstaller: React.FC = () => {
   if (showIOSInstructions) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+        <div className="bg-white rounded-lg p-6 max-w-sm w-full text-gray-900">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold">Install App</h3>
             <button 
@@ -126,7 +126,7 @@ const PWAInstaller: React.FC = () => {
   // Install prompt for Android/Desktop
   if (isInstallable && !isIOS) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 bg-white shadow-lg rounded-lg p-4 z-40 border border-gray-200">
+      <div className="fixed top-4 left-4 right-4 bg-white shadow-lg rounded-lg p-4 z-40 border border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h4 className="font-medium text-gray-900">Install App</h4>
@@ -154,7 +154,7 @@ const PWAInstaller: React.FC = () => {
   // iOS install hint (show after delay)
   if (isIOS && !isInstalled) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 bg-blue-50 border border-blue-200 rounded-lg p-4 z-40">
+      <div className="fixed top-4 left-4 right-4 bg-blue-50 border border-blue-200 rounded-lg p-4 z-40">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <h4 className="font-medium text-blue-900">Install this app</h4>
