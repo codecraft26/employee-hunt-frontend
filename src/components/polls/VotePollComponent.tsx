@@ -12,7 +12,9 @@ import {
   UserCheck,
   Building2,
   Eye,
-  EyeOff
+  EyeOff,
+  Search,
+  X
 } from 'lucide-react';
 import { Vote, VoteStatus, VoteType, VotingOptionType } from '../../types/votes';
 import { useVotes } from '../../hooks/useVotes';
@@ -46,6 +48,8 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [alreadyVotedError, setAlreadyVotedError] = useState<string | null>(null);
   const [showFullResults, setShowFullResults] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   // Determine voting eligibility and result visibility
   const canVote = poll.status === VoteStatus.ACTIVE && !hasVoted;
@@ -87,7 +91,13 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     // Clear any previous errors when poll changes
     clearError();
     setAlreadyVotedError(null);
-  }, [poll.id, clearError]);
+    
+    // Auto-show search for polls with many users
+    if (poll.options && poll.options.length > 10 && 
+        (poll.votingOptionType === VotingOptionType.USER_SPECIFIC || poll.votingOptionType === VotingOptionType.CATEGORY_USER_BASED)) {
+      setShowSearch(true);
+    }
+  }, [poll.id, clearError, poll.options, poll.votingOptionType]);
 
   // Check if user has already voted based on error message
   useEffect(() => {
@@ -196,6 +206,26 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   };
 
   const timeUntilStart = getTimeUntilStart();
+
+  // Filter options based on search query for user-specific polls
+  const filteredOptions = poll.options?.filter(option => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    
+    // Search in option name
+    if (option.name.toLowerCase().includes(query)) return true;
+    
+    // Search in target user details for user-specific polls
+    if (option.targetUser) {
+      if (option.targetUser.name.toLowerCase().includes(query)) return true;
+      if (option.targetUser.email.toLowerCase().includes(query)) return true;
+      if (option.targetUser.employeeCode?.toLowerCase().includes(query)) return true;
+      if (option.targetUser.department?.toLowerCase().includes(query)) return true;
+    }
+    
+    return false;
+  }) || [];
 
   const getStatusBadge = () => {
     switch (poll.status) {
@@ -567,9 +597,77 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
         {/* Poll Options */}
         {(canVote || shouldShowResults) && poll.options && poll.options.length > 0 ? (
           <>
+            {/* Search functionality for user-specific polls */}
+            {(poll.votingOptionType === VotingOptionType.USER_SPECIFIC || poll.votingOptionType === VotingOptionType.CATEGORY_USER_BASED) && poll.options.length > 5 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-slate-300">
+                    Search Users {poll.options.length > 10 && `(${poll.options.length} users)`}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setShowSearch(!showSearch);
+                      if (!showSearch) {
+                        setSearchQuery('');
+                      }
+                    }}
+                    className="text-slate-400 hover:text-slate-200 text-sm flex items-center space-x-1"
+                  >
+                    {showSearch ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+                    <span>{showSearch ? 'Hide Search' : 'Search Users'}</span>
+                  </button>
+                </div>
+                
+                {(showSearch || poll.options.length > 10) && (
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name, email, employee code, or department..."
+                      className="w-full pl-10 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      >
+                        <X className="h-4 w-4 text-slate-400 hover:text-slate-200" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                
+                {/* Search results summary */}
+                {searchQuery && (
+                  <div className="mt-2 text-sm text-slate-400">
+                    Found {filteredOptions.length} user{filteredOptions.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-3">
-              {poll.options.map(renderOption).filter(Boolean)}
+              {filteredOptions.map(renderOption).filter(Boolean)}
             </div>
+
+            {/* No search results message */}
+            {showSearch && searchQuery && filteredOptions.length === 0 && (
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+                <p className="text-slate-400 text-sm">No users found matching "{searchQuery}"</p>
+                <p className="text-slate-500 text-xs mt-1">Try searching by name, email, employee code, or department</p>
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="mt-3 text-indigo-400 hover:text-indigo-300 text-sm underline"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
 
             {canVote && poll.options.length > 0 && (
               <div className="mt-6 flex justify-end">

@@ -1,6 +1,6 @@
 // components/AdminHeader.tsx
 import React, { memo } from 'react';
-import { Crown, Bell, Settings, LogOut, User } from 'lucide-react';
+import { Crown, Bell, LogOut, User } from 'lucide-react';
 
 interface AdminHeaderProps {
   pendingApprovals?: number;
@@ -44,11 +44,6 @@ const AdminHeader: React.FC<AdminHeaderProps> = memo(({
                 </span>
               </button>
             )}
-            
-            {/* Settings */}
-            <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <Settings className="h-6 w-6" />
-            </button>
             
             {/* Logout Button */}
             <button 
