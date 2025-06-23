@@ -55,7 +55,7 @@ const UserQuizTab: React.FC = () => {
   const {
     loading,
     error,
-    quizzes,
+    quizzesWithCompletion,
     currentQuiz,
     assignedQuestions,
     teamRankings,
@@ -101,27 +101,7 @@ const UserQuizTab: React.FC = () => {
     fetchMyQuizzes();
   }, [fetchMyQuizzes]);
 
-  // Check completion status for all quizzes
-  useEffect(() => {
-    const checkCompletedQuizzes = async () => {
-      const completed = new Set<string>();
-      
-      for (const quiz of quizzes) {
-        if (quiz.status === 'ACTIVE' || quiz.status === 'COMPLETED') {
-          const isCompleted = await isQuizCompleted(quiz.id);
-          if (isCompleted) {
-            completed.add(quiz.id);
-          }
-        }
-      }
-      
-      setCompletedQuizzes(completed);
-    };
-
-    if (quizzes.length > 0) {
-      checkCompletedQuizzes();
-    }
-  }, [quizzes, isQuizCompleted]);
+  // No need to check completion status manually; handled by API
 
   // Update quiz cards every minute to refresh timers
   useEffect(() => {
@@ -526,7 +506,7 @@ const UserQuizTab: React.FC = () => {
       {/* Quiz Notifications */}
       <QuizNotifications />
 
-      {quizzes.length === 0 ? (
+      {quizzesWithCompletion.length === 0 ? (
         <div className="text-center py-12 gaming-card">
           <Shield className="mx-auto h-12 w-12 text-blue-400" />
           <h3 className="mt-4 text-xl font-bold text-white">No Quizzes Found</h3>
@@ -536,32 +516,27 @@ const UserQuizTab: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {quizzes.map((quiz) => {
+          {quizzesWithCompletion.map((item) => {
+            const { quiz, completionStatus, canAccess, message } = item;
             const status = getQuizDisplayStatus(quiz);
             const statusColor = getQuizStatusColor(status);
-            const progress = getQuizProgress(quiz);
-            const isExpired = isQuizExpired(quiz);
-            const canTake = canStartQuiz(quiz);
-            
-            // Override status for completed quizzes
-            const userCompletedQuiz = completedQuizzes.has(quiz.id);
-            const displayStatus = userCompletedQuiz && status !== 'COMPLETED' ? 'COMPLETED' : status;
-            const displayStatusColor = userCompletedQuiz && status !== 'COMPLETED' 
-              ? 'bg-green-100 text-green-800 border-green-200' 
-              : statusColor;
-
-            // Calculate remaining time for active quizzes
+            const progress = completionStatus?.completionPercentage || 0;
+            const isCompleted = completionStatus?.isCompleted;
             const now = new Date();
             const endTime = new Date(quiz.endTime);
             const remainingTimeSeconds = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+
+            // Progress bar color
+            let progressBarColor = 'bg-gradient-to-r from-blue-500 to-indigo-500';
+            if (progress === 100) progressBarColor = 'bg-gradient-to-r from-green-500 to-emerald-500';
+            else if (progress >= 80) progressBarColor = 'bg-gradient-to-r from-yellow-400 to-yellow-600';
+            else if (progress <= 30) progressBarColor = 'bg-gradient-to-r from-red-500 to-orange-500';
 
             return (
               <div
                 key={quiz.id}
                 className={`gaming-card p-4 sm:p-5 flex flex-col justify-between hover-lift group ${
-                  (status === 'COMPLETED' || userCompletedQuiz) 
-                    ? 'opacity-95 bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/50' 
-                    : ''
+                  isCompleted ? 'opacity-95 bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/50' : ''
                 }`}
               >
                 <div>
@@ -570,15 +545,29 @@ const UserQuizTab: React.FC = () => {
                       {quiz.title}
                     </h3>
                     <div
-                      className={`flex items-center text-xs font-bold px-3 py-1 rounded-full ${displayStatusColor}`}
+                      className={`flex items-center text-xs font-bold px-3 py-1 rounded-full ${statusColor}`}
                     >
-                      {getStatusIcon(displayStatus)}
-                      <span className="ml-1.5">{displayStatus}</span>
+                      {getStatusIcon(status)}
+                      <span className="ml-1.5">{status}</span>
                     </div>
                   </div>
-                  
+
+                  {/* Progress Bar */}
+                  <div className="mb-3">
+                    <div className="flex justify-between items-center text-xs text-gray-400 mb-1">
+                      <span>Progress</span>
+                      <span>{completionStatus?.completedCount || 0} / {completionStatus?.totalAssigned || 0} completed</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`${progressBarColor} h-2 rounded-full transition-all duration-300`}
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
                   {/* Quiz Timer Display */}
-                  {status === 'ACTIVE' && !isExpired && !userCompletedQuiz && (
+                  {status === 'ACTIVE' && !isCompleted && canAccess && (
                     <div className={`mb-3 p-3 rounded-lg border-2 ${
                       remainingTimeSeconds <= 300 
                         ? 'bg-red-50 border-red-200 text-red-800' 
@@ -603,7 +592,7 @@ const UserQuizTab: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <p className="text-slate-400 text-sm mb-4 h-10">
                     {quiz.description}
                   </p>
@@ -623,10 +612,10 @@ const UserQuizTab: React.FC = () => {
                 </div>
 
                 <div className="mt-6">
-                  {status === 'COMPLETED' || completedQuizzes.has(quiz.id) ? (
+                  {isCompleted ? (
                     <div className="flex flex-col gap-2">
                       <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-lg text-center font-semibold text-sm">
-                        ✅ {status === 'COMPLETED' ? 'Quiz Completed' : 'You completed this quiz'}
+                        ✅ Quiz Completed
                       </div>
                       {quiz.userScore !== undefined && (
                         <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-lg text-center text-xs">
@@ -637,15 +626,20 @@ const UserQuizTab: React.FC = () => {
                   ) : (
                     <div className="flex flex-col gap-2">
                       <button
-                        onClick={() => handleStartQuiz(quiz)}
-                        disabled={!canTake || isExpired}
+                        onClick={() => canAccess && handleStartQuiz(quiz)}
+                        disabled={!canAccess}
                         className="btn-gaming w-full disabled:opacity-50 disabled:cursor-not-allowed group/play-btn"
                       >
                         <div className="flex items-center justify-center">
                           <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover/play-btn:scale-125" />
-                          <span>{isExpired ? 'Expired' : canTake ? 'Start Quiz' : 'Locked'}</span>
+                          <span>{canAccess ? 'Start Quiz' : 'Locked'}</span>
                         </div>
                       </button>
+                      {!canAccess && message && (
+                        <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 text-xs mt-1 text-center">
+                          {message}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
