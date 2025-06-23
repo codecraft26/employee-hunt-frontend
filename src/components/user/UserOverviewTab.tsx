@@ -427,7 +427,7 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
           <div className="flex-1 min-w-0">
             <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gradient mb-1 sm:mb-2 flex items-center">
               <Flame className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 mr-2 sm:mr-3 text-orange-400 flex-shrink-0" />
-              <span className="truncate">Recent Activities</span>
+              <span className="truncate">Announcements</span>
             </h2>
             <p className="text-slate-300 text-xs sm:text-sm md:text-base">Stay updated with epic announcements</p>
           </div>

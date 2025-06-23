@@ -123,7 +123,7 @@ const UserSubmissionsView: React.FC<UserSubmissionsViewProps> = ({ className = '
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">My Submissions</h2>
+            <h2 className="text-xl font-semibold text-white-900">My Submissions</h2>
             <p className="text-sm text-gray-600 mt-1">
               Track your treasure hunt submissions for {myTeam.name}
             </p>
