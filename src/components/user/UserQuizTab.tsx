@@ -93,6 +93,8 @@ const UserQuizTab: React.FC = () => {
   const [showQuestionReview, setShowQuestionReview] = useState(false);
   // Removed showImmediateFeedback and feedbackData - no longer showing immediate feedback
   const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
+  // Error message for answer submission
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Fetch quizzes on component mount
   useEffect(() => {
@@ -296,6 +298,7 @@ const UserQuizTab: React.FC = () => {
   };
 
   const handleSubmitAnswer = async () => {
+    setSubmitError(null);
     const currentQuestion = getCurrentQuestion();
     
     // Enhanced validation to prevent duplicate submissions
@@ -306,15 +309,7 @@ const UserQuizTab: React.FC = () => {
         isSubmitting ||
         isQuestionAnswered(currentQuestion.question.id) ||
         (currentQuestion.userAnswer !== null && currentQuestion.userAnswer !== undefined)) {
-      console.log('Submission blocked:', {
-        selectedAnswer,
-        hasQuiz: !!selectedQuiz,
-        hasQuestion: !!currentQuestion,
-        isCompleted: currentQuestion?.isCompleted,
-        isSubmitting,
-        isAlreadyAnswered: currentQuestion ? isQuestionAnswered(currentQuestion.question.id) : false,
-        hasUserAnswer: currentQuestion?.userAnswer !== null && currentQuestion?.userAnswer !== undefined
-      });
+      setSubmitError('You have already answered this question.');
       return;
     }
 
@@ -337,57 +332,45 @@ const UserQuizTab: React.FC = () => {
       });
 
       if (success) {
-        // Don't show immediate feedback - just move to next question
         handleMoveToNextQuestion();
       }
-      
     } catch (err: any) {
       console.error('Failed to submit answer:', err);
-      
-      // Handle specific error cases
-      const errorMessage = err.response?.data?.message || err.message;
-      
-      if (errorMessage?.includes('already answered')) {
-        // If question was already answered, just move to next question
-        console.log('Question already answered, moving to next question');
-        
-        // Move to next question without trying to update state
-        handleMoveToNextQuestion();
-      } else {
-        // For other errors, just move to next question
-        console.log('Error submitting answer, but continuing...');
+      // Try to extract error message from various possible locations
+      let errorMessage = 'Failed to submit answer.';
+      if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
       }
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleMoveToNextQuestion = () => {
+    setSubmitError(null); // Clear error on navigation
     const completionStatus = getQuizCompletionStatus();
-    
     // Check if all questions are now completed
     if (completionStatus.isAllCompleted) {
-      // Quiz completed - just show simple message
       setShowQuizModal(false);
       alert('🎉 Quiz Completed! Your answers have been submitted successfully.');
-      fetchMyQuizzes(); // Refresh quiz list
+      fetchMyQuizzes();
       return;
     }
-    
     // Find next unanswered question
     const nextUnansweredIndex = findNextUnansweredQuestion(currentQuestionIndex + 1);
-    
     if (nextUnansweredIndex !== -1) {
-      // Move to next unanswered question
       setCurrentQuestionIndex(nextUnansweredIndex);
       setSelectedAnswer(null);
       setShowQuestionReview(false);
-      
       const nextQuestion = assignedQuestions[nextUnansweredIndex];
       const timeLimit = nextQuestion?.question?.timeLimit || 30;
       setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
     } else {
-      // No more unanswered questions, but move to next question for review
       if (currentQuestionIndex < assignedQuestions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         const nextQuestion = assignedQuestions[currentQuestionIndex + 1];
@@ -395,7 +378,6 @@ const UserQuizTab: React.FC = () => {
         setShowQuestionReview(true);
         setTimeRemaining(0);
       } else {
-        // All questions reviewed, finish quiz
         setShowQuizModal(false);
         setShowResultsModal(true);
         fetchMyQuizzes();
@@ -405,9 +387,9 @@ const UserQuizTab: React.FC = () => {
 
   const handlePreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
+      setSubmitError(null); // Clear error on navigation
       const prevIndex = currentQuestionIndex - 1;
       setCurrentQuestionIndex(prevIndex);
-      
       const prevQuestion = assignedQuestions[prevIndex];
       if (prevQuestion.isCompleted) {
         setSelectedAnswer(prevQuestion.userAnswer || null);
@@ -424,9 +406,9 @@ const UserQuizTab: React.FC = () => {
 
   const handleNextQuestion = () => {
     if (currentQuestionIndex < assignedQuestions.length - 1) {
+      setSubmitError(null); // Clear error on navigation
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
-      
       const nextQuestion = assignedQuestions[nextIndex];
       if (nextQuestion.isCompleted) {
         setSelectedAnswer(nextQuestion.userAnswer || null);
@@ -451,12 +433,10 @@ const UserQuizTab: React.FC = () => {
 
   const handleAnswerSelection = (optionIndex: number) => {
     if (showQuestionReview || isSubmitting) return;
-    
     const currentQuestion = getCurrentQuestion();
     if (!currentQuestion || !selectedQuiz || currentQuestion.isCompleted) return;
-    
-    // Just set the selected answer - don't submit immediately
     setSelectedAnswer(optionIndex);
+    setSubmitError(null); // Clear error on new selection
   };
 
   const handleCloseQuiz = () => {
@@ -865,6 +845,13 @@ const UserQuizTab: React.FC = () => {
                 </div>
               </div>
 
+              {/* Error message for answer submission - always visible above navigation */}
+              {submitError && (
+                <div className="text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2 mb-3 flex items-center gap-2">
+                  <XCircle className="h-5 w-5" />
+                  <span>{submitError}</span>
+                </div>
+              )}
               {/* Navigation Buttons */}
               <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-2 border-t border-gray-200">
                 <div className="flex space-x-2">
