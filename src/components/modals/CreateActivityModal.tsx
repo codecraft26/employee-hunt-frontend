@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Users, Activity, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import { useActivities } from '../../hooks/useActivities';
+import { X, Upload, Activity, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -8,13 +7,6 @@ interface CreateActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -26,24 +18,13 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    userIds: [] as string[]
+    description: ''
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const { fetchActivities } = useActivities();
-
-  // Fetch users when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      fetchUsers();
-    }
-  }, [isOpen]);
 
   // Clear form when modal closes
   useEffect(() => {
@@ -52,37 +33,10 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
     }
   }, [isOpen]);
 
-  const fetchUsers = async () => {
-    try {
-      // Get authentication token with priority: adminToken > localStorage adminToken > regular token
-      const adminTokenCookie = Cookies.get('adminToken');
-      const adminTokenLocal = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const regularToken = Cookies.get('token');
-      
-      const token = adminTokenCookie || adminTokenLocal || regularToken;
-
-      const response = await fetch(`${API_BASE_URL}/activities/users`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (data.success) {
-        setUsers(data.data);
-      } else {
-        setError('Failed to fetch users');
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setError('Failed to fetch users');
-    }
-  };
-
   const resetForm = () => {
     setFormData({
       name: '',
-      description: '',
-      userIds: []
+      description: ''
     });
     setImageFile(null);
     setImagePreview(null);
@@ -117,14 +71,6 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
     }
   };
 
-  const handleUserSelection = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData(prev => ({
-      ...prev,
-      userIds: selectedOptions
-    }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -144,10 +90,6 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
       if (imageFile) {
         formDataToSend.append('image', imageFile);
       }
-      
-      formData.userIds.forEach(userId => {
-        formDataToSend.append('userIds[]', userId);
-      });
 
       // Get authentication token with priority: adminToken > localStorage adminToken > regular token
       const adminTokenCookie = Cookies.get('adminToken');
@@ -165,7 +107,6 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
 
       if (response.data.success) {
         setSuccess(true);
-        await fetchActivities(); // Refresh activities list
         onSuccess?.();
         
         // Auto close after 2 seconds
@@ -196,7 +137,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Create Activity</h2>
-              <p className="text-sm text-gray-600">Send announcements and activities to users</p>
+              <p className="text-sm text-gray-600">Send announcements and activities to all users</p>
             </div>
           </div>
           <button
@@ -214,7 +155,7 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
             <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
             <div>
               <p className="text-green-800 font-medium">Activity Created Successfully!</p>
-              <p className="text-green-700 text-sm">The activity has been sent to selected users.</p>
+              <p className="text-green-700 text-sm">The activity has been sent to all users.</p>
             </div>
           </div>
         )}
@@ -323,44 +264,6 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
               )}
             </div>
           </div>
-
-          {/* User Selection */}
-          <div>
-            <label htmlFor="users" className="block text-sm font-medium text-gray-700 mb-2">
-              Select Users (Leave empty for all users)
-            </label>
-            <div className="relative">
-              <select
-                id="users"
-                multiple
-                value={formData.userIds}
-                onChange={handleUserSelection}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors min-h-[120px]"
-                disabled={loading}
-              >
-                {users.map(user => (
-                  <option key={user.id} value={user.id} className="py-1">
-                    {user.name} ({user.email}) - {user.role}
-                  </option>
-                ))}
-              </select>
-              <div className="absolute top-3 right-3 pointer-events-none">
-                <Users className="h-5 w-5 text-gray-400" />
-              </div>
-            </div>
-            <p className="mt-2 text-sm text-gray-500">
-              Hold Ctrl/Cmd to select multiple users. If no users are selected, the activity will be sent to all users.
-            </p>
-          </div>
-
-          {/* Selected Users Count */}
-          {formData.userIds.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-800">
-                <span className="font-medium">{formData.userIds.length}</span> user{formData.userIds.length !== 1 ? 's' : ''} selected
-              </p>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">

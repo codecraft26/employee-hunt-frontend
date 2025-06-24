@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Lock,
   Play,
-  Award
+  Award,
+  X
 } from 'lucide-react';
 import { useTreasureHunt } from '../../hooks/useUserTreasureHunt';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
@@ -81,6 +82,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
   const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
   const [leaderNotes, setLeaderNotes] = useState('');
   const [autoRefresh, setAutoRefresh] = useState<NodeJS.Timeout | null>(null);
+  const [leaderSelectionError, setLeaderSelectionError] = useState<string | null>(null);
 
   // Check if hunt is accessible
   const canAccessHunt = hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS';
@@ -316,7 +318,14 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
   const handleLeaderSubmit = async () => {
     if (selectedSubmissions.size === 0 || !teamId || !currentStage?.id) return;
 
+    // Validate that only one submission is selected per stage
+    if (selectedSubmissions.size > 1) {
+      setLeaderSelectionError('You can only select one image per stage. Please select only one submission to send to the admin.');
+      return;
+    }
+
     setSubmittingMember(true);
+    setLeaderSelectionError(null);
     try {
       await leaderSubmitToAdmin(teamId, currentStage.id, {
         selectedSubmissionIds: Array.from(selectedSubmissions),
@@ -338,8 +347,15 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
     const newSelected = new Set(selectedSubmissions);
     if (newSelected.has(submissionId)) {
       newSelected.delete(submissionId);
+      setLeaderSelectionError(null); // Clear error when deselecting
     } else {
+      // Check if we're trying to select more than one submission
+      if (newSelected.size >= 1) {
+        setLeaderSelectionError('You can only select one image per stage. Please deselect the current selection first.');
+        return;
+      }
       newSelected.add(submissionId);
+      setLeaderSelectionError(null);
     }
     setSelectedSubmissions(newSelected);
   };
@@ -734,6 +750,22 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                             <Crown className="h-4 w-4 mr-2" />
                             Team Leader Review
                           </h4>
+                          
+                          {/* Leader Selection Error */}
+                          {leaderSelectionError && (
+                            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-2">
+                              <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-sm text-red-700">{leaderSelectionError}</p>
+                              </div>
+                              <button
+                                onClick={() => setLeaderSelectionError(null)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                           
                           {memberSubmissions.length > 0 ? (
                             <div className="space-y-3">
