@@ -22,6 +22,7 @@ import {
   FileText
 } from 'lucide-react';
 import { useActivities, Activity } from '../../hooks/useActivities';
+import { useAppSelector } from '../../hooks/redux'; // Adjust the import path as needed
 
 const UserActivitiesTab: React.FC = () => {
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
@@ -38,6 +39,14 @@ const UserActivitiesTab: React.FC = () => {
     getActivityStatusColor,
     formatActivityDate,
   } = useActivities();
+
+  // Get the current user from Redux (or your auth state)
+  const user = useAppSelector((state) => state.auth.user);
+
+  // Filter activities for the current user only, with null checks
+  const userActivities = Array.isArray(activities) && user && user.id
+    ? activities.filter(activity => activity.user && activity.user.id === user.id)
+    : [];
 
   // Fetch activities when component mounts
   useEffect(() => {
@@ -133,7 +142,7 @@ const UserActivitiesTab: React.FC = () => {
             <Sparkles className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
-            Activities Timeline
+            Announcements
           </h1>
           <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
             Stay updated with the latest announcements, quizzes, polls, and treasure hunts
@@ -174,7 +183,7 @@ const UserActivitiesTab: React.FC = () => {
                 </div>
               </div>
             </div>
-          ) : activities.length === 0 && !activitiesLoading ? (
+          ) : userActivities.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center">
               <div className="w-20 h-20 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center mx-auto mb-6">
                 <ActivityIcon className="h-10 w-10 text-gray-500" />
@@ -187,7 +196,7 @@ const UserActivitiesTab: React.FC = () => {
               {/* Timeline Line */}
               <div className="absolute left-4 sm:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-400 via-purple-400 to-pink-400 opacity-30"></div>
 
-              {activitiesLoading && activities.length === 0 ? (
+              {activitiesLoading && userActivities.length === 0 ? (
                 // Loading state
                 Array.from({ length: 3 }).map((_, index) => (
                   <div key={index} className="relative pl-12 sm:pl-20">
@@ -208,7 +217,7 @@ const UserActivitiesTab: React.FC = () => {
                   </div>
                 ))
               ) : (
-                activities.map((activity, index) => {
+                userActivities.map((activity, index) => {
                   const IconComponent = getIconComponent(getActivityTypeIcon(activity.type));
                   const gradient = getActivityGradient(activity.type);
                   const iconColor = getIconColor(activity.type);
@@ -271,7 +280,7 @@ const UserActivitiesTab: React.FC = () => {
                               <img
                                 src={activity.imageUrl}
                                 alt={activity.title}
-                                className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 shadow-sm"
+                                className="object-cover rounded-lg border border-gray-200 shadow-sm"
                               />
                             </div>
                           )}
@@ -403,11 +412,11 @@ const UserActivitiesTab: React.FC = () => {
                               {currentTab === 'image' && activity.imageUrl && (
                                 <div>
                                   <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Activity Image</h4>
-                                  <div className="relative">
-                                    <img 
-                                      src={activity.imageUrl} 
+                                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg overflow-hidden border shadow-md mx-auto">
+                                    <img
+                                      src={activity.imageUrl}
                                       alt={activity.title}
-                                      className="w-full max-h-96 object-contain rounded-lg border shadow-md"
+                                      className="w-full h-full object-cover"
                                     />
                                   </div>
                                 </div>

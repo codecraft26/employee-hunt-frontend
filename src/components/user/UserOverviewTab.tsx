@@ -245,6 +245,12 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
     }
   }, []);
 
+  // Filter activities for the current user only
+  const userActivities = useMemo(
+    () => (activities || []).filter(activity => activity.user && activity.user.id === user.id),
+    [activities, user.id]
+  );
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Enhanced Team Info Section - Mobile responsive */}
@@ -460,24 +466,25 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
               </div>
             ))}
           </div>
-        ) : !activities || activities.length === 0 ? (
-          <div className="text-center py-6 sm:py-8 md:py-12">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 md:mb-6">
-              <Zap className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-white" />
+        ) :
+          userActivities.length === 0 ? (
+            <div className="text-center py-6 sm:py-8 md:py-12">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 md:mb-6">
+                <Zap className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 text-white" />
+              </div>
+              <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2 md:mb-3">No Recent Activities</h3>
+              <p className="text-slate-400 mb-3 sm:mb-4 md:mb-6 text-xs sm:text-sm md:text-base px-4">Check back later for epic announcements and challenges</p>
+              <button
+                onClick={() => router.push('/dashboard/activities')}
+                className="btn-gaming text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 inline-flex items-center"
+              >
+                <Gem className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2 flex-shrink-0" />
+                Check Activities
+              </button>
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2 md:mb-3">No Recent Activities</h3>
-            <p className="text-slate-400 mb-3 sm:mb-4 md:mb-6 text-xs sm:text-sm md:text-base px-4">Check back later for epic announcements and challenges</p>
-            <button
-              onClick={() => router.push('/dashboard/activities')}
-              className="btn-gaming text-xs sm:text-sm md:text-base px-3 sm:px-4 md:px-5 py-2 sm:py-2.5 md:py-3 inline-flex items-center"
-            >
-              <Gem className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2 flex-shrink-0" />
-              Check Activities
-            </button>
-          </div>
-        ) : (
+          ) :
           <div className="space-y-2 sm:space-y-3 md:space-y-4">
-            {activities.slice(0, 3).map((activity, index) => {
+            {userActivities.slice(0, 3).map((activity, index) => {
               const IconComponent = getIconComponent(getActivityTypeIcon(activity.type));
               const gradient = getActivityGradient(activity.type);
               
@@ -529,21 +536,21 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
             })}
             
             {/* View More Activities Link */}
-            {activities && activities.length > 3 && (
+            {userActivities.length > 3 && (
               <div className="text-center pt-3 sm:pt-4 md:pt-6">
                 <button
                   onClick={() => router.push('/dashboard/activities')}
                   className="inline-flex items-center text-xs sm:text-sm md:text-base text-gradient hover:text-white font-bold transition-colors duration-300 group"
                 >
                   <Heart className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 mr-1 sm:mr-2 flex-shrink-0" />
-                  <span className="hidden sm:inline">View {activities.length - 3} more epic activities</span>
-                  <span className="sm:hidden">View {activities.length - 3} more</span>
+                  <span className="hidden sm:inline">View {userActivities.length - 3} more epic activities</span>
+                  <span className="sm:hidden">View {userActivities.length - 3} more</span>
                   <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 ml-1 group-hover:translate-x-1 transition-transform duration-300 flex-shrink-0" />
                 </button>
               </div>
             )}
           </div>
-        )}
+        }
       </div>
     </div>
   );
