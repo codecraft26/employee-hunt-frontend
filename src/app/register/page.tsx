@@ -464,7 +464,7 @@ export default function RegisterPage() {
           )}
 
           {!registrationSuccess && (
-            <form onSubmit={currentStep === totalSteps ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }} className="space-y-6">
+            <form onSubmit={currentStep === totalSteps ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }} className="space-y-6" autoComplete="off">
               
               {/* Step 1: Basic Information */}
               {currentStep === 1 && (
