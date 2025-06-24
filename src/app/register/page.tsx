@@ -8,6 +8,7 @@ import { registerUser, clearError } from '../../store/authSlice';
 import { useCategories } from '../../hooks/useCategories';
 import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Building2, Upload, X, Heart, CreditCard, FileCheck, Shield } from 'lucide-react';
 import Image from 'next/image';
+import { compressImage, validateImageFile, getImageDimensions } from '../../utils/imageUtils';
 
 // Add SVG as a React component
 const TeamPlayBanner = () => (
@@ -84,6 +85,7 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -157,25 +159,65 @@ export default function RegisterPage() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        setValidationErrors(['Image size should be less than 5MB']);
+      // Clear previous errors
+      setValidationErrors([]);
+      
+      // Basic file validation
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        setValidationErrors([validationError]);
         return;
       }
       
-      if (!file.type.startsWith('image/')) {
-        setValidationErrors(['Please upload an image file']);
-        return;
+      try {
+        // Get image dimensions for additional validation
+        const dimensions = await getImageDimensions(file);
+        
+        // Check minimum dimensions
+        if (dimensions.width < 100 || dimensions.height < 100) {
+          setValidationErrors(['Image should be at least 100x100 pixels']);
+          return;
+        }
+        
+        // Check maximum dimensions
+        if (dimensions.width > 5000 || dimensions.height > 5000) {
+          setValidationErrors(['Image dimensions should not exceed 5000x5000 pixels']);
+          return;
+        }
+        
+        // Compress image if it's too large
+        let processedFile = file;
+        if (file.size > 1 * 1024 * 1024) { // Compress files larger than 1MB
+          try {
+            processedFile = await compressImage(file, {
+              maxWidth: 1920,
+              maxHeight: 1920,
+              quality: 0.8
+            });
+            console.log(`Compressed image from ${file.size} to ${processedFile.size} bytes`);
+          } catch (compressionError) {
+            console.warn('Image compression failed, using original file:', compressionError);
+          }
+        }
+        
+        // If all validations pass, proceed with file processing
+        setFormData((prev) => ({ ...prev, profileImage: processedFile }));
+        const reader = new FileReader();
+        reader.onload = () => {
+          setPreviewUrl(reader.result as string);
+        };
+        reader.onerror = () => {
+          setValidationErrors(['Failed to read image file. Please try again.']);
+        };
+        reader.readAsDataURL(processedFile);
+        
+      } catch (error) {
+        console.error('Error processing image:', error);
+        setValidationErrors(['Failed to process image. Please try a different file.']);
       }
-
-      setFormData((prev) => ({ ...prev, profileImage: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -194,23 +236,50 @@ export default function RegisterPage() {
     const file = e.target.files?.[0];
     if (file) {
       console.log('File selected:', file.name, file.size, file.type);
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      
+      // Clear previous errors
+      setValidationErrors([]);
+      
+      // File size validation (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
         setValidationErrors(['File size should be less than 5MB']);
         return;
       }
       
-      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-        setValidationErrors(['Please upload an image file or PDF']);
+      // File type validation
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const allowedDocTypes = ['application/pdf'];
+      const isValidImage = allowedImageTypes.includes(file.type.toLowerCase());
+      const isValidDoc = allowedDocTypes.includes(file.type.toLowerCase());
+      
+      if (!isValidImage && !isValidDoc) {
+        setValidationErrors(['Please upload a valid image file (JPEG, PNG, GIF, WebP) or PDF document']);
         return;
+      }
+
+      // For PDF files, additional validation
+      if (file.type === 'application/pdf') {
+        // Check if PDF is corrupted by attempting to create object URL
+        try {
+          const testUrl = URL.createObjectURL(file);
+          URL.revokeObjectURL(testUrl);
+        } catch (error) {
+          setValidationErrors(['Invalid PDF file. Please select a different file.']);
+          return;
+        }
       }
 
       setFormData((prev) => ({ ...prev, idProof: file }));
       
       // Only show preview for images, not PDFs
-      if (file.type.startsWith('image/')) {
+      if (isValidImage) {
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onload = () => {
           setIdCardPreviewUrl(reader.result as string);
+        };
+        reader.onerror = () => {
+          setValidationErrors(['Failed to read image file. Please try again.']);
+          setFormData((prev) => ({ ...prev, idProof: null }));
         };
         reader.readAsDataURL(file);
       } else {
@@ -319,37 +388,87 @@ export default function RegisterPage() {
       return;
     }
 
-    try {
-      // Create FormData object
-      const submitData = new FormData();
-      submitData.append('name', formData.name);
-      submitData.append('email', formData.email);
-      submitData.append('password', formData.password);
-      submitData.append('categoryIds', JSON.stringify(formData.categoryIds));
-      submitData.append('employeeCode', formData.employeeCode);
-      submitData.append('gender', formData.gender);
-      submitData.append('hobbies', formData.hobbies);
-      submitData.append('declarationAccepted', formData.declarationAccepted.toString());
-      if (formData.profileImage) {
-        submitData.append('profileImage', formData.profileImage);
-      }
-      if (formData.idProof) {
-        submitData.append('idProof', formData.idProof);
-      }
+    // Retry logic for form submission
+    const maxRetries = 3;
+    let currentRetry = 0;
 
-      const result = await dispatch(registerUser(submitData));
-      
-      // Check if registration was successful
-      if (registerUser.fulfilled.match(result)) {
-        // Show success message
-        setRegistrationSuccess(true);
-        // Redirect to login page after a short delay
-        setTimeout(() => {
-          router.push('/login?registered=true');
-        }, 2000);
+    const attemptSubmission = async (): Promise<boolean> => {
+      try {
+        // Create FormData object
+        const submitData = new FormData();
+        submitData.append('name', formData.name);
+        submitData.append('email', formData.email);
+        submitData.append('password', formData.password);
+        submitData.append('categoryIds', JSON.stringify(formData.categoryIds));
+        submitData.append('employeeCode', formData.employeeCode);
+        submitData.append('gender', formData.gender);
+        submitData.append('hobbies', formData.hobbies);
+        submitData.append('declarationAccepted', formData.declarationAccepted.toString());
+        
+        if (formData.profileImage) {
+          // Validate file before submission
+          if (formData.profileImage.size > 5 * 1024 * 1024) {
+            throw new Error('Profile image size exceeds 5MB limit');
+          }
+          submitData.append('profileImage', formData.profileImage);
+        }
+        
+        if (formData.idProof) {
+          // Validate file before submission
+          if (formData.idProof.size > 5 * 1024 * 1024) {
+            throw new Error('ID proof file size exceeds 5MB limit');
+          }
+          submitData.append('idProof', formData.idProof);
+        }
+
+        const result = await dispatch(registerUser(submitData));
+        
+        // Check if registration was successful
+        if (registerUser.fulfilled.match(result)) {
+          // Show success message
+          setRegistrationSuccess(true);
+          // Redirect to login page after a short delay
+          setTimeout(() => {
+            router.push('/login?registered=true');
+          }, 2000);
+          return true;
+        } else if (registerUser.rejected.match(result)) {
+          throw new Error(result.payload as string || 'Registration failed');
+        }
+        
+        return false;
+      } catch (error: any) {
+        console.error(`Registration attempt ${currentRetry + 1} failed:`, error);
+        
+        // Check if it's a network error that we should retry
+        const isRetryableError = 
+          error.message.includes('Network Error') ||
+          error.message.includes('timeout') ||
+          error.message.includes('ECONNREFUSED') ||
+          error.code === 'NETWORK_ERROR' ||
+          (error.response && error.response.status >= 500);
+        
+        if (isRetryableError && currentRetry < maxRetries - 1) {
+          currentRetry++;
+          setError(`Connection failed. Retrying... (${currentRetry}/${maxRetries})`);
+          
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, currentRetry) * 1000));
+          return await attemptSubmission();
+        } else {
+          // If it's not retryable or we've exhausted retries
+          if (currentRetry >= maxRetries - 1) {
+            setError(`Registration failed after ${maxRetries} attempts. Please check your internet connection and try again.`);
+          } else {
+            setError(error.message || 'An error occurred during registration');
+          }
+          return false;
+        }
       }
-    } catch (error) {
-      setError('An error occurred during registration');
+    };
+
+    try {
+      await attemptSubmission();
     } finally {
       setIsSubmitting(false);
     }
@@ -1018,7 +1137,14 @@ export default function RegisterPage() {
                     className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isSubmitting ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                        <span>
+                          {uploadProgress > 0 && uploadProgress < 100 
+                            ? `Uploading... ${uploadProgress}%` 
+                            : 'Processing...'}
+                        </span>
+                      </div>
                     ) : (
                       <>
                         <UserPlus className="h-5 w-5 mr-2" />

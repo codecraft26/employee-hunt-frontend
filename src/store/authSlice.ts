@@ -96,13 +96,39 @@ export const registerUser = createAsyncThunk(
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 30000, // 30 second timeout for file uploads
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       });
       
       // Don't automatically log in the user after registration
       // Just return success message
       return { success: true, message: response.data.message };
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', error);
+      
+      // Enhanced error handling
+      if (error.code === 'ECONNABORTED') {
+        return rejectWithValue('Upload timeout. Please check your internet connection and try again.');
+      }
+      
+      if (error.code === 'ERR_NETWORK') {
+        return rejectWithValue('Network error. Please check if the server is running and try again.');
+      }
+      
+      if (error.response?.status === 413) {
+        return rejectWithValue('File size too large. Please reduce image size and try again.');
+      }
+      
+      if (error.response?.status === 400) {
+        return rejectWithValue(error.response?.data?.message || 'Invalid data provided. Please check your inputs.');
+      }
+      
+      if (error.response?.status === 409) {
+        return rejectWithValue('User already exists with this email or employee code.');
+      }
+      
+      return rejectWithValue(error.response?.data?.message || 'Registration failed. Please try again.');
     }
   }
 );
