@@ -255,7 +255,7 @@ export interface TeamMemberSubmitRequest {
 }
 
 export interface LeaderSubmitToAdminRequest {
-  selectedSubmissionIds: string[]; // Frontend sends array, backend expects selectedSubmissionId (singular)
+  selectedSubmissionIds: string[]; // Frontend sends array, backend now accepts array
   leaderNotes?: string;
 }
 
@@ -1028,9 +1028,9 @@ export const useTreasureHunts = () => {
         throw new Error('No submissions selected. Please select at least one submission.');
       }
 
-      // Convert to backend expected format - use first selected submission ID
+      // Send the full array of selected submission IDs to the backend
       const requestData = {
-        selectedSubmissionId: submitData.selectedSubmissionIds[0], // Backend expects singular
+        selectedSubmissionIds: submitData.selectedSubmissionIds, // Backend now accepts array
         leaderNotes: submitData.leaderNotes || ''
       };
 
