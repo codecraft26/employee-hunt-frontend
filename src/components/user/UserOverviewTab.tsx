@@ -1,4 +1,6 @@
 // components/user/UserOverviewTab.tsx
+// Updated to use fetchMyActivities API endpoint for user-specific activities
+// This replaces the previous fetchActivities + client-side filtering approach
 'use client';
 
 import { useMemo, useCallback, memo } from 'react';
@@ -106,15 +108,18 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
   const router = useRouter();
 
   // Call hooks at the top level - this is required by Rules of Hooks
-  const { fetchActivities } = useActivities();
+  const { fetchMyActivities } = useActivities();
   const { fetchMyTeam } = useTeams();
 
-  // Optimized data fetching with caching - now using the hook methods properly
+  // Optimized data fetching with caching - now using fetchMyActivities for user-specific data
   const { data: activities = [], loading: activitiesLoading } = useOptimizedData(
     `user-activities-${user?.id}`,
     useCallback(async () => {
-      return await fetchActivities() || [];
-    }, [fetchActivities]),
+      console.log('🔄 UserOverviewTab: Fetching my activities...');
+      const result = await fetchMyActivities() || [];
+      console.log('✅ UserOverviewTab: Fetched activities:', result.length);
+      return result;
+    }, [fetchMyActivities]),
     { 
       staleTime: 30000, // 30 seconds
       cacheTime: 300000 // 5 minutes
@@ -245,10 +250,10 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
     }
   }, []);
 
-  // Filter activities for the current user only
+  // Since fetchMyActivities returns user-specific activities, no need to filter
   const userActivities = useMemo(
-    () => (activities || []).filter(activity => activity.user && activity.user.id === user.id),
-    [activities, user.id]
+    () => activities || [],
+    [activities]
   );
 
   return (
