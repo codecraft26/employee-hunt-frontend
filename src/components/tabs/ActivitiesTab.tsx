@@ -11,9 +11,11 @@ import {
   Trash2,
   MoreVertical,
   CheckCircle,
-  XCircle
+  XCircle,
+  ChevronDown
 } from 'lucide-react';
-import { useActivities, Activity as ActivityType } from '../../hooks/useActivities';
+import { Activity as ActivityType } from '../../hooks/useActivities';
+import { apiService } from '../../services/apiService';
 import CreateActivityModal from '../modals/CreateActivityModal';
 
 const ActivitiesTab: React.FC = () => {
@@ -21,23 +23,86 @@ const ActivitiesTab: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+  const [allActivities, setAllActivities] = useState<ActivityType[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreActivities, setHasMoreActivities] = useState(true);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const ACTIVITIES_PER_PAGE = 50;
 
-  const {
-    loading,
-    error,
-    activities,
-    fetchActivities,
-    clearError,
-    getActivityTypeIcon,
-    getActivityTypeDisplay,
-    getActivityStatusColor,
-    formatActivityDate,
-  } = useActivities();
+  // Helper functions from the hook (we'll copy them locally)
+  const getActivityTypeDisplay = (type: string) => {
+    switch (type.toUpperCase()) {
+      case 'QUIZ_UPLOADED':
+        return 'Quiz';
+      case 'POLL_CREATED':
+        return 'Poll Created';
+      case 'POLL_VOTE_CAST':
+        return 'Vote Cast';
+      case 'TREASURE_HUNT':
+        return 'Treasure Hunt';
+      case 'CHALLENGE':
+        return 'Challenge';
+      case 'ANNOUNCEMENT_CREATED':
+        return 'Announcement';
+      default:
+        return type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
+  const getActivityStatusColor = (type: string) => {
+    switch (type.toUpperCase()) {
+      case 'QUIZ_UPLOADED':
+        return 'bg-blue-100 text-blue-800';
+      case 'POLL_CREATED':
+        return 'bg-green-100 text-green-800';
+      case 'POLL_VOTE_CAST':
+        return 'bg-purple-100 text-purple-800';
+      case 'TREASURE_HUNT':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'CHALLENGE':
+        return 'bg-red-100 text-red-800';
+      case 'ANNOUNCEMENT_CREATED':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatActivityDate = (date: string) => {
+    return new Date(date).toLocaleDateString();
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
 
   // Fetch activities on component mount
   useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+    // Fetch user's activities using the same API as UserOverview tab
+    const loadInitialActivities = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 ActivitiesTab: Fetching my activities...');
+        // Use the same endpoint as UserOverview tab: /activities/my-activities
+        const response = await apiService.getMyActivities();
+        console.log('📋 ActivitiesTab: API response:', response);
+        if (response?.success && response?.data) {
+          console.log('✅ ActivitiesTab: Fetched activities:', response.data.length);
+          setAllActivities(response.data);
+          // Since getMyActivities returns all user activities at once, no pagination needed
+          setHasMoreActivities(false);
+        }
+      } catch (error) {
+        console.error('❌ ActivitiesTab: Failed to load activities:', error);
+        setError('Failed to load activities');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInitialActivities();
+  }, []);
 
   // Clear success message after 5 seconds
   useEffect(() => {
@@ -51,12 +116,48 @@ const ActivitiesTab: React.FC = () => {
 
   const handleCreateSuccess = () => {
     setSuccessMessage('Activity created successfully!');
-    fetchActivities(); // Refresh the list
+    setCurrentPage(1); // Reset to first page
+    // Refresh the list using the same API as UserOverview
+    const refreshActivities = async () => {
+      try {
+        const response = await apiService.getMyActivities();
+        if (response?.success && response?.data) {
+          setAllActivities(response.data);
+          setHasMoreActivities(false); // No pagination for user activities
+        }
+      } catch (error) {
+        console.error('Failed to refresh activities:', error);
+      }
+    };
+    refreshActivities();
   };
 
   const handleRefresh = () => {
     clearError();
-    fetchActivities();
+    setCurrentPage(1); // Reset to first page
+    // Refresh using the same API as UserOverview
+    const refreshActivities = async () => {
+      try {
+        setLoading(true);
+        const response = await apiService.getMyActivities();
+        if (response?.success && response?.data) {
+          setAllActivities(response.data);
+          setHasMoreActivities(false); // No pagination for user activities
+        }
+      } catch (error) {
+        console.error('Failed to refresh activities:', error);
+        setError('Failed to refresh activities');
+      } finally {
+        setLoading(false);
+      }
+    };
+    refreshActivities();
+  };
+
+  const handleLoadMore = async () => {
+    // Since getMyActivities doesn't support pagination, disable load more
+    // All user activities are loaded at once
+    setHasMoreActivities(false);
   };
 
   const toggleDropdown = (activityId: string) => {
@@ -72,10 +173,29 @@ const ActivitiesTab: React.FC = () => {
     setDropdownOpen(null);
   };
 
-  const handleDeleteActivity = (activity: ActivityType) => {
-    // TODO: Implement delete functionality
-    console.log('Delete activity:', activity.id);
+  const handleDeleteActivity = async (activity: ActivityType) => {
+    if (!confirm(`Are you sure you want to delete "${activity.title}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleteLoading(activity.id);
     setDropdownOpen(null);
+    
+    try {
+      await apiService.deleteActivity(activity.id);
+      
+      // Remove the activity from the local state
+      setAllActivities(prev => prev.filter(a => a.id !== activity.id));
+      
+      setSuccessMessage('Activity deleted successfully!');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete activity';
+      setSuccessMessage(null);
+      // Show error in a more visible way
+      alert(`Error deleting activity: ${errorMessage}`);
+    } finally {
+      setDeleteLoading(null);
+    }
   };
 
   const getActivityGradient = (type: string) => {
@@ -93,7 +213,7 @@ const ActivitiesTab: React.FC = () => {
     }
   };
 
-  if (loading && activities.length === 0) {
+  if (loading && allActivities.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -109,8 +229,15 @@ const ActivitiesTab: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Activities Management</h2>
-          <p className="text-gray-600">Create and manage announcements and activities</p>
+          <h2 className="text-2xl font-bold text-gray-900">My Activities</h2>
+          <p className="text-gray-600">
+            View and manage your activities and announcements
+            {allActivities.length > 0 && (
+              <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                {allActivities.length} activities{hasMoreActivities ? '+' : ''}
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex items-center space-x-3">
           <button
@@ -172,7 +299,7 @@ const ActivitiesTab: React.FC = () => {
       )}
 
       {/* Activities Grid */}
-      {activities.length === 0 ? (
+      {allActivities.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-20 h-20 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center mx-auto mb-6">
             <Activity className="h-10 w-10 text-gray-500" />
@@ -189,7 +316,7 @@ const ActivitiesTab: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activities.map((activity) => {
+          {allActivities.map((activity) => {
             const gradient = getActivityGradient(activity.type);
             
             return (
@@ -235,10 +362,15 @@ const ActivitiesTab: React.FC = () => {
                               </button>
                               <button
                                 onClick={() => handleDeleteActivity(activity)}
-                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                disabled={deleteLoading === activity.id}
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Activity
+                                {deleteLoading === activity.id ? (
+                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                )}
+                                {deleteLoading === activity.id ? 'Deleting...' : 'Delete Activity'}
                               </button>
                             </div>
                           </div>
@@ -270,7 +402,7 @@ const ActivitiesTab: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Users className="h-4 w-4" />
-                      <span>{activity.user.name}</span>
+                      <span>{activity.user?.name || 'Unknown User'}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="h-4 w-4" />
@@ -292,6 +424,19 @@ const ActivitiesTab: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Load More Button */}
+      {hasMoreActivities && !loading && (
+        <div className="flex justify-center mt-8">
+          <button
+            onClick={handleLoadMore}
+            className="inline-flex items-center px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <ChevronDown className="h-4 w-4 mr-2" />
+            Load More Activities
+          </button>
         </div>
       )}
 
@@ -330,7 +475,10 @@ const ActivitiesTab: React.FC = () => {
                 
                 <div>
                   <h4 className="font-medium text-gray-900">Created By</h4>
-                  <p className="text-gray-700">{selectedActivity.user.name} ({selectedActivity.user.email})</p>
+                  <p className="text-gray-700">
+                    {selectedActivity.user?.name || 'Unknown User'} 
+                    {selectedActivity.user?.email && ` (${selectedActivity.user.email})`}
+                  </p>
                 </div>
                 
                 <div>
@@ -357,4 +505,4 @@ const ActivitiesTab: React.FC = () => {
   );
 };
 
-export default ActivitiesTab; 
+export default ActivitiesTab;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, Activity, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import Cookies from 'js-cookie';
-import axios from 'axios';
+import { apiService } from '../../services/apiService';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
@@ -74,6 +73,11 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent multiple submissions
+    if (loading) {
+      return;
+    }
+    
     if (!formData.name.trim()) {
       setError('Activity name is required');
       return;
@@ -91,22 +95,15 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
         formDataToSend.append('image', imageFile);
       }
 
-      // Get authentication token with priority: adminToken > localStorage adminToken > regular token
-      const adminTokenCookie = Cookies.get('adminToken');
-      const adminTokenLocal = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const regularToken = Cookies.get('token');
+      console.log('🔄 Creating activity:', formData.name);
       
-      const token = adminTokenCookie || adminTokenLocal || regularToken;
+      const response = await apiService.createActivity(formDataToSend);
 
-      const response = await axios.post(`${API_BASE_URL}/activities/create`, formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('✅ Activity creation response:', response);
 
-      if (response.data.success) {
+      if (response.success) {
         setSuccess(true);
+        console.log('🎉 Activity created successfully');
         onSuccess?.();
         
         // Auto close after 2 seconds
@@ -114,10 +111,10 @@ const CreateActivityModal: React.FC<CreateActivityModalProps> = ({
           onClose();
         }, 2000);
       } else {
-        setError(response.data.message || 'Failed to create activity');
+        setError(response.message || 'Failed to create activity');
       }
     } catch (err: any) {
-      console.error('Create activity error:', err);
+      console.error('❌ Create activity error:', err);
       setError(err.response?.data?.message || 'Failed to create activity');
     } finally {
       setLoading(false);
