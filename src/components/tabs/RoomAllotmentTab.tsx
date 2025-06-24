@@ -33,16 +33,21 @@ const RoomAllotmentTab: React.FC = () => {
   // Filter and sort rooms
   const filteredAndSortedRooms = rooms
     .filter(room => {
+      const hasUsers = room.user || (room.users && room.users.length > 0);
+      const searchableUsers = room.users || (room.user ? [room.user] : []);
+      
       const matchesSearch = 
         room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.user?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.user?.employeeCode?.toLowerCase().includes(searchTerm.toLowerCase());
+        searchableUsers.some(user => 
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.employeeCode?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
       const matchesFilter = 
         filterStatus === 'all' ||
-        (filterStatus === 'occupied' && room.user) ||
-        (filterStatus === 'vacant' && !room.user);
+        (filterStatus === 'occupied' && hasUsers) ||
+        (filterStatus === 'vacant' && !hasUsers);
 
       return matchesSearch && matchesFilter;
     })
@@ -60,8 +65,16 @@ const RoomAllotmentTab: React.FC = () => {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
-  const occupiedRooms = rooms.filter(room => room.user);
-  const vacantRooms = rooms.filter(room => !room.user);
+  const occupiedRooms = rooms.filter(room => room.user || (room.users && room.users.length > 0));
+  const vacantRooms = rooms.filter(room => !room.user && (!room.users || room.users.length === 0));
+  const totalUsers = rooms.reduce((total, room) => {
+    if (room.users && room.users.length > 0) {
+      return total + room.users.length;
+    } else if (room.user) {
+      return total + 1;
+    }
+    return total;
+  }, 0);
 
   const handleRefresh = () => {
     fetchAllRooms();
@@ -72,11 +85,13 @@ const RoomAllotmentTab: React.FC = () => {
   };
 
   const getStatusColor = (room: HotelRoom) => {
-    return room.user ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    const hasUsers = room.user || (room.users && room.users.length > 0);
+    return hasUsers ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
   };
 
   const getStatusIcon = (room: HotelRoom) => {
-    return room.user ? CheckCircle : X;
+    const hasUsers = room.user || (room.users && room.users.length > 0);
+    return hasUsers ? CheckCircle : X;
   };
 
   return (
@@ -246,41 +261,85 @@ const RoomAllotmentTab: React.FC = () => {
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getStatusColor(room)}`}>
                     <StatusIcon className="h-3 w-3" />
-                    <span>{room.user ? 'Occupied' : 'Vacant'}</span>
+                    <span>
+                      {room.user || (room.users && room.users.length > 0) ? 
+                        `Occupied${room.users && room.users.length > 1 ? ` (${room.users.length})` : ''}` : 
+                        'Vacant'
+                      }
+                    </span>
                   </span>
                 </div>
 
                 {/* User Info */}
-                {room.user ? (
+                {(room.user || (room.users && room.users.length > 0)) ? (
                   <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      {room.user.profileImage ? (
-                        <img
-                          src={room.user.profileImage}
-                          alt={room.user.name}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-gray-400" />
+                    {/* Display all users in the room */}
+                    {room.users && room.users.length > 0 ? (
+                      room.users.map((user, index) => (
+                        <div key={user.id} className={`${index > 0 ? 'border-t border-gray-100 pt-3' : ''}`}>
+                          <div className="flex items-center space-x-3">
+                            {user.profileImage ? (
+                              <img
+                                src={user.profileImage}
+                                alt={user.name}
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                <User className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{user.name}</p>
+                              <p className="text-sm text-gray-500">{user.email}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-1 mt-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Employee Code:</span>
+                              <span className="font-medium">{user.employeeCode || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-600">Department:</span>
+                              <span className="font-medium">{user.department || 'N/A'}</span>
+                            </div>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{room.user.name}</p>
-                        <p className="text-sm text-gray-500">{room.user.email}</p>
+                      ))
+                    ) : room.user ? (
+                      // Fallback to single user display for backward compatibility
+                      <div>
+                        <div className="flex items-center space-x-3">
+                          {room.user.profileImage ? (
+                            <img
+                              src={room.user.profileImage}
+                              alt={room.user.name}
+                              className="h-10 w-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                              <User className="h-5 w-5 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{room.user.name}</p>
+                            <p className="text-sm text-gray-500">{room.user.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-lg p-3 space-y-1 mt-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Employee Code:</span>
+                            <span className="font-medium">{room.user.employeeCode || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Department:</span>
+                            <span className="font-medium">{room.user.department || 'N/A'}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded-lg p-3 space-y-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Employee Code:</span>
-                        <span className="font-medium">{room.user.employeeCode || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Department:</span>
-                        <span className="font-medium">{room.user.department || 'N/A'}</span>
-                      </div>
-                    </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="text-center py-6">

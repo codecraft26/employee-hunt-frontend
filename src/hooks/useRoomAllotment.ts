@@ -12,6 +12,14 @@ export interface HotelRoom {
     department?: string;
     profileImage?: string;
   } | null;
+  users?: {
+    id: string;
+    name: string;
+    email: string;
+    employeeCode?: string;
+    department?: string;
+    profileImage?: string;
+  }[];
 }
 
 export interface AssignRoomRequest {
@@ -78,8 +86,17 @@ export const useRoomAllotment = () => {
       console.log('Rooms response:', response);
       
       if (response.success) {
-        setRooms(response.data);
-        return response.data;
+        // Transform the API response to match the expected structure
+        const transformedRooms: HotelRoom[] = response.data.map((room: any) => ({
+          id: room.id,
+          roomNumber: room.roomNumber,
+          user: room.users && room.users.length > 0 ? room.users[0] : null, // Take the first user for backward compatibility
+          users: room.users || [] // Keep the users array for future use
+        }));
+        
+        console.log('Transformed rooms:', transformedRooms);
+        setRooms(transformedRooms);
+        return transformedRooms;
       } else {
         throw new Error('Failed to fetch rooms');
       }

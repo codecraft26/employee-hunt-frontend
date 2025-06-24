@@ -37,7 +37,10 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
 
   // Get user's current room
   const getUserCurrentRoom = (userId: string) => {
-    return rooms.find(room => room.user?.id === userId);
+    return rooms.find(room => 
+      room.user?.id === userId || 
+      (room.users && room.users.some(user => user.id === userId))
+    );
   };
 
   const validateForm = (): boolean => {
