@@ -15,6 +15,8 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+const fallbackImage = "/dashboard_tiles/app-logo.jpeg";
+
 messaging.onBackgroundMessage(function (payload) {
   console.log("[firebase-messaging-sw.js] Background message:", payload);
 
@@ -25,29 +27,29 @@ messaging.onBackgroundMessage(function (payload) {
   if (payload.notification) {
     title = payload.notification.title || title;
     body = payload.notification.body || body;
-    image = payload.notification.image || image;
+    image = payload.notification.image || image || fallbackImage;
   } else if (payload.data) {
     try {
       const data = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
       if (data.notification) {
         title = data.notification.title || title;
         body = data.notification.body || body;
-        image = data.notification.image || image;
+        image = data.notification.image || image || fallbackImage;
       } else {
         title = data.title || title;
         body = data.body || body;
-        image = data.image || image;
+        image = data.image || image || fallbackImage;
       }
     } catch (e) {
       title = payload.data.title || title;
       body = payload.data.body || body;
-      image = payload.data.image || image;
+      image = payload.data.image || image || fallbackImage;
     }
   }
 
   const notificationOptions = {
     body: body,
-    image: image,
+    image: image || fallbackImage,
     icon: "/icons/icon-192x192.png",
     data: payload.data || {},
   };
@@ -71,11 +73,11 @@ self.addEventListener('push', function(event) {
   if (data.notification) {
     title = data.notification.title || title;
     body = data.notification.body || body;
-    image = data.notification.image || image;
+    image = data.notification.image || image || fallbackImage;
   } else if (data.title || data.body) {
     title = data.title || title;
     body = data.body || body;
-    image = data.image || image;
+    image = data.image || image || fallbackImage;
   } else {
     // If the whole data is a stringified JSON
     try {
@@ -83,17 +85,18 @@ self.addEventListener('push', function(event) {
       if (parsed.notification) {
         title = parsed.notification.title || title;
         body = parsed.notification.body || body;
-        image = parsed.notification.image || image;
+        image = parsed.notification.image || image || fallbackImage;
       }
     } catch (e) {
       // fallback: show the stringified data
       body = JSON.stringify(data);
+      image = fallbackImage;
     }
   }
 
   const notificationOptions = {
     body: body,
-    image: image,
+    image: image || fallbackImage,
     icon: "/icons/icon-192x192.png",
     data: data.data || {},
   };
