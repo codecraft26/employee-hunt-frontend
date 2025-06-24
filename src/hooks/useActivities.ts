@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { apiService } from '../services/apiService';
 
 export interface Activity {
   id: string;
@@ -93,12 +94,21 @@ export const useActivities = () => {
       let response;
       
       try {
-        // First try the user-specific endpoint
-        response = await api.get<ActivitiesResponse>('/activities/user');
+        // First try the new my-activities endpoint
+        response = await api.get<ActivitiesResponse>('/activities/my-activities');
       } catch (err: any) {
         if (err.response?.status === 404 || err.response?.status === 400) {
-          // If that fails, try the general activities endpoint
-          response = await api.get<ActivitiesResponse>('/activities');
+          try {
+            // If that fails, try the user-specific endpoint
+            response = await api.get<ActivitiesResponse>('/activities/user');
+          } catch (userErr: any) {
+            if (userErr.response?.status === 404 || userErr.response?.status === 400) {
+              // If that also fails, try the general activities endpoint
+              response = await api.get<ActivitiesResponse>('/activities');
+            } else {
+              throw userErr;
+            }
+          }
         } else {
           throw err;
         }
@@ -223,6 +233,78 @@ export const useActivities = () => {
     }
   }, []);
 
+  // Fetch my activities using apiService
+  const fetchMyActivities = useCallback(async (): Promise<Activity[] | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('📋 Fetching my activities...');
+      const response = await apiService.getMyActivities();
+      
+      if (response.success) {
+        console.log('✅ My activities fetched successfully:', response.data);
+        setActivities(response.data);
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to fetch my activities');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch my activities';
+      console.error('❌ Fetch my activities error:', errorMessage);
+      setError(errorMessage);
+      
+      // For development, provide mock data if API is not available
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔧 Using mock activities for development');
+        const mockActivities: Activity[] = [
+          {
+            id: '1',
+            type: 'QUIZ_UPLOADED',
+            title: 'Weekly Quiz Available',
+            description: 'A new quiz has been uploaded for your team to complete.',
+            referenceId: 'quiz-1',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            user: {
+              id: 'admin-1',
+              name: 'Admin User',
+              email: 'admin@example.com',
+              role: 'admin',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          },
+          {
+            id: '2',
+            type: 'POLL_CREATED',
+            title: 'Team Event Poll',
+            description: 'Vote for your preferred team event this month.',
+            referenceId: 'poll-1',
+            createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+            updatedAt: new Date(Date.now() - 86400000).toISOString(),
+            user: {
+              id: 'admin-1',
+              name: 'Admin User',
+              email: 'admin@example.com',
+              role: 'admin',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }
+          }
+        ];
+        setActivities(mockActivities);
+        return mockActivities;
+      }
+      
+      // Return empty array as fallback to prevent UI from breaking
+      setActivities([]);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Format date for display
   const formatActivityDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
@@ -251,6 +333,7 @@ export const useActivities = () => {
     activities,
     fetchActivities,
     fetchUserActivities,
+    fetchMyActivities,
     clearError,
     getActivityTypeIcon,
     getActivityTypeDisplay,
