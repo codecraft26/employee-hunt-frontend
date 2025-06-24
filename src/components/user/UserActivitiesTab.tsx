@@ -27,12 +27,13 @@ import { useAppSelector } from '../../hooks/redux'; // Adjust the import path as
 const UserActivitiesTab: React.FC = () => {
   const [expandedActivities, setExpandedActivities] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<{ [key: string]: string }>({});
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   const {
     loading: activitiesLoading,
     error: activitiesError,
     activities,
-    fetchUserActivities,
+    fetchActivities,
     clearError: clearActivitiesError,
     getActivityTypeIcon,
     getActivityTypeDisplay,
@@ -43,15 +44,25 @@ const UserActivitiesTab: React.FC = () => {
   // Get the current user from Redux (or your auth state)
   const user = useAppSelector((state) => state.auth.user);
 
-  // Filter activities for the current user only, with null checks
-  const userActivities = Array.isArray(activities) && user && user.id
-    ? activities.filter(activity => activity.user && activity.user.id === user.id)
+  // Show all activities - announcements are typically meant for all users to see
+  // Remove the user-specific filtering to show all activities
+  // Sort by creation date (newest first)
+  const userActivities = Array.isArray(activities) 
+    ? activities.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     : [];
+
+  // Debug logging to help identify data issues
+  useEffect(() => {
+    if (activities && activities.length > 0) {
+      console.log('Activities received:', activities.length, activities);
+    }
+  }, [activities]);
 
   // Fetch activities when component mounts
   useEffect(() => {
-    fetchUserActivities();
-  }, [fetchUserActivities]);
+    fetchActivities();
+    setLastRefresh(new Date());
+  }, [fetchActivities]);
 
   // Get React icon component from string name
   const getIconComponent = useCallback((iconName: string) => {
@@ -103,8 +114,9 @@ const UserActivitiesTab: React.FC = () => {
 
   const handleRefreshActivities = useCallback(() => {
     clearActivitiesError();
-    fetchUserActivities();
-  }, [fetchUserActivities, clearActivitiesError]);
+    fetchActivities();
+    setLastRefresh(new Date());
+  }, [fetchActivities, clearActivitiesError]);
 
   const toggleActivityExpansion = useCallback((activityId: string) => {
     setExpandedActivities(prev => {
@@ -150,7 +162,7 @@ const UserActivitiesTab: React.FC = () => {
         </div>
 
         {/* Refresh Button */}
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center space-y-2">
           <button
             onClick={handleRefreshActivities}
             disabled={activitiesLoading}
@@ -159,6 +171,11 @@ const UserActivitiesTab: React.FC = () => {
             <RefreshCw className={`h-4 w-4 sm:h-5 sm:w-5 mr-2 ${activitiesLoading ? 'animate-spin' : ''}`} />
             <span className="font-medium">Refresh Activities</span>
           </button>
+          {lastRefresh && (
+            <p className="text-xs text-gray-500">
+              Last updated: {lastRefresh.toLocaleTimeString()}
+            </p>
+          )}
         </div>
 
         {/* Activities Timeline */}
@@ -183,6 +200,31 @@ const UserActivitiesTab: React.FC = () => {
                 </div>
               </div>
             </div>
+          ) : activitiesLoading && userActivities.length === 0 ? (
+            // Loading state when no activities are present
+            <div className="space-y-4 sm:space-y-6">
+              {/* Timeline Line */}
+              <div className="absolute left-4 sm:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-400 via-purple-400 to-pink-400 opacity-30"></div>
+              
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="relative pl-12 sm:pl-20">
+                  <div className="absolute left-2 sm:left-6 w-4 h-4 rounded-full bg-gray-300 animate-pulse"></div>
+                  <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 animate-pulse">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-200"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-gray-200 rounded w-full"></div>
+                      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : userActivities.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center">
               <div className="w-20 h-20 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center mx-auto mb-6">
@@ -196,28 +238,7 @@ const UserActivitiesTab: React.FC = () => {
               {/* Timeline Line */}
               <div className="absolute left-4 sm:left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-400 via-purple-400 to-pink-400 opacity-30"></div>
 
-              {activitiesLoading && userActivities.length === 0 ? (
-                // Loading state
-                Array.from({ length: 3 }).map((_, index) => (
-                  <div key={index} className="relative pl-12 sm:pl-20">
-                    <div className="absolute left-2 sm:left-6 w-4 h-4 rounded-full bg-gray-300 animate-pulse"></div>
-                    <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 animate-pulse">
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="w-12 h-12 rounded-full bg-gray-200"></div>
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                          <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-3 bg-gray-200 rounded w-full"></div>
-                        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                userActivities.map((activity, index) => {
+              {userActivities.map((activity, index) => {
                   const IconComponent = getIconComponent(getActivityTypeIcon(activity.type));
                   const gradient = getActivityGradient(activity.type);
                   const iconColor = getIconColor(activity.type);
@@ -280,7 +301,7 @@ const UserActivitiesTab: React.FC = () => {
                               <img
                                 src={activity.imageUrl}
                                 alt={activity.title}
-                                className="object-cover rounded-lg border border-gray-200 shadow-sm"
+                                className="w-full max-w-md mx-auto object-cover rounded-lg border border-gray-200 shadow-sm"
                               />
                             </div>
                           )}
@@ -296,10 +317,10 @@ const UserActivitiesTab: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2 text-sm text-gray-500">
                               <User className="h-4 w-4" />
-                              <span className="hidden sm:inline">Created by {activity.user.name}</span>
-                              <span className="sm:hidden">{activity.user.name}</span>
+                              <span className="hidden sm:inline">Created by {activity.user?.name || 'Unknown User'}</span>
+                              <span className="sm:hidden">{activity.user?.name || 'Unknown'}</span>
                               <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
-                                {activity.user.role}
+                                {activity.user?.role || 'N/A'}
                               </span>
                             </div>
 
@@ -385,9 +406,9 @@ const UserActivitiesTab: React.FC = () => {
                                     <div>
                                       <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Created By</h4>
                                       <div className="flex items-center space-x-2">
-                                        <span className="text-gray-900 font-medium">{activity.user.name}</span>
+                                        <span className="text-gray-900 font-medium">{activity.user?.name || 'Unknown User'}</span>
                                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-                                          {activity.user.role}
+                                          {activity.user?.role || 'N/A'}
                                         </span>
                                       </div>
                                     </div>
@@ -412,11 +433,11 @@ const UserActivitiesTab: React.FC = () => {
                               {currentTab === 'image' && activity.imageUrl && (
                                 <div>
                                   <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Activity Image</h4>
-                                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg overflow-hidden border shadow-md mx-auto">
+                                  <div className="w-full max-w-md mx-auto rounded-lg overflow-hidden border shadow-md">
                                     <img
                                       src={activity.imageUrl}
                                       alt={activity.title}
-                                      className="w-full h-full object-cover"
+                                      className="w-full h-auto object-cover"
                                     />
                                   </div>
                                 </div>
@@ -438,8 +459,7 @@ const UserActivitiesTab: React.FC = () => {
                       </div>
                     </div>
                   );
-                })
-              )}
+                })}
             </div>
           )}
         </div>

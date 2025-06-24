@@ -13,7 +13,7 @@ export interface Activity {
   referenceId: string;
   createdAt: string;
   updatedAt: string;
-  user: {
+  user?: {
     id: string;
     name: string;
     email: string;
@@ -25,7 +25,7 @@ export interface Activity {
     hobbies?: string[] | null;
     createdAt: string;
     updatedAt: string;
-  };
+  } | null;
 }
 
 export interface ActivitiesResponse {
@@ -61,14 +61,31 @@ export const useActivities = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
 
   // Fetch all activities (admin view)
-  const fetchActivities = useCallback(async (): Promise<Activity[] | null> => {
+  const fetchActivities = useCallback(async (limit?: number, page?: number): Promise<Activity[] | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.get<ActivitiesResponse>('/activities');
+      // Add query parameters for pagination if provided
+      let url = '/activities';
+      const params = new URLSearchParams();
+      
+      if (limit) {
+        params.append('limit', limit.toString());
+      }
+      if (page) {
+        params.append('page', page.toString());
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      console.log('🔄 Fetching activities from:', url);
+      const response = await api.get<ActivitiesResponse>(url);
       
       if (response.data.success) {
+        console.log('✅ Fetched activities:', response.data.data.length);
         setActivities(response.data.data);
         return response.data.data;
       } else {
@@ -77,7 +94,7 @@ export const useActivities = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to fetch activities';
       setError(errorMessage);
-      console.error('Activities fetch error:', err);
+      console.error('❌ Activities fetch error:', err);
       return null;
     } finally {
       setLoading(false);
@@ -171,6 +188,21 @@ export const useActivities = () => {
       return [];
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // Delete activity
+  const deleteActivity = useCallback(async (activityId: string) => {
+    try {
+      console.log('Deleting activity:', activityId);
+      const response = await apiService.deleteActivity(activityId);
+      console.log('Delete response:', response);
+      return response;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete activity';
+      console.error('Delete activity error:', errorMessage);
+      setError(errorMessage);
+      throw err;
     }
   }, []);
 
@@ -334,6 +366,7 @@ export const useActivities = () => {
     fetchActivities,
     fetchUserActivities,
     fetchMyActivities,
+    deleteActivity,
     clearError,
     getActivityTypeIcon,
     getActivityTypeDisplay,

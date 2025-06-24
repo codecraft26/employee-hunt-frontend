@@ -133,6 +133,15 @@ const apiService = {
 
   // Activities methods
   getMyActivities: () => apiService.get('/activities/my-activities'),
+  getAllActivities: (limit?: number, page?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (page) params.append('page', page.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return apiService.get(`/activities${query}`);
+  },
+  createActivity: (data: FormData) => apiService.post('/activities/create', data),
+  deleteActivity: (activityId: string) => apiService.delete(`/activities/${activityId}`),
 };
 
 export { apiService };
