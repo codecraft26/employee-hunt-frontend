@@ -9,6 +9,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { User, Mail, Lock, Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Building2, Upload, X, Heart, CreditCard, FileCheck, Shield } from 'lucide-react';
 import Image from 'next/image';
 import { compressImage, validateImageFile, getImageDimensions } from '../../utils/imageUtils';
+import { uploadProfileImage, uploadIdProof, validateImageFile as validateS3ImageFile, validateDocumentFile } from '../../services/s3Service';
 
 // Add SVG as a React component
 const TeamPlayBanner = () => (
@@ -394,34 +395,51 @@ export default function RegisterPage() {
 
     const attemptSubmission = async (): Promise<boolean> => {
       try {
-        // Create FormData object
-        const submitData = new FormData();
-        submitData.append('name', formData.name);
-        submitData.append('email', formData.email);
-        submitData.append('password', formData.password);
-        submitData.append('categoryIds', JSON.stringify(formData.categoryIds));
-        submitData.append('employeeCode', formData.employeeCode);
-        submitData.append('gender', formData.gender);
-        submitData.append('hobbies', formData.hobbies);
-        submitData.append('declarationAccepted', formData.declarationAccepted.toString());
+        setError('Uploading images...');
         
+        // Upload files to S3 first
+        let profileImageUrl = '';
+        let idProofUrl = '';
+
         if (formData.profileImage) {
-          // Validate file before submission
-          if (formData.profileImage.size > 5 * 1024 * 1024) {
-            throw new Error('Profile image size exceeds 5MB limit');
+          // Validate profile image
+          const validation = validateS3ImageFile(formData.profileImage);
+          if (!validation.isValid) {
+            throw new Error(validation.error);
           }
-          submitData.append('profileImage', formData.profileImage);
-        }
-        
-        if (formData.idProof) {
-          // Validate file before submission
-          if (formData.idProof.size > 5 * 1024 * 1024) {
-            throw new Error('ID proof file size exceeds 5MB limit');
-          }
-          submitData.append('idProof', formData.idProof);
+          
+          setError('Uploading profile image...');
+          profileImageUrl = await uploadProfileImage(formData.profileImage);
         }
 
-        const result = await dispatch(registerUser(submitData));
+        if (formData.idProof) {
+          // Validate ID proof (can be image or PDF)
+          const validation = validateDocumentFile(formData.idProof);
+          if (!validation.isValid) {
+            throw new Error(validation.error);
+          }
+          
+          setError('Uploading ID proof...');
+          idProofUrl = await uploadIdProof(formData.idProof);
+        }
+
+        setError('Creating account...');
+
+        // Create registration data object with URLs
+        const registrationData = {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          categoryIds: formData.categoryIds,
+          employeeCode: formData.employeeCode,
+          gender: formData.gender,
+          hobbies: formData.hobbies,
+          profileImageUrl,
+          idProofUrl,
+          declarationAccepted: formData.declarationAccepted,
+        };
+
+        const result = await dispatch(registerUser(registrationData));
         
         // Check if registration was successful
         if (registerUser.fulfilled.match(result)) {

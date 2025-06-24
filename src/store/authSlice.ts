@@ -51,11 +51,13 @@ interface RegisterData {
   name: string;
   email: string;
   password: string;
-  department: string;
+  categoryIds: string[];
   employeeCode: string;
   gender: string;
-  hobbies: string[];
-  profileImage: File;
+  hobbies: string;
+  profileImageUrl: string;
+  idProofUrl: string;
+  declarationAccepted: boolean;
 }
 
 interface LoginData {
@@ -90,15 +92,13 @@ api.interceptors.request.use((config) => {
 // Async thunks
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
-  async (userData: FormData, { rejectWithValue }) => {
+  async (userData: RegisterData, { rejectWithValue }) => {
     try {
       const response = await api.post<AuthResponse>('/auth/register', userData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
-        timeout: 30000, // 30 second timeout for file uploads
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
+        timeout: 30000, // 30 second timeout
       });
       
       // Don't automatically log in the user after registration
@@ -109,15 +109,11 @@ export const registerUser = createAsyncThunk(
       
       // Enhanced error handling
       if (error.code === 'ECONNABORTED') {
-        return rejectWithValue('Upload timeout. Please check your internet connection and try again.');
+        return rejectWithValue('Registration timeout. Please check your internet connection and try again.');
       }
       
       if (error.code === 'ERR_NETWORK') {
         return rejectWithValue('Network error. Please check if the server is running and try again.');
-      }
-      
-      if (error.response?.status === 413) {
-        return rejectWithValue('File size too large. Please reduce image size and try again.');
       }
       
       if (error.response?.status === 400) {
