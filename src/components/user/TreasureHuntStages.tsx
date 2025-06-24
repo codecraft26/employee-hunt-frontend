@@ -318,12 +318,6 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
   const handleLeaderSubmit = async () => {
     if (selectedSubmissions.size === 0 || !teamId || !currentStage?.id) return;
 
-    // Validate that only one submission is selected per stage
-    if (selectedSubmissions.size > 1) {
-      setLeaderSelectionError('You can only select one image per stage. Please select only one submission to send to the admin.');
-      return;
-    }
-
     setSubmittingMember(true);
     setLeaderSelectionError(null);
     try {
@@ -349,11 +343,6 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
       newSelected.delete(submissionId);
       setLeaderSelectionError(null); // Clear error when deselecting
     } else {
-      // Check if we're trying to select more than one submission
-      if (newSelected.size >= 1) {
-        setLeaderSelectionError('You can only select one image per stage. Please deselect the current selection first.');
-        return;
-      }
       newSelected.add(submissionId);
       setLeaderSelectionError(null);
     }
@@ -769,6 +758,17 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                           
                           {memberSubmissions.length > 0 ? (
                             <div className="space-y-3">
+                              {selectedSubmissions.size > 0 && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                  <p className="text-sm text-blue-800">
+                                    📤 <strong>{selectedSubmissions.size} photo{selectedSubmissions.size !== 1 ? 's' : ''} selected</strong>
+                                  </p>
+                                  <p className="text-xs text-blue-600 mt-1">
+                                    Click "Submit to Admin" to send these photos for final review.
+                                  </p>
+                                </div>
+                              )}
+                              
                               <div className="grid grid-cols-2 gap-2">
                                 {memberSubmissions.map((submission) => (
                                   <div
@@ -798,7 +798,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                               <textarea
                                 value={leaderNotes}
                                 onChange={(e) => setLeaderNotes(e.target.value)}
-                                placeholder="Add notes about the selected submission..."
+                                placeholder="Add notes about the selected submissions..."
                                 rows={2}
                                 className="w-full px-3 py-2 border border-slate-700 rounded-lg bg-slate-800 text-white placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               />
@@ -809,7 +809,14 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                                 className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                               >
                                 <Send className="h-4 w-4" />
-                                <span>{submittingMember ? 'Submitting...' : 'Submit to Admin'}</span>
+                                <span>
+                                  {submittingMember 
+                                    ? 'Submitting...' 
+                                    : selectedSubmissions.size > 0 
+                                      ? `Submit ${selectedSubmissions.size} Photo${selectedSubmissions.size !== 1 ? 's' : ''} to Admin`
+                                      : 'Submit to Admin'
+                                  }
+                                </span>
                               </button>
                             </div>
                           ) : (
