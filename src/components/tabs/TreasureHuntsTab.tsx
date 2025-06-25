@@ -69,6 +69,7 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
     }
   };
 
+  // Format date in IST
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -345,14 +346,34 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                           <Calendar className="h-4 w-4 mr-1" />
                           Start Date
                         </p>
-                        <p className="font-medium text-xs text-gray-600">{formatDate(hunt.startTime)}</p>
+                        <p className="font-medium text-xs text-gray-600">{
+                          new Date(hunt.startTime).toLocaleString('en-IN', {
+                            timeZone: 'Asia/Kolkata',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          })
+                        }</p>
                       </div>
                       <div>
                         <p className="text-gray-600 flex items-center">
                           <Clock className="h-4 w-4 mr-1" />
                           End Date
                         </p>
-                        <p className="font-medium text-xs text-gray-600">{formatDate(hunt.endTime)}</p>
+                        <p className="font-medium text-xs text-gray-600">{
+                          new Date(hunt.endTime).toLocaleString('en-IN', {
+                            timeZone: 'Asia/Kolkata',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          })
+                        }</p>
                       </div>
                     </div>
 

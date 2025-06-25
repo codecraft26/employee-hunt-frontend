@@ -44,14 +44,14 @@ const OptimizedHeader: React.FC<OptimizedHeaderProps> = memo(({
           </div>
           
           <div className="flex items-center space-x-1.5 sm:space-x-2">
-            <button className="relative p-2 text-slate-300 hover:text-white transition-colors duration-300 group">
+            {/* <button className="relative p-2 text-slate-300 hover:text-white transition-colors duration-300 group">
               <Bell className="h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform duration-300" />
               <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse border-2 border-slate-800"></div>
             </button>
             
             <button className="hidden sm:block p-2 text-slate-300 hover:text-white transition-colors duration-300 group">
               <Settings className="h-5 w-5 sm:h-6 sm:w-6 group-hover:rotate-90 transition-transform duration-300" />
-            </button>
+            </button> */}
             
             <button className="hidden sm:block p-2 text-slate-300 hover:text-white transition-colors duration-300 group">
               <User className="h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform duration-300" />
@@ -64,10 +64,10 @@ const OptimizedHeader: React.FC<OptimizedHeaderProps> = memo(({
               <LogOut className="h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform duration-300" />
               <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-pink-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
             </button>
-
+{/* 
             <button className="sm:hidden p-2 text-slate-300 hover:text-white transition-colors duration-300 group">
               <Menu className="h-6 w-6"/>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
