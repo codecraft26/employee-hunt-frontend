@@ -522,7 +522,18 @@ const SubmissionsManagementTab: React.FC<SubmissionsManagementTabProps> = ({
 
                                 <div className="text-xs text-gray-500 space-y-1">
                                   <p><strong>Submitted by:</strong> {submission.submittedBy.name}</p>
-                                  <p><strong>Submitted:</strong> {formatDate(submission.createdAt)}</p>
+                                  <p><strong>Submitted:</strong> {(() => {
+                                    const date = new Date(submission.createdAt);
+                                    date.setMinutes(date.getMinutes() + 330);
+                                    return date.toLocaleString('en-IN', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    });
+                                  })()}</p>
                                 </div>
 
                                 {submission.adminFeedback && (
@@ -600,7 +611,18 @@ const SubmissionsManagementTab: React.FC<SubmissionsManagementTabProps> = ({
                   <span className="ml-1">{selectedSubmission.status}</span>
                 </span>
                 <span className="text-sm text-gray-500">
-                  Submitted {formatDate(selectedSubmission.createdAt)}
+                  Submitted {(() => {
+                    const date = new Date(selectedSubmission.createdAt);
+                    date.setMinutes(date.getMinutes() + 330);
+                    return date.toLocaleString('en-IN', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true
+                    });
+                  })()}
                 </span>
               </div>
 
