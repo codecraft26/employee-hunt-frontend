@@ -406,12 +406,29 @@ const ActivitiesTab: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="h-4 w-4" />
-                      <span>{formatActivityDate(activity.createdAt)}</span>
+                      <span>
+                        
+                      {(() => {
+  const date = new Date(activity.createdAt);
+  date.setMinutes(date.getMinutes() + 330); // Add 5 hours 30 minutes for IST
+  return date.toLocaleString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+})()}
+
+
+                        
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                    {/* <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Clock className="h-4 w-4" />
                       <span>{new Date(activity.createdAt).toLocaleTimeString()}</span>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Status Badge */}
@@ -483,7 +500,24 @@ const ActivitiesTab: React.FC = () => {
                 
                 <div>
                   <h4 className="font-medium text-gray-900">Created At</h4>
-                  <p className="text-gray-700">{new Date(selectedActivity.createdAt).toLocaleString()}</p>
+                  <p className="text-gray-700">
+                    
+                    {/* {new Date(selectedActivity.createdAt).toLocaleString()} */}
+
+                    {(() => {
+  const date = new Date(selectedActivity.createdAt);
+  date.setMinutes(date.getMinutes() + 330); // Add 5 hours 30 minutes for IST
+  return date.toLocaleString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+})()}
+                    
+                  </p>
                 </div>
                 
                 {selectedActivity.imageUrl && (

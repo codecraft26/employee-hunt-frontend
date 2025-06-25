@@ -571,12 +571,18 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
                       {/* Activity Meta Info */}
                       <div className="flex flex-col xs:flex-row xs:items-center space-y-1 xs:space-y-0 xs:space-x-3 sm:space-x-4">
                         <span className="text-xs sm:text-sm text-slate-400 flex-shrink-0">
-                          {new Date(activity.createdAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                        {(() => {
+  const date = new Date(activity.createdAt);
+  date.setMinutes(date.getMinutes() + 330); // Add 5 hours 30 minutes for IST
+  return date.toLocaleString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+})()}
                         </span>
                         <span className="text-xs sm:text-sm px-2 sm:px-3 py-1 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 text-blue-300 rounded-full border border-blue-500/30 self-start xs:self-auto">
                           {getActivityTypeDisplay(activity.type)}

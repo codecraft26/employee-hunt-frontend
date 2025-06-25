@@ -316,7 +316,19 @@ const WinnerSelectionModal: React.FC<WinnerSelectionModalProps> = ({
                           Last Submission
                         </h4>
                         <p className="text-xs text-gray-600">
-                          {formatDate(team.lastSubmissionTime)}
+                          {/* {formatDate(team.lastSubmissionTime)} */}
+                          {(() => {
+  const date = new Date(team.lastSubmissionTime);
+  date.setMinutes(date.getMinutes() + 330); // Add 5 hours 30 minutes for IST
+  return date.toLocaleString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+})()}
                         </p>
                       </div>
                     )}
