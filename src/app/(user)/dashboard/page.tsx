@@ -127,7 +127,7 @@ export default function UserDashboardUI() {
           <div className="relative z-10 px-4 sm:px-6 pt-4 sm:pt-8 pb-4 flex flex-col h-full justify-between">
             <div className="animate-bounce-in">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-2xl mb-2">
-                <span className="text-gradient">Trip</span> Games
+                <span className="text-gradient">Bann</span> Dhann
               </h1>
               <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl opacity-90 font-medium">
                 Ready for an epic adventure? Let's play together! 🎮
