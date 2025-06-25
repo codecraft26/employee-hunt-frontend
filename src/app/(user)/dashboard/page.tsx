@@ -87,7 +87,7 @@ export default function UserDashboardUI() {
         </div>
 
         {/* Hero Banner with Video Background */}
-        <div className="relative w-full h-40 sm:h-48 md:h-56 lg:h-64 xl:h-72 overflow-hidden">
+        <div className="relative w-full min-h-40 sm:min-h-48 md:min-h-56 lg:min-h-64 xl:min-h-72 overflow-hidden">
           {/* Video Background with Bluish Filter */}
           <div className="absolute inset-0">
             <video
@@ -124,7 +124,7 @@ export default function UserDashboardUI() {
           </div>
           
           {/* Content overlay - Mobile responsive */}
-          <div className="relative z-10 px-4 sm:px-6 pt-4 sm:pt-8 pb-4 flex flex-col h-full justify-between">
+          <div className="relative z-10 px-4 sm:px-6 pt-4 sm:pt-8 pb-1 flex flex-col h-full justify-between">
             <div className="animate-bounce-in">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-2xl mb-2 flex items-center justify-start">
                 <img
@@ -134,7 +134,7 @@ export default function UserDashboardUI() {
                   style={{ maxWidth: '100vw', filter: 'brightness(1.5) contrast(1.2)' }}
                 />
               </h1>
-              <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl opacity-90 font-medium">
+              <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl opacity-90 font-medium" style={{position:'relative', bottom :12 }}>
                 Ready for an epic adventure? Let's play together! 🎮
               </p>
             </div>
