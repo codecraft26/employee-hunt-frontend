@@ -479,14 +479,26 @@ const UserActivitiesTab: React.FC = () => {
                                     <div>
                                       <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Date & Time</h4>
                                       <p className="text-gray-900">
-                                        {new Date(activity.createdAt).toLocaleDateString('en-US', {
+                                        {/* {new Date(activity.createdAt).toLocaleDateString('en-US', {
                                           weekday: 'long',
                                           year: 'numeric',
                                           month: 'long',
                                           day: 'numeric',
                                           hour: '2-digit',
                                           minute: '2-digit'
-                                        })}
+                                        })} */}
+                                        {(() => {
+  const date = new Date(activity.createdAt);
+  date.setMinutes(date.getMinutes() + 330); // Add 5 hours 30 minutes for IST
+  return date.toLocaleString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+})()}
                                       </p>
                                     </div>
                                   </div>
