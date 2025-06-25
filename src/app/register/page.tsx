@@ -533,7 +533,7 @@ export default function RegisterPage() {
               priority
             />
           </div>
-          <TeamPlayBanner />
+          {/* <TeamPlayBanner /> */}
           <div className="p-6">
             
             {/* Progress Bar */}
