@@ -15,7 +15,7 @@ export default function NotificationButton() {
       if (permission === "granted" && messaging) {
         // ✅ Register the service worker first
         const registration = await navigator.serviceWorker.register(
-          "/sw-custom.js"
+          "/firebase-messaging-sw.js"
         );
 
         // ✅ Then use it to get token
