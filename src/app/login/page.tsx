@@ -10,6 +10,7 @@ import Image from 'next/image';
 import { Gamepad2 } from 'lucide-react';
 import PendingApprovalMessage from '../../components/PendingApprovalMessage';
 import FCMUtils from '../../utils/fcmUtils';
+import SupportFloatingButton from '../../components/shared/SupportFloatingButton';
 
 // Add SVG as a React component
 const TeamPlayBanner = () => (
@@ -176,184 +177,187 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="w-full max-w-md bg-white rounded-b-2xl shadow-lg overflow-hidden">
-        {/* App Logo */}
-        <div className="flex justify-center mt-6 mb-2">
-          <img
-            src="/dashboard_tiles/app-logo.jpeg"
-            alt="App Logo"
-            width={80}
-            height={80}
-            className="rounded-xl shadow-lg"
-            style={{ background: 'white' }}
-          />
-        </div>
-        <TeamPlayBanner />
-        {/* Tabs */}
-        <div className="flex justify-center mb-6 border-b border-gray-200">
-          <button
-            type="button"
-            onClick={() => setIsOTPMode(false)}
-            className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${!isOTPMode ? 'border-purple-500 text-black' : 'border-transparent text-gray-400'}`}
-          >
-            Password
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsOTPMode(true)}
-            className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${isOTPMode ? 'border-purple-500 text-black' : 'border-transparent text-gray-400'}`}
-          >
-            OTP
-          </button>
-        </div>
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
-        {/* Registration Success Message */}
-        {showRegistrationSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
-            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm text-green-700 font-medium">Registration successful!</p>
-              <p className="text-sm text-green-600">Please log in with your credentials to continue.</p>
-            </div>
-          </div>
-        )}
-        {/* Success Message for OTP */}
-        {otpSent && !error && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
-            <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-green-700">
-              OTP has been sent to your email. Please check your inbox.
-            </p>
-          </div>
-        )}
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 pb-6">
-          {/* Email Field */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className="h-5 w-5 text-purple-400" />
-            </div>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={isOTPMode ? otpData.email : formData.email}
-              onChange={handleInputChange}
-              className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-              placeholder="test@gmail.com"
+    <>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-full max-w-md bg-white rounded-b-2xl shadow-lg overflow-hidden">
+          {/* App Logo */}
+          <div className="flex justify-center mt-6 mb-2">
+            <img
+              src="/dashboard_tiles/app-logo.jpeg"
+              alt="App Logo"
+              width={80}
+              height={80}
+              className="rounded-xl shadow-lg"
+              style={{ background: 'white' }}
             />
           </div>
-          {/* Password Field (only in password mode) */}
-          {!isOTPMode && (
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-purple-400" />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-                className="block w-full pl-10 pr-10 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-                placeholder="Enter your password"
-              />
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-purple-400 hover:text-purple-600 focus:outline-none"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-          {/* OTP Field (only in OTP mode after sending) */}
-          {isOTPMode && otpSent && (
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Smartphone className="h-5 w-5 text-purple-400" />
-              </div>
-              <input
-                id="otp"
-                name="otp"
-                type="text"
-                required
-                value={otpData.otp}
-                onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-                placeholder="Enter the OTP"
-              />
-            </div>
-          )}
-          {/* Submit Button */}
-          <div>
+          <TeamPlayBanner />
+          {/* Tabs */}
+          <div className="flex justify-center mb-6 border-b border-gray-200">
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 transition-colors text-base shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              onClick={() => setIsOTPMode(false)}
+              className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${!isOTPMode ? 'border-purple-500 text-black' : 'border-transparent text-gray-400'}`}
             >
-              {isSubmitting ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto" />
-              ) : (
-                <span>{isOTPMode ? (otpSent ? 'Verify OTP' : 'Send OTP') : 'SIGN IN TO PLAY'}</span>
-              )}
+              Password
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOTPMode(true)}
+              className={`px-6 py-2 text-sm font-medium focus:outline-none border-b-2 transition-colors duration-200 ${isOTPMode ? 'border-purple-500 text-black' : 'border-transparent text-gray-400'}`}
+            >
+              OTP
             </button>
           </div>
-          {/* Login with OTP link (only in password mode) */}
-          {!isOTPMode && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setIsOTPMode(true)}
-                className="text-purple-500 hover:underline text-sm font-medium mt-2"
-              >
-                Login with OTP
-              </button>
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
-          {/* Reset OTP (only in OTP mode) */}
-          {isOTPMode && otpSent && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={resetOTP}
-                className="text-sm text-gray-500 hover:text-purple-500 focus:outline-none"
-              >
-                Didn't receive OTP? Try again
-              </button>
+          {/* Registration Success Message */}
+          {showRegistrationSuccess && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
+              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-green-700 font-medium">Registration successful!</p>
+                <p className="text-sm text-green-600">Please log in with your credentials to continue.</p>
+              </div>
             </div>
           )}
-        </form>
-        {/* Register Link */}
-        <div className="text-center pb-6">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              href="/register"
-              className="font-medium text-purple-600 hover:underline"
-            >
-              Create one here
-            </Link>
-          </p>
+          {/* Success Message for OTP */}
+          {otpSent && !error && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start space-x-2 mx-6">
+              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-green-700">
+                OTP has been sent to your email. Please check your inbox.
+              </p>
+            </div>
+          )}
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-4 px-6 pb-6">
+            {/* Email Field */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-purple-400" />
+              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={isOTPMode ? otpData.email : formData.email}
+                onChange={handleInputChange}
+                className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                placeholder="test@gmail.com"
+              />
+            </div>
+            {/* Password Field (only in password mode) */}
+            {!isOTPMode && (
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-purple-400" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="block w-full pl-10 pr-10 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                  placeholder="Enter your password"
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-purple-400 hover:text-purple-600 focus:outline-none"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* OTP Field (only in OTP mode after sending) */}
+            {isOTPMode && otpSent && (
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Smartphone className="h-5 w-5 text-purple-400" />
+                </div>
+                <input
+                  id="otp"
+                  name="otp"
+                  type="text"
+                  required
+                  value={otpData.otp}
+                  onChange={handleInputChange}
+                  className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                  placeholder="Enter the OTP"
+                />
+              </div>
+            )}
+            {/* Submit Button */}
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 transition-colors text-base shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto" />
+                ) : (
+                  <span>{isOTPMode ? (otpSent ? 'Verify OTP' : 'Send OTP') : 'SIGN IN TO PLAY'}</span>
+                )}
+              </button>
+            </div>
+            {/* Login with OTP link (only in password mode) */}
+            {!isOTPMode && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsOTPMode(true)}
+                  className="text-purple-500 hover:underline text-sm font-medium mt-2"
+                >
+                  Login with OTP
+                </button>
+              </div>
+            )}
+            {/* Reset OTP (only in OTP mode) */}
+            {isOTPMode && otpSent && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={resetOTP}
+                  className="text-sm text-gray-500 hover:text-purple-500 focus:outline-none"
+                >
+                  Didn't receive OTP? Try again
+                </button>
+              </div>
+            )}
+          </form>
+          {/* Register Link */}
+          <div className="text-center pb-6">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link
+                href="/register"
+                className="font-medium text-purple-600 hover:underline"
+              >
+                Create one here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+      <SupportFloatingButton />
+    </>
   );
 }

@@ -545,6 +545,17 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="flex items-start space-x-3 sm:space-x-4">
+                    {/* Activity Image */}
+                    {activity.imageUrl && (
+                      <div className="flex-shrink-0">
+                        <img
+                          src={activity.imageUrl}
+                          alt={activity.title}
+                          className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 lg:w-18 lg:h-18 xl:w-20 xl:h-20 rounded-lg sm:rounded-xl object-cover border border-slate-600 shadow-md"
+                        />
+                      </div>
+                    )}
+                    
                     {/* Activity Icon */}
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 xl:w-16 xl:h-16 rounded-lg sm:rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}>
                       <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 lg:h-7 lg:w-7 xl:h-8 xl:w-8 text-white" />

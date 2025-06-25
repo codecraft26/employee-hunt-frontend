@@ -11,6 +11,7 @@ import LazyWrapper from '../../../components/shared/LazyWrapper';
 import { useOptimizedData } from '../../../hooks/useOptimizedData';
 import { Trophy, Sparkles, Zap, Crown } from 'lucide-react';
 import UserOverviewTab from '../../../components/user/UserOverviewTab';
+import SupportFloatingButton from '../../../components/shared/SupportFloatingButton';
 
 
 export default function UserDashboardUI() {
@@ -210,17 +211,9 @@ export default function UserDashboardUI() {
         </div>
 
         {/* Floating action button for quick access - Mobile responsive */}
-        <div className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-50">
-          <button 
-            onClick={() => router.push('/dashboard/activities')}
-            className="btn-gaming neon-glow hover-lift text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-3"
-          >
-            <Zap className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Quick Play</span>
-            <span className="sm:hidden">Play</span>
-          </button>
-        </div>
+       
       </div>
+      <SupportFloatingButton />
     </ProtectedRoute>
   );
 }
