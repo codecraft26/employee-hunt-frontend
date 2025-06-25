@@ -183,7 +183,7 @@ export default function LoginPage() {
           {/* App Logo */}
           <div className="flex justify-center mt-6 mb-2">
             <img
-              src="/dashboard_tiles/app-logo.svg"
+              src="/dashboard_tiles/bandhan-initial.svg"
               alt="App Logo"
               width={80}
               height={80}
