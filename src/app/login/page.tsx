@@ -191,7 +191,7 @@ export default function LoginPage() {
               style={{ background: 'white' }}
             />
           </div>
-          <TeamPlayBanner />
+          {/* <TeamPlayBanner /> */}
           {/* Tabs */}
           <div className="flex justify-center mb-6 border-b border-gray-200">
             <button
@@ -250,8 +250,8 @@ export default function LoginPage() {
                 required
                 value={isOTPMode ? otpData.email : formData.email}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
-                placeholder="test@gmail.com"
+                className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-blue-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                placeholder="Please enter official email"
               />
             </div>
             {/* Password Field (only in password mode) */}
@@ -268,7 +268,7 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-10 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                  className="block w-full pl-10 pr-10 py-3 rounded-full border border-purple-200 bg-blue-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
                   placeholder="Enter your password"
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -299,7 +299,7 @@ export default function LoginPage() {
                   required
                   value={otpData.otp}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-purple-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                  className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-blue-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
                   placeholder="Enter the OTP"
                 />
               </div>
@@ -309,7 +309,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 transition-colors text-base shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full rounded-full bg-blue-500 hover:bg-purple-600 text-white font-semibold py-3 transition-colors text-base shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto" />

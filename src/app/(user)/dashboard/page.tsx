@@ -126,8 +126,13 @@ export default function UserDashboardUI() {
           {/* Content overlay - Mobile responsive */}
           <div className="relative z-10 px-4 sm:px-6 pt-4 sm:pt-8 pb-4 flex flex-col h-full justify-between">
             <div className="animate-bounce-in">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-2xl mb-2">
-                <span className="text-gradient">Bann</span> Dhann
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-2xl mb-2 flex items-center justify-start">
+                <img
+                  src="/dashboard_tiles/bandhan-hindi-dashboard.svg"
+                  alt="बंधन Logo"
+                  className="h-20 sm:h-28 md:h-36 lg:h-44 xl:h-52 w-auto"
+                  style={{ maxWidth: '100vw', filter: 'brightness(1.5) contrast(1.2)' }}
+                />
               </h1>
               <p className="text-white text-sm sm:text-base md:text-lg lg:text-xl opacity-90 font-medium">
                 Ready for an epic adventure? Let's play together! 🎮
@@ -142,7 +147,7 @@ export default function UserDashboardUI() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-semibold text-sm sm:text-base lg:text-lg truncate">
-                    Welcome back, {user.name}!
+                    Welcome {user.name}!
                   </div>
                   <div className="text-slate-300 text-xs sm:text-sm truncate">Your adventure awaits...</div>
                 </div>
@@ -157,7 +162,7 @@ export default function UserDashboardUI() {
         {/* Enhanced Header with Gaming Theme */}
         <div className="relative z-20">
           <OptimizedHeader
-            title="Gaming Dashboard"
+            title="Dashboard"
             subtitle="Your epic journey"
             icon={Trophy}
             iconGradient="from-yellow-400 to-orange-500"

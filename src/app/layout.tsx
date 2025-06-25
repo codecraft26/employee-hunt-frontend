@@ -79,10 +79,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5, viewport-fit=cover, user-scalable=yes" />
 
         {/* Enhanced PWA Meta Tags */}
-        <meta name="application-name" content="Bann Dhann" />
+        <meta name="application-name" content="बंधन" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Bann Dhann" />
+        <meta name="apple-mobile-web-app-title" content="बंधन" />
         <meta name="description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -125,18 +125,18 @@ export default function RootLayout({
 
         {/* SEO and Social Media */}
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Bann Dhann - Team Activities & Contests" />
+        <meta property="og:title" content="बंधन - Team Activities & Contests" />
         <meta property="og:description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
-        <meta property="og:site_name" content="Bann Dhann" />
+        <meta property="og:site_name" content="बंधन" />
         <meta property="og:url" content="https://employeehunt.com" />
         <meta property="og:image" content="/icons/icon-512x512.png" />
 
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Bann Dhann - Team Activities & Contests" />
+        <meta name="twitter:title" content="बंधन - Team Activities & Contests" />
         <meta name="twitter:description" content="Engage in team activities, quizzes, treasure hunts, and polls with your colleagues" />
         <meta name="twitter:image" content="/icons/icon-512x512.png" />
 
-        <title>Bann Dhann - Team Activities & Contests</title>
+        <title>बंधन - Team Activities & Contests</title>
       </head>
       <body>
         <Provider store={store}>
