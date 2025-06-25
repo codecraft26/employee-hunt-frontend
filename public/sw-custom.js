@@ -184,27 +184,6 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// Handle push notifications
-self.addEventListener('push', (event) => {
-  if (event.data) {
-    const data = event.data.json();
-    
-    const options = {
-      body: data.body,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-72x72.png',
-      tag: data.tag || 'default',
-      data: data.data || {},
-      actions: data.actions || [],
-      requireInteraction: data.requireInteraction || false,
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(data.title || 'Bann Dhann', options)
-    );
-  }
-});
-
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
