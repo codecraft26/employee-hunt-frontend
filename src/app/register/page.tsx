@@ -336,7 +336,7 @@ export default function RegisterPage() {
       
       case 2:
         if (!formData.employeeCode.trim()) errors.push('Employee Code is required');
-        if (formData.categoryIds.length === 0) errors.push('Categories are required');
+        if (formData.categoryIds.length === 0) errors.push('Personality Traits are required');
         break;
       
       case 3:
@@ -552,7 +552,7 @@ export default function RegisterPage() {
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
               {currentStep === 1 && "Let's Get Started"}
-              {currentStep === 2 && "Categories & Work Info"}
+              {currentStep === 2 && "Personality Traits & Work Info"}
               {currentStep === 3 && "Personal Details"}
               {currentStep === 4 && "Secure Your Account"}
               {currentStep === 5 && "Profile Picture"}
@@ -561,7 +561,7 @@ export default function RegisterPage() {
             </h2>
             <p className="mt-2 text-sm text-gray-600">
               {currentStep === 1 && "Enter your basic information"}
-              {currentStep === 2 && "Tell us about your categories and employee details"}
+              {currentStep === 2 && "Tell us about your personality traits and employee details"}
               {currentStep === 3 && "A bit more about you"}
               {currentStep === 4 && "Create a strong password"}
               {currentStep === 5 && "Add your profile picture"}
@@ -677,9 +677,9 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Categories <span className="text-red-500">*</span>
+                      Personality Traits <span className="text-red-500">*</span>
                     </label>
-                    <p className="text-sm text-gray-600 mb-3">Select categories that apply to you:</p>
+                    <p className="text-sm text-gray-600 mb-3">Select your personality traits:</p>
                     
                     {/* Categories Multi-Select Dropdown */}
                     <div className="relative">
@@ -695,8 +695,8 @@ export default function RegisterPage() {
                       >
                         <span className={formData.categoryIds.length === 0 ? 'text-gray-400' : 'text-gray-900'}>
                           {formData.categoryIds.length === 0 
-                            ? 'Select categories' 
-                            : `${formData.categoryIds.length} category${formData.categoryIds.length > 1 ? 'ies' : 'y'} selected`
+                            ? 'Select personality' 
+                            : `${formData.categoryIds.length} personality${formData.categoryIds.length > 1 ? '' : ''} selected`
                           }
                         </span>
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -715,11 +715,11 @@ export default function RegisterPage() {
                         {categoriesLoading ? (
                           <div className="p-3 text-center text-sm text-gray-500">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                            Loading categories...
+                            Loading personas...
                           </div>
                         ) : categories.length === 0 ? (
                           <div className="p-3 text-center text-sm text-gray-500">
-                            No categories available
+                            No personality traits available
                           </div>
                         ) : (
                           categories.map((category) => (
@@ -756,7 +756,7 @@ export default function RegisterPage() {
                     {formData.categoryIds.length > 0 && (
                       <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-sm font-medium text-blue-900 mb-2">
-                          Selected Categories ({formData.categoryIds.length}):
+                          Selected Persona(s) ({formData.categoryIds.length}):
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {formData.categoryIds.map((id) => (
