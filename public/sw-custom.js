@@ -184,90 +184,25 @@ self.addEventListener('sync', (event) => {
   }
 });
 
-// --- Firebase FCM Support ---
-try {
-  importScripts(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"
-  );
-  importScripts(
-    "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"
-  );
-
-  firebase.initializeApp({
-    apiKey: "AIzaSyARWPBWjKBGiXEzGzCJqqFT9fBiMgpkw3w",
-    authDomain: "mynotificationapp-5ee91.firebaseapp.com",
-    projectId: "mynotificationapp-5ee91",
-    messagingSenderId: "699688442197",
-    appId: "1:699688442197:web:36930d1cb7dacb305937dc",
-  });
-
-  const messaging = firebase.messaging();
-  const fallbackImage = "/dashboard_tiles/app-logo.svg";
-
-  // FCM background message handler
-  messaging.onBackgroundMessage(function (payload) {
-    let title = "Notification";
-    let body = "";
-    let image = "";
-    if (payload.notification) {
-      title = payload.notification.title || title;
-      body = payload.notification.body || body;
-      image = payload.notification.image || image || fallbackImage;
-    } else if (payload.data) {
-      try {
-        const data = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
-        if (data.notification) {
-          title = data.notification.title || title;
-          body = data.notification.body || body;
-          image = data.notification.image || image || fallbackImage;
-        } else {
-          title = data.title || title;
-          body = data.body || body;
-          image = data.image || image || fallbackImage;
-        }
-      } catch (e) {
-        title = payload.data.title || title;
-        body = payload.data.body || body;
-        image = payload.data.image || image || fallbackImage;
-      }
-    }
-    const notificationOptions = {
-      body: body,
-      image: image || fallbackImage,
-      icon: "/icons/icon-192x192.png",
-      data: payload.data || {},
-    };
-    self.registration.showNotification(title, notificationOptions);
-  });
-} catch (e) {
-  // Firebase not available, skip FCM support
-}
-
-// --- Unified Push Notification Handler ---
+// Handle push notifications
 self.addEventListener('push', (event) => {
-  let data = {};
-  try {
-    data = event.data ? event.data.json() : {};
-  } catch (e) {
-    data = {};
+  if (event.data) {
+    const data = event.data.json();
+    
+    const options = {
+      body: data.body,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: data.tag || 'default',
+      data: data.data || {},
+      actions: data.actions || [],
+      requireInteraction: data.requireInteraction || false,
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Bann Dhann', options)
+    );
   }
-  const fallbackImage = "/dashboard_tiles/app-logo.svg";
-  let title = data.title || (data.notification && data.notification.title) || "Bann Dhann";
-  let body = data.body || (data.notification && data.notification.body) || "";
-  let image = (data.image || (data.notification && data.notification.image)) || fallbackImage;
-  const options = {
-    body: body,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    image: image,
-    tag: data.tag || 'default',
-    data: data.data || {},
-    actions: data.actions || [],
-    requireInteraction: data.requireInteraction || false,
-  };
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
 });
 
 // Handle notification clicks

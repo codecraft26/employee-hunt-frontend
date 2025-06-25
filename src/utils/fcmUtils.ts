@@ -30,7 +30,7 @@ export class FCMUtils {
 
     try {
       const registration = await navigator.serviceWorker.register(
-        "/sw-custom.js"
+        "/firebase-messaging-sw.js"
       );
       console.log("Service Worker registered successfully:", registration);
       return registration;
