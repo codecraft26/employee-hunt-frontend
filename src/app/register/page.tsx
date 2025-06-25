@@ -525,7 +525,7 @@ export default function RegisterPage() {
           {/* App Logo */}
           <div className="flex justify-center mt-6 mb-2">
             <Image
-              src="/dashboard_tiles/app-logo.jpeg"
+              src="/dashboard_tiles/app-logo.svg"
               alt="App Logo"
               width={80}
               height={80}

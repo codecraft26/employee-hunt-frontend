@@ -15,7 +15,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-const fallbackImage = "/dashboard_tiles/app-logo.jpeg";
+const fallbackImage = "/dashboard_tiles/app-logo.svg";
 
 messaging.onBackgroundMessage(function (payload) {
   console.log("[firebase-messaging-sw.js] Background message:", payload);
