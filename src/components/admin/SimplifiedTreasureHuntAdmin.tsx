@@ -20,6 +20,7 @@ import {
   Camera
 } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
+import { useMemberSubmissions } from '../../hooks/useMemberSubmissions';
 
 interface SimplifiedTreasureHuntAdminProps {
   hunt: any;
@@ -27,11 +28,14 @@ interface SimplifiedTreasureHuntAdminProps {
 
 const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = ({ hunt }) => {
   const { 
-    getTeamSubmissionsForAdmin, 
-    adminApproveTeamSubmission, 
-    adminRejectTeamSubmission, 
+    approveTeamSubmission, 
+    rejectTeamSubmission, 
     loading 
   } = useTreasureHunts();
+  
+  const {
+    fetchTreasureHuntSubmissions
+  } = useMemberSubmissions();
   
   const [teamSubmissions, setTeamSubmissions] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,14 +57,14 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
     
     setRefreshing(true);
     try {
-      const submissions = await getTeamSubmissionsForAdmin(hunt.id);
+      const submissions = await fetchTreasureHuntSubmissions(hunt.id);
       setTeamSubmissions(submissions || []);
     } catch (error) {
       // Handle error
     } finally {
       setRefreshing(false);
     }
-  }, [hunt?.id, getTeamSubmissionsForAdmin]);
+  }, [hunt?.id, fetchTreasureHuntSubmissions]);
 
   useEffect(() => {
     loadTeamSubmissions();
@@ -77,13 +81,9 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
 
     try {
       if (action === 'approve') {
-        await adminApproveTeamSubmission(hunt.id, submissionId, {
-          feedback: feedback.trim() || undefined
-        });
+        await approveTeamSubmission(hunt.id, submissionId, feedback.trim() || undefined);
       } else {
-        await adminRejectTeamSubmission(hunt.id, submissionId, {
-          feedback: feedback.trim()
-        });
+        await rejectTeamSubmission(hunt.id, submissionId, feedback.trim());
       }
 
       setFeedbackModal({ isOpen: false, submission: null, action: 'approve' });
@@ -157,7 +157,30 @@ const SimplifiedTreasureHuntAdmin: React.FC<SimplifiedTreasureHuntAdminProps> = 
               </div>
             </div>
             
-            {submission.imageUrl && (
+            {/* Display multiple images if available, otherwise show single image */}
+            {submission.imageUrls && submission.imageUrls.length > 0 ? (
+              <div className="mb-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {submission.imageUrls.map((imageUrl: string, imgIndex: number) => (
+                    <div key={imgIndex} className="relative">
+                      <img 
+                        src={imageUrl} 
+                        alt={`Submission ${index + 1} - Image ${imgIndex + 1}`}
+                        className="w-full h-32 object-cover rounded-lg border"
+                      />
+                      <div className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1.5 py-0.5 rounded">
+                        {imgIndex + 1}/{submission.imageUrls.length}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {submission.imageUrls.length > 1 && (
+                  <p className="text-xs text-gray-500 mt-1 text-center">
+                    {submission.imageUrls.length} images submitted by team
+                  </p>
+                )}
+              </div>
+            ) : submission.imageUrl && (
               <div className="mb-3">
                 <img 
                   src={submission.imageUrl} 

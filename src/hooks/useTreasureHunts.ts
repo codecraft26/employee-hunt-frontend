@@ -19,6 +19,7 @@ export interface TeamSubmission {
   id: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   imageUrl: string;
+  imageUrls?: string[]; // Multiple selected images
   description: string;
   team: {
     id: string;

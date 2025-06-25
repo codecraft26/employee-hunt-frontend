@@ -203,7 +203,6 @@ const SubmissionsManagementTab: React.FC<SubmissionsManagementTabProps> = ({
           teamMap.set(teamId, {
             teamId,
             teamName: submission.team.name,
-            teamDescription: submission.team.description,
             submissions: [],
             totalStages: 0,
             completedStages: 0,
@@ -494,16 +493,44 @@ const SubmissionsManagementTab: React.FC<SubmissionsManagementTabProps> = ({
                           {/* Submission Content */}
                           <div className="p-4">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                              {/* Image */}
+                              {/* Images */}
                               <div className="relative group">
-                                <img
-                                  src={submission.imageUrl}
-                                  alt="Team submission"
-                                  className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity rounded-lg"
-                                  onClick={() => setSelectedSubmission(submission)}
-                                />
+                                {submission.imageUrls && submission.imageUrls.length > 0 ? (
+                                  <div className="space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      {submission.imageUrls.slice(0, 4).map((imageUrl: string, imgIndex: number) => (
+                                        <div key={imgIndex} className="relative">
+                                          <img
+                                            src={imageUrl}
+                                            alt={`Team submission ${imgIndex + 1}`}
+                                            className="w-full h-24 object-cover cursor-pointer hover:opacity-90 transition-opacity rounded-lg"
+                                            onClick={() => setSelectedSubmission(submission)}
+                                          />
+                                          <div className="absolute top-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 rounded">
+                                            {imgIndex + 1}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {submission.imageUrls.length > 4 && (
+                                      <p className="text-xs text-gray-500 text-center">
+                                        +{submission.imageUrls.length - 4} more images (click to view all)
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-gray-500 text-center">
+                                      {submission.imageUrls.length} image{submission.imageUrls.length !== 1 ? 's' : ''} submitted
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={submission.imageUrl}
+                                    alt="Team submission"
+                                    className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity rounded-lg"
+                                    onClick={() => setSelectedSubmission(submission)}
+                                  />
+                                )}
                                 <button
-                                  onClick={() => window.open(submission.imageUrl, '_blank')}
+                                  onClick={() => window.open(submission.imageUrls?.[0] || submission.imageUrl, '_blank')}
                                   className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
                                   title="Open in new tab"
                                 >
@@ -588,21 +615,55 @@ const SubmissionsManagementTab: React.FC<SubmissionsManagementTabProps> = ({
               </div>
               
               <div className="mb-6 relative group">
-                <img
-                  src={selectedSubmission.imageUrl}
-                  alt="Team submission"
-                  className="w-full max-h-96 object-contain rounded-lg border cursor-pointer"
-                  onClick={() => window.open(selectedSubmission.imageUrl, '_blank')}
-                />
-                <button
-                  onClick={() => window.open(selectedSubmission.imageUrl, '_blank')}
-                  className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Open in new tab"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </button>
+                {selectedSubmission.imageUrls && selectedSubmission.imageUrls.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {selectedSubmission.imageUrls.map((imageUrl: string, imgIndex: number) => (
+                        <div key={imgIndex} className="relative">
+                          <img
+                            src={imageUrl}
+                            alt={`Team submission ${imgIndex + 1}`}
+                            className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:opacity-90"
+                            onClick={() => window.open(imageUrl, '_blank')}
+                          />
+                          <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                            {imgIndex + 1}/{selectedSubmission.imageUrls!.length}
+                          </div>
+                          <button
+                            onClick={() => window.open(imageUrl, '_blank')}
+                            className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Open in new tab"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-600 text-center">
+                      {selectedSubmission.imageUrls.length} image{selectedSubmission.imageUrls.length !== 1 ? 's' : ''} submitted by team
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <img
+                      src={selectedSubmission.imageUrl}
+                      alt="Team submission"
+                      className="w-full max-h-96 object-contain rounded-lg border cursor-pointer"
+                      onClick={() => window.open(selectedSubmission.imageUrl, '_blank')}
+                    />
+                    <button
+                      onClick={() => window.open(selectedSubmission.imageUrl, '_blank')}
+                      className="absolute top-2 right-2 bg-black bg-opacity-50 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Open in new tab"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
 
               <div className="flex items-center space-x-2 mb-4">
