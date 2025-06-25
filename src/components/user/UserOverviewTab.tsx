@@ -25,7 +25,8 @@ import {
   Flame,
   Sword,
   Heart,
-  Gem
+  Gem,
+  ExternalLink
 } from 'lucide-react';
 import { useOptimizedData } from '../../hooks/useOptimizedData';
 import { useActivities } from '../../hooks/useActivities';
@@ -196,6 +197,49 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
     };
     return iconMap[iconName] || ActivityIcon;
   }, []);
+
+  // Utility function to extract URLs from text
+  const extractUrls = useCallback((text: string): string[] => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const matches = text.match(urlRegex);
+    return matches || [];
+  }, []);
+
+  // Utility function to render description with link buttons
+  const renderDescriptionWithLinks = useCallback((description: string) => {
+    const urls = extractUrls(description);
+    
+    if (urls.length === 0) {
+      return (
+        <p className="text-slate-300 text-xs sm:text-sm md:text-base line-clamp-2 leading-relaxed mb-2 sm:mb-3">
+          {description}
+        </p>
+      );
+    }
+
+    return (
+      <div className="mb-2 sm:mb-3">
+        <p className="text-slate-300 text-xs sm:text-sm md:text-base line-clamp-2 leading-relaxed mb-2">
+          {description}
+        </p>
+        <div className="flex flex-wrap gap-1 sm:gap-2">
+          {urls.map((url, index) => (
+            <a
+              key={index}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-2 py-1 sm:px-3 sm:py-1.5 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors text-xs sm:text-sm font-medium border border-blue-500/30"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ExternalLink className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+              Open Link
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  }, [extractUrls]);
 
   const getActivityTypeIcon = useCallback((type: string) => {
     switch (type.toUpperCase()) {
@@ -511,9 +555,7 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
                       <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white truncate group-hover:text-gradient transition-colors duration-300 mb-1">
                         {activity.title}
                       </h3>
-                      <p className="text-slate-300 text-xs sm:text-sm md:text-base line-clamp-2 leading-relaxed mb-2 sm:mb-3">
-                        {activity.description}
-                      </p>
+                      {renderDescriptionWithLinks(activity.description)}
                       
                       {/* Activity Meta Info */}
                       <div className="flex flex-col xs:flex-row xs:items-center space-y-1 xs:space-y-0 xs:space-x-3 sm:space-x-4">

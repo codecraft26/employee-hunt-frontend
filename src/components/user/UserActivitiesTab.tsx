@@ -19,7 +19,8 @@ import {
   ArrowRight,
   Info,
   Image as ImageIcon,
-  FileText
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import { useActivities, Activity } from '../../hooks/useActivities';
 import { useAppSelector } from '../../hooks/redux'; // Adjust the import path as needed
@@ -144,6 +145,42 @@ const UserActivitiesTab: React.FC = () => {
       [activityId]: tab
     }));
   }, []);
+
+  // Utility function to extract URLs from text
+  const extractUrls = (text: string): string[] => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const matches = text.match(urlRegex);
+    return matches || [];
+  };
+
+  // Utility function to render description with link buttons
+  const renderDescriptionWithLinks = (description: string) => {
+    const urls = extractUrls(description);
+    
+    if (urls.length === 0) {
+      return <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4">{description}</p>;
+    }
+
+    return (
+      <div className="mb-4">
+        <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-3">{description}</p>
+        <div className="flex flex-wrap gap-2">
+          {urls.map((url, index) => (
+            <a
+              key={index}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Open Link
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 sm:p-6">
@@ -291,9 +328,7 @@ const UserActivitiesTab: React.FC = () => {
 
                         {/* Card Content */}
                         <div className="p-4 sm:p-6">
-                          <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-4">
-                            {activity.description}
-                          </p>
+                          {renderDescriptionWithLinks(activity.description)}
 
                           {/* Image Display */}
                           {activity.imageUrl && (
@@ -399,7 +434,35 @@ const UserActivitiesTab: React.FC = () => {
                                 <div className="space-y-4">
                                   <div>
                                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h4>
-                                    <p className="text-gray-900 leading-relaxed">{activity.description || 'No description provided'}</p>
+                                    {activity.description ? (
+                                      <div>
+                                        <p className="text-gray-900 leading-relaxed mb-3">{activity.description}</p>
+                                        {(() => {
+                                          const urls = extractUrls(activity.description);
+                                          if (urls.length > 0) {
+                                            return (
+                                              <div className="flex flex-wrap gap-2 mt-3">
+                                                {urls.map((url, index) => (
+                                                  <a
+                                                    key={index}
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+                                                  >
+                                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                                    Open Link
+                                                  </a>
+                                                ))}
+                                              </div>
+                                            );
+                                          }
+                                          return null;
+                                        })()}
+                                      </div>
+                                    ) : (
+                                      <p className="text-gray-900 leading-relaxed">No description provided</p>
+                                    )}
                                   </div>
                                   
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
