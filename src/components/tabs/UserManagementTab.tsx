@@ -4,6 +4,8 @@ import React, { useState, useCallback } from 'react';
 import { UserCog, UserPlus, Users, Shield, CheckCircle, XCircle, Mail, Building, RefreshCw } from 'lucide-react';
 import { useUserManagement } from '../../hooks/useUserManagement';
 import UserManagementModal from '../modals/UserManagementModal';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 const UserManagementTab: React.FC = () => {
   const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
@@ -35,6 +37,29 @@ const UserManagementTab: React.FC = () => {
   const handleRefresh = useCallback(async () => {
     await refreshUsers();
   }, [refreshUsers]);
+
+  const handleDownloadAllIdProofs = async () => {
+    const zip = new JSZip();
+    const idProofUsers = users.filter(user => !!user.idProof);
+
+    for (const user of idProofUsers) {
+      try {
+        // @ts-ignore: idProof is guaranteed by filter
+        const response = await fetch(user.idProof);
+        const blob = await response.blob();
+        // @ts-ignore: idProof is guaranteed by filter
+        const ext = user.idProof.split('.').pop()?.split('?')[0] || 'jpg';
+        const safeName = user.name?.replace(/[^a-zA-Z0-9-_]/g, '_') || user.id;
+        const filename = `${safeName}.${ext}`;
+        zip.file(filename, blob);
+      } catch (err) {
+        console.error(`Failed to fetch ID proof for ${user.name}:`, err);
+      }
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, 'all-id-proofs.zip');
+  };
 
   const stats = getUserStats();
 
@@ -125,8 +150,14 @@ const UserManagementTab: React.FC = () => {
 
       {/* Users List */}
       <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-lg font-medium text-gray-900">All Users</h3>
+          <button
+            onClick={handleDownloadAllIdProofs}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Download All ID Proofs as Zip
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
