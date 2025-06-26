@@ -138,7 +138,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
         };
       case 'active':
         return {
-          bg: currentUrgency === 'high' ? 'bg-red-100' : currentUrgency === 'medium' ? 'bg-yellow-100' : 'bg-green-100',
+          bg: currentUrgency === 'high' ? 'bg-red-100' : currentUrgency === 'medium' ? 'bg-yellow-900' : 'bg-green-100',
           text: currentUrgency === 'high' ? 'text-red-800' : currentUrgency === 'medium' ? 'text-yellow-800' : 'text-green-800',
           border: currentUrgency === 'high' ? 'border-red-200' : currentUrgency === 'medium' ? 'border-yellow-200' : 'border-green-200',
           dot: currentUrgency === 'high' ? 'bg-red-500' : currentUrgency === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
