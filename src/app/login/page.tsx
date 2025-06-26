@@ -240,7 +240,7 @@ export default function LoginPage() {
             {/* Email Field */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-purple-400" />
+                <Mail className="h-5 w-5 text-blue-400" />
               </div>
               <input
                 id="email"
@@ -258,7 +258,7 @@ export default function LoginPage() {
             {!isOTPMode && (
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-purple-400" />
+                  <Lock className="h-5 w-5 text-blue-400" />
                 </div>
                 <input
                   id="password"
@@ -275,7 +275,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-purple-400 hover:text-purple-600 focus:outline-none"
+                    className="text-blue-400 hover:text-purple-600 focus:outline-none"
                   >
                     {showPassword ? (
                       <EyeOff className="h-5 w-5" />
@@ -290,7 +290,7 @@ export default function LoginPage() {
             {isOTPMode && otpSent && (
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Smartphone className="h-5 w-5 text-purple-400" />
+                  <Smartphone className="h-5 w-5 text-blue-400" />
                 </div>
                 <input
                   id="otp"
@@ -324,7 +324,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setIsOTPMode(true)}
-                  className="text-purple-500 hover:underline text-sm font-medium mt-2"
+                  className="text-blue-500 hover:underline text-sm font-medium mt-2"
                 >
                   Login with OTP
                 </button>
