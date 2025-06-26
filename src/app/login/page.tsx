@@ -250,7 +250,7 @@ export default function LoginPage() {
                 required
                 value={isOTPMode ? otpData.email : formData.email}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-3 py-3 rounded-full border border-purple-200 bg-blue-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                className="block w-full pl-10 pr-3 py-3 rounded-full border border-blue-200 bg-blue-50 text-gray-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                 placeholder="Please enter official email"
               />
             </div>
@@ -268,7 +268,7 @@ export default function LoginPage() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-10 py-3 rounded-full border border-purple-200 bg-blue-50 text-gray-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                  className="block w-full pl-10 pr-10 py-3 rounded-full border border-blue-200 bg-blue-50 text-gray-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                   placeholder="Enter your password"
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
