@@ -170,7 +170,7 @@ const UserManagementTab: React.FC = () => {
                   Role
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Department
+                  ID Proof
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -215,10 +215,19 @@ const UserManagementTab: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div className="flex items-center">
-                      <Building className="h-3 w-3 mr-1 text-gray-400" />
-                      {user.department || 'N/A'}
-                    </div>
+                    {user.idProof ? (
+                      <a
+                        href={user.idProof}
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        Download ID Proof
+                      </a>
+                    ) : (
+                      'N/A'
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
