@@ -567,7 +567,7 @@ export default function RegisterPage() {
                 {currentStep === 3 && "A bit more about you"}
                 {currentStep === 4 && "Create a strong password"}
                 {currentStep === 5 && "Add your profile picture"}
-                {currentStep === 6 && "Upload your ID proof for verification"}
+                {currentStep === 6 && "Upload your ID proof for verification. (Office Id / Masked Adhaar Card / Pan Card / Driving License )"}
                 {currentStep === 7 && "Please read and accept our terms"}
               </p>
             </div>
