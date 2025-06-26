@@ -132,7 +132,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                   </div>
                 )}
               </div>
-              <p className="text-gray-600">{user.email}</p>
+              <p className="text-white-600">{user.email}</p>
               <div className="flex items-center space-x-2 mt-1">
                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
                   {user.role}
@@ -305,7 +305,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
               <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
                 <Tag className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Categories</p>
+                  <p className="text-sm font-medium text-gray-700">Personality Traits</p>
                   <div className="flex flex-wrap gap-1 mt-1">
                     {user.categories.map((category: any) => (
                       <span key={category.id} className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded-full">
