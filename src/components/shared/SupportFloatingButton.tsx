@@ -9,7 +9,7 @@ const SupportFloatingButton: React.FC = () => (
     target="_blank"
     rel="noopener noreferrer"
     aria-label="Contact Support"
-    className="fixed z-50 bottom-6 right-6 sm:bottom-8 sm:right-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 transition-all duration-200 group"
+    className="fixed z-50 bottom-6 left-6 sm:bottom-8 sm:right-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 transition-all duration-200 group"
     style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0,0.18)' }}
   >
     {/* Generic Support Icon (Headset) */}

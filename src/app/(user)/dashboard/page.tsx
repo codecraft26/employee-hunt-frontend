@@ -128,7 +128,7 @@ export default function UserDashboardUI() {
             <div className="animate-bounce-in">
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white drop-shadow-2xl mb-2 flex items-center justify-start">
                 <img
-                  src="/dashboard_tiles/bandhan-hindi-dashboard.svg"
+                  src="/dashboard_tiles/bandhan-initial.svg"
                   alt="बंधन Logo"
                   className="h-20 sm:h-28 md:h-36 lg:h-44 xl:h-52 w-auto"
                   style={{ maxWidth: '100vw', filter: 'brightness(1.5) contrast(1.2)' }}
