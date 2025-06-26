@@ -243,10 +243,10 @@ export default function RegisterPage() {
       setValidationErrors([]);
       
       // File size validation (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        setValidationErrors(['File size should be less than 5MB']);
-        return;
-      }
+      // if (file.size > 5 * 1024 * 1024) {
+      //   setValidationErrors(['File size should be less than 5MB']);
+      //   return;
+      // }
       
       // File type validation
       const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
