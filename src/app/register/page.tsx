@@ -1047,7 +1047,7 @@ export default function RegisterPage() {
                                 onClick={handleIdProofClick}
                                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
                               >
-                                Upload your ID proof
+                                Upload your ID proof (for hotel check-in)
                               </button>
                               <input
                                 id="id-proof"
