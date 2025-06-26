@@ -983,7 +983,7 @@ export default function RegisterPage() {
                                   id="profile-image"
                                   name="profile-image"
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/*,application/pdf"
                                   className="sr-only"
                                   onChange={handleImageChange}
                                 />
