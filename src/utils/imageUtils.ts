@@ -96,9 +96,9 @@ export const validateImageFile = (file: File): string | null => {
     return 'Please upload a valid image file (JPEG, PNG, GIF, or WebP)';
   }
 
-  if (file.size > maxSize) {
-    return 'Image size should be less than 5MB';
-  }
+  // if (file.size > maxSize) {
+  //   return 'Image size should be less than 5MB';
+  // }
 
   return null;
 };

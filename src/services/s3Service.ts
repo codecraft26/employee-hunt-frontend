@@ -86,12 +86,12 @@ export const validateImageFile = (file: File): { isValid: boolean; error?: strin
     };
   }
 
-  if (file.size > maxSize) {
-    return {
-      isValid: false,
-      error: 'File size exceeds 5MB limit.'
-    };
-  }
+  // if (file.size > maxSize) {
+  //   return {
+  //     isValid: false,
+  //     error: 'File size exceeds 5MB limit.'
+  //   };
+  // }
 
   return { isValid: true };
 };
@@ -112,12 +112,12 @@ export const validateDocumentFile = (file: File): { isValid: boolean; error?: st
     };
   }
 
-  if (file.size > maxSize) {
-    return {
-      isValid: false,
-      error: 'File size exceeds 5MB limit.'
-    };
-  }
+  // if (file.size > maxSize) {
+  //   return {
+  //     isValid: false,
+  //     error: 'File size exceeds 5MB limit.'
+  //   };
+  // }
 
   return { isValid: true };
 };
