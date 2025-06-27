@@ -16,11 +16,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   useEffect(() => {
-    // Force cleanup: Unregister ALL service workers first
+    // Unregister all service workers except firebase-messaging-sw.js
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         registrations.forEach(function(registration) {
-          registration.unregister();
+          if (
+            !registration.active ||
+            !registration.active.scriptURL.endsWith('/firebase-messaging-sw.js')
+          ) {
+            registration.unregister();
+          }
         });
       });
     }
