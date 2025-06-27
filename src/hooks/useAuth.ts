@@ -15,9 +15,9 @@ export const useAuth = () => {
       // Clear the token cookie
       Cookies.remove('token');
       
-      // Clear any other local storage items (if you have any)
-      removeLocalStorageItem('deviceToken');
+      // Clear all localStorage and sessionStorage
       if (typeof window !== 'undefined') {
+        localStorage.clear();
         sessionStorage.clear();
       }
       
