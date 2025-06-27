@@ -597,12 +597,12 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
         {/* Poll Options */}
         {(canVote || shouldShowResults) && poll.options && poll.options.length > 0 ? (
           <>
-            {/* Search functionality for user-specific polls */}
-            {(poll.votingOptionType === VotingOptionType.USER_SPECIFIC || poll.votingOptionType === VotingOptionType.CATEGORY_USER_BASED) && poll.options.length > 5 && (
+            {/* Search functionality for polls with many options (quick fix) */}
+            {poll.options.length > 5 && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-slate-300">
-                    Search Users {poll.options.length > 10 && `(${poll.options.length} users)`}
+                    Search Options {poll.options.length > 10 && `(${poll.options.length} options)`}
                   </h3>
                   <button
                     onClick={() => {
@@ -614,7 +614,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                     className="text-slate-400 hover:text-slate-200 text-sm flex items-center space-x-1"
                   >
                     {showSearch ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-                    <span>{showSearch ? 'Hide Search' : 'Search Users'}</span>
+                    <span>{showSearch ? 'Hide Search' : 'Search Options'}</span>
                   </button>
                 </div>
                 
@@ -644,7 +644,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                 {/* Search results summary */}
                 {searchQuery && (
                   <div className="mt-2 text-sm text-slate-400">
-                    Found {filteredOptions.length} user{filteredOptions.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                    Found {filteredOptions.length} option{filteredOptions.length !== 1 ? 's' : ''} matching "{searchQuery}"
                   </div>
                 )}
               </div>
@@ -658,7 +658,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
             {showSearch && searchQuery && filteredOptions.length === 0 && (
               <div className="text-center py-8">
                 <Search className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-slate-400 text-sm">No users found matching "{searchQuery}"</p>
+                <p className="text-slate-400 text-sm">No options found matching "{searchQuery}"</p>
                 <p className="text-slate-500 text-xs mt-1">Try searching by name, email, employee code, or department</p>
                 <button
                   onClick={() => setSearchQuery('')}
