@@ -457,7 +457,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
                     <div className="space-y-3">
                       <p className="text-sm font-medium text-gray-700">Options ({poll.options.length})</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {poll.options.slice(0, 4).map((option) => (
+                        {poll.options.map((option) => (
                           <div key={option.id} className="border border-gray-200 rounded-lg p-3">
                             <div className="flex items-center space-x-3 mb-2">
                               {option.imageUrl && (
@@ -485,11 +485,11 @@ const PollsTab: React.FC<PollsTabProps> = ({
                             )}
                           </div>
                         ))}
-                        {poll.options.length > 4 && (
+                        {/* {poll.options.length > 4 && (
                           <div className="border border-gray-200 rounded-lg p-3 flex items-center justify-center">
                             <p className="text-gray-500 text-sm">+{poll.options.length - 4} more options</p>
                           </div>
-                        )}
+                        )} */}
                       </div>
                     </div>
                   )}
