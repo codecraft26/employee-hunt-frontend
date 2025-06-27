@@ -67,7 +67,7 @@ export const useActivities = () => {
     
     try {
       // Add query parameters for pagination if provided
-      let url = '/activities';
+      let url = '/activities/my-activities';
       const params = new URLSearchParams();
       
       if (limit) {
