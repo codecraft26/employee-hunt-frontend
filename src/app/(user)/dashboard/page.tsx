@@ -218,7 +218,7 @@ export default function UserDashboardUI() {
         {/* Floating action button for quick access - Mobile responsive */}
        
       </div>
-      <SupportFloatingButton />
+      <SupportFloatingButton dashboardOnly />
     </ProtectedRoute>
   );
 }
