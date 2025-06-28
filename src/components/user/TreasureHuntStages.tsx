@@ -1,7 +1,7 @@
 // components/user/TreasureHuntStages.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Camera, 
   Upload, 
@@ -30,6 +30,7 @@ import { useTeamLeadership } from '../../hooks/useTeamLeadership';
 import { useAuth } from '../../hooks/useAuth';
 import { TeamMemberSubmission } from '../../types/teams';
 import TimerDisplay from '../shared/TimerDisplay';
+import imageCompression from 'browser-image-compression';
 
 interface TreasureHuntStagesProps {
   hunt: any;
@@ -128,11 +129,29 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
 
   // Refresh all data
   const refreshAllData = async () => {
-    await Promise.all([
-      fetchProgress(hunt.id),
-      loadMySubmissions(),
-      isTeamLeader ? loadMemberSubmissions() : Promise.resolve()
-    ]);
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        loadMySubmissions(),
+        loadMemberSubmissions()
+      ]);
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Compress image
+  const compressImage = async (image: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 2,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true
+    };
+    const compressedBlob = await imageCompression(image, options);
+    const compressedFile = new File([compressedBlob], image.name, { type: image.type });
+    return compressedFile;
   };
 
   // Initialize data
@@ -164,11 +183,25 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
   }, [canAccessHunt, progress?.currentStage]);
 
   // Handle image selection
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file));
+      try {
+        let processedFile = file;
+        
+        // Compress if larger than 2MB
+        if (file.size > 2 * 1024 * 1024) {
+          console.log(`Compressing image from ${file.size} bytes`);
+          processedFile = await compressImage(file);
+          console.log(`Compressed to ${processedFile.size} bytes`);
+        }
+        
+        setSelectedImage(processedFile);
+        setImagePreview(URL.createObjectURL(processedFile));
+      } catch (error) {
+        console.error('Image processing error:', error);
+        alert('Failed to process the image. Please try again.');
+      }
     }
   };
 
@@ -258,11 +291,26 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(video, 0, 0);
         
-        canvas.toBlob((blob) => {
+        canvas.toBlob(async (blob) => {
           if (blob) {
             const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
-            setSelectedImage(file);
-            setImagePreview(URL.createObjectURL(file));
+            
+            try {
+              let processedFile = file;
+              
+              // Compress if larger than 2MB
+              if (file.size > 2 * 1024 * 1024) {
+                console.log(`Compressing camera capture from ${file.size} bytes`);
+                processedFile = await compressImage(file);
+                console.log(`Compressed to ${processedFile.size} bytes`);
+              }
+              
+              setSelectedImage(processedFile);
+              setImagePreview(URL.createObjectURL(processedFile));
+            } catch (error) {
+              console.error('Camera capture processing error:', error);
+              alert('Failed to process the captured image. Please try again.');
+            }
           }
         }, 'image/jpeg', 0.8);
         
