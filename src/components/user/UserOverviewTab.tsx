@@ -110,7 +110,7 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
 
   // Call hooks at the top level - this is required by Rules of Hooks
   const { fetchMyActivities } = useActivities();
-  const { fetchMyTeam } = useTeams();
+  const { fetchMyTeam, fetchTeams } = useTeams();
 
   // Optimized data fetching with caching - now using fetchMyActivities for user-specific data
   const { data: activities = [], loading: activitiesLoading } = useOptimizedData(
@@ -137,6 +137,63 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
       cacheTime: 300000 // 5 minutes
     }
   );
+
+  // Fetch all teams for ranking calculation
+  const { data: allTeams = [], loading: allTeamsLoading } = useOptimizedData(
+    `all-teams-ranking`,
+    useCallback(async () => {
+      console.log('🔄 UserOverviewTab: Fetching all teams for ranking...');
+      const result = await fetchTeams() || [];
+      console.log('✅ UserOverviewTab: Fetched all teams:', result.length);
+      return result;
+    }, [fetchTeams]),
+    { 
+      staleTime: 60000, // 1 minute
+      cacheTime: 300000 // 5 minutes
+    }
+  );
+
+  // Calculate team rank based on score
+  const teamRank = useMemo(() => {
+    if (!myTeam || !allTeams || allTeams.length === 0) return null;
+    
+    // Sort teams by score in descending order (highest score first)
+    const sortedTeams = [...allTeams].sort((a, b) => b.score - a.score);
+    
+    // Find the rank of the current user's team
+    const rank = sortedTeams.findIndex(team => team.id === myTeam.id) + 1;
+    
+    return rank > 0 ? rank : null;
+  }, [myTeam, allTeams]);
+
+  // Get rank styling based on position
+  const getRankStyling = useCallback((rank: number) => {
+    if (rank === 1) {
+      return {
+        bgColor: 'from-yellow-400 to-yellow-600',
+        icon: Trophy,
+        textColor: 'text-yellow-400'
+      };
+    } else if (rank === 2) {
+      return {
+        bgColor: 'from-slate-300 to-slate-500',
+        icon: Medal,
+        textColor: 'text-slate-300'
+      };
+    } else if (rank === 3) {
+      return {
+        bgColor: 'from-amber-600 to-amber-800',
+        icon: Medal,
+        textColor: 'text-amber-600'
+      };
+    } else {
+      return {
+        bgColor: 'from-yellow-500 to-orange-500',
+        icon: Star,
+        textColor: 'text-white'
+      };
+    }
+  }, []);
 
   // Memoized navigation handler
   const handleQuickAction = useCallback((type: string) => {
@@ -383,10 +440,25 @@ const UserOverviewTab: React.FC<UserOverviewTabProps> = memo(({ user }) => {
                             <div className="text-slate-400 text-xs">Points</div>
                           </div>
                           <div className="text-center">
-                            <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg sm:rounded-xl mx-auto mb-1 sm:mb-2">
-                              <Star className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                            <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-gradient-to-r ${teamRank ? getRankStyling(teamRank).bgColor : 'from-yellow-500 to-orange-500'} rounded-lg sm:rounded-xl mx-auto mb-1 sm:mb-2`}>
+                              {(() => {
+                                if (teamRank && teamRank <= 3) {
+                                  const IconComponent = getRankStyling(teamRank).icon;
+                                  return <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />;
+                                } else {
+                                  return <Star className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />;
+                                }
+                              })()}
                             </div>
-                            <div className="text-white font-bold text-sm sm:text-lg">#1</div>
+                            <div className={`font-bold text-sm sm:text-lg ${teamRank ? getRankStyling(teamRank).textColor : 'text-white'}`}>
+                              {allTeamsLoading ? (
+                                <div className="animate-pulse bg-slate-600 h-4 w-8 rounded"></div>
+                              ) : teamRank ? (
+                                `#${teamRank}`
+                              ) : (
+                                'N/A'
+                              )}
+                            </div>
                             <div className="text-slate-400 text-xs">Rank</div>
                           </div>
                         </>
