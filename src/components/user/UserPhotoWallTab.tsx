@@ -30,7 +30,7 @@ const UserPhotoWallTab: React.FC<UserPhotoWallTabProps> = ({ onUploadSuccess }) 
 
       {/* Tab Navigation */}
       <div className="border-b border-slate-700">
-        <nav className="flex space-x-8">
+        <nav className="flex space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveView('collage')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
