@@ -34,6 +34,7 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
   const [itemsPerPage] = useState(6);
   const [likingStates, setLikingStates] = useState<{ [key: string]: boolean }>({});
   const [refreshing, setRefreshing] = useState(false);
+  const [likedCollages, setLikedCollages] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     fetchCollages();
@@ -49,6 +50,14 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
     setFilteredCollages(filtered);
     setCurrentPage(1); // Reset to first page when filtering
   }, [collages, searchTerm]);
+
+  useEffect(() => {
+    const liked: { [key: string]: boolean } = {};
+    collages.forEach((collage) => {
+      liked[collage.id] = localStorage.getItem(`liked_collage_${collage.id}`) === 'true';
+    });
+    setLikedCollages(liked);
+  }, [collages]);
 
   const fetchCollages = async () => {
     const publishedCollages = await getPublishedCollages();
@@ -252,167 +261,17 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
           {/* Grid View */}
           {viewMode === 'grid' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentCollages.map((collage) => (
-                <div
-                  key={collage.id}
-                  className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  {/* Collage Image */}
-                  <div className="aspect-video relative group">
-                    {collage.collageImageUrl ? (
-                      <>
-                        <img
-                          src={collage.collageImageUrl}
-                          alt={collage.title}
-                          className="w-full h-full object-cover"
-                        />
-                        {/* Collage Download Icon Button */}
-                        <a
-                          href={collage.collageImageUrl}
-                          download={`collage_${collage.title.replace(/[^a-zA-Z0-9-_]/g, '_') || 'collage'}.jpg`}
-                          className="absolute bottom-2 right-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
-                          title="Download collage image"
-                          target="_blank" rel="noopener noreferrer"
-                        >
-                          <Download className="h-4 w-4" />
-                        </a>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="h-12 w-12 text-slate-600" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Collage Details */}
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
-                      {collage.title}
-                    </h3>
-                    
-                    {collage.description && (
-                      <p className="text-slate-300 text-sm mb-3 line-clamp-2">
-                        {collage.description}
-                      </p>
-                    )}
-
-                    {/* Selected Photos Section */}
-                    {collage.selectedPhotos && collage.selectedPhotos.length > 0 && (
-                      <div className="mb-3">
-                        <h4 className="text-sm font-medium text-slate-300 mb-2 flex items-center">
-                          <Users className="h-3 w-3 mr-1" />
-                          Photos in this collage ({collage.selectedPhotos.length})
-                        </h4>
-                        <div className="grid grid-cols-3 gap-1">
-                          {collage.selectedPhotos.slice(0, 6).map((photo, index) => (
-                            <div
-                              key={photo.id}
-                              className="aspect-square rounded overflow-hidden relative group"
-                            >
-                              <img
-                                src={photo.imageUrl}
-                                alt={photo.caption || `Photo ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              {/* Individual Photo Download Button */}
-                              <a
-                                href={photo.imageUrl}
-                                download={`photo_${index + 1}.jpg`}
-                                className="absolute bottom-1 right-1 p-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
-                                title="Download photo"
-                                target="_blank" rel="noopener noreferrer"
-                              >
-                                <Download className="h-3 w-3" />
-                              </a>
-                              {photo.caption && (
-                                <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-200 flex items-end">
-                                  <p className="text-xs text-white p-1 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                    {photo.caption}
-                                  </p>
-                                </div>
-                              )}
-                              {index === 5 && (collage.selectedPhotos?.length || 0) > 6 && (
-                                <div className="absolute inset-0 bg-opacity-70 flex items-center justify-center">
-                                  <span className="text-xs text-white font-medium">
-                                    +{(collage.selectedPhotos?.length || 0) - 6} more
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        {(collage.selectedPhotos?.length || 0) > 6 && (
-                          <p className="text-xs text-slate-400 mt-1">
-                            Showing 6 of {collage.selectedPhotos?.length || 0} photos
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Stats */}
-                    <div className="flex items-center justify-between text-sm text-slate-400 mb-3">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{collage.viewCount}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Heart className="h-4 w-4" />
-                          <span>{collage.likeCount}</span>
-                        </div>
-                        {collage.selectedPhotos && (
-                          <div className="flex items-center space-x-1">
-                            <Users className="h-4 w-4" />
-                            <span>{collage.selectedPhotos.length}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Creator and Date */}
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <div className="flex items-center space-x-1">
-                        <User className="h-3 w-3" />
-                        <span>{collage.createdBy.name}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>{formatDate(collage.publishedAt || collage.createdAt)}</span>
-                      </div>
-                    </div>
-
-                    {/* Like Button */}
-                    <button
-                      onClick={() => handleLike(collage.id)}
-                      disabled={likingStates[collage.id]}
-                      className="w-full mt-3 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
-                    >
-                      {likingStates[collage.id] ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b border-white" />
-                      ) : (
-                        <Heart className="h-4 w-4" />
-                      )}
-                      <span>Like</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* List View */}
-          {viewMode === 'list' && (
-            <div className="space-y-4">
-              {currentCollages.map((collage) => (
-                <div
-                  key={collage.id}
-                  className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
-                >
-                  <div className="flex items-start space-x-4">
-                    {/* Thumbnail */}
-                    <div className="w-24 h-24 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0">
+              {currentCollages.map((collage) => {
+                const isLiked = likedCollages[collage.id];
+                return (
+                  <div
+                    key={collage.id}
+                    className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    {/* Collage Image */}
+                    <div className="aspect-video relative group">
                       {collage.collageImageUrl ? (
-                        <div className="aspect-video relative group">
+                        <>
                           <img
                             src={collage.collageImageUrl}
                             alt={collage.title}
@@ -428,22 +287,22 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
                           >
                             <Download className="h-4 w-4" />
                           </a>
-                        </div>
+                        </>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="h-8 w-8 text-slate-600" />
+                          <ImageIcon className="h-12 w-12 text-slate-600" />
                         </div>
                       )}
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-1">
+                    {/* Collage Details */}
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
                         {collage.title}
                       </h3>
                       
                       {collage.description && (
-                        <p className="text-slate-300 text-sm mb-2">
+                        <p className="text-slate-300 text-sm mb-3 line-clamp-2">
                           {collage.description}
                         </p>
                       )}
@@ -502,71 +361,225 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
                       )}
 
                       {/* Stats */}
-                      <div className="flex items-center space-x-4 text-sm text-slate-400 mb-2">
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span>{collage.viewCount} views</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Heart className="h-4 w-4" />
-                          <span>{collage.likeCount} likes</span>
-                        </div>
-                        {collage.selectedPhotos && (
+                      <div className="flex items-center justify-between text-sm text-slate-400 mb-3">
+                        <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-1">
-                            <Users className="h-4 w-4" />
-                            <span>{collage.selectedPhotos.length} photos</span>
+                            <Eye className="h-4 w-4" />
+                            <span>{collage.viewCount}</span>
                           </div>
-                        )}
+                          <div className="flex items-center space-x-1">
+                            <Heart className="h-4 w-4" />
+                            <span>{collage.likeCount}</span>
+                          </div>
+                          {collage.selectedPhotos && (
+                            <div className="flex items-center space-x-1">
+                              <Users className="h-4 w-4" />
+                              <span>{collage.selectedPhotos.length}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       {/* Creator and Date */}
                       <div className="flex items-center justify-between text-xs text-slate-500">
                         <div className="flex items-center space-x-1">
                           <User className="h-3 w-3" />
-                          <span>by {collage.createdBy.name}</span>
+                          <span>{collage.createdBy.name}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-3 w-3" />
                           <span>{formatDate(collage.publishedAt || collage.createdAt)}</span>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex flex-col space-y-2 flex-shrink-0">
+                      {/* Like Button */}
                       <button
                         onClick={() => handleLike(collage.id)}
-                        disabled={likingStates[collage.id]}
-                        className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center space-x-1"
+                        disabled={isLiked || likingStates[collage.id]}
+                        className={`w-full mt-3 px-3 py-2 rounded-lg flex items-center justify-center space-x-2
+                          ${isLiked ? 'bg-purple-700 text-white' : 'bg-purple-600 text-white hover:bg-purple-700'}
+                          disabled:opacity-70`}
                       >
-                        {likingStates[collage.id] ? (
-                          <div className="animate-spin rounded-full h-3 w-3 border-b border-white" />
-                        ) : (
-                          <Heart className="h-3 w-3" />
-                        )}
-                        <span>Like</span>
+                        <Heart className={`h-4 w-4 ${isLiked ? 'fill-current text-white' : ''}`} fill={isLiked ? 'currentColor' : 'none'} />
+                        <span>{isLiked ? 'Liked' : 'Like'}</span>
                       </button>
-                      
-                      <div className="flex space-x-1">
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === 'list' && (
+            <div className="space-y-4">
+              {currentCollages.map((collage) => {
+                const isLiked = likedCollages[collage.id];
+                return (
+                  <div
+                    key={collage.id}
+                    className="bg-slate-800 border border-slate-700 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-start space-x-4">
+                      {/* Thumbnail */}
+                      <div className="w-24 h-24 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0">
+                        {collage.collageImageUrl ? (
+                          <div className="aspect-video relative group">
+                            <img
+                              src={collage.collageImageUrl}
+                              alt={collage.title}
+                              className="w-full h-full object-cover"
+                            />
+                            {/* Collage Download Icon Button */}
+                            <a
+                              href={collage.collageImageUrl}
+                              download={`collage_${collage.title.replace(/[^a-zA-Z0-9-_]/g, '_') || 'collage'}.jpg`}
+                              className="absolute bottom-2 right-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+                              title="Download collage image"
+                              target="_blank" rel="noopener noreferrer"
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="h-8 w-8 text-slate-600" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-white mb-1">
+                          {collage.title}
+                        </h3>
+                        
+                        {collage.description && (
+                          <p className="text-slate-300 text-sm mb-2">
+                            {collage.description}
+                          </p>
+                        )}
+
+                        {/* Selected Photos Section */}
+                        {collage.selectedPhotos && collage.selectedPhotos.length > 0 && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-slate-300 mb-2 flex items-center">
+                              <Users className="h-3 w-3 mr-1" />
+                              Photos in this collage ({collage.selectedPhotos.length})
+                            </h4>
+                            <div className="grid grid-cols-3 gap-1">
+                              {collage.selectedPhotos.slice(0, 6).map((photo, index) => (
+                                <div
+                                  key={photo.id}
+                                  className="aspect-square rounded overflow-hidden relative group"
+                                >
+                                  <img
+                                    src={photo.imageUrl}
+                                    alt={photo.caption || `Photo ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {/* Individual Photo Download Button */}
+                                  <a
+                                    href={photo.imageUrl}
+                                    download={`photo_${index + 1}.jpg`}
+                                    className="absolute bottom-1 right-1 p-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+                                    title="Download photo"
+                                    target="_blank" rel="noopener noreferrer"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </a>
+                                  {photo.caption && (
+                                    <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-200 flex items-end">
+                                      <p className="text-xs text-white p-1 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                        {photo.caption}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {index === 5 && (collage.selectedPhotos?.length || 0) > 6 && (
+                                    <div className="absolute inset-0 bg-opacity-70 flex items-center justify-center">
+                                      <span className="text-xs text-white font-medium">
+                                        +{(collage.selectedPhotos?.length || 0) - 6} more
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            {(collage.selectedPhotos?.length || 0) > 6 && (
+                              <p className="text-xs text-slate-400 mt-1">
+                                Showing 6 of {collage.selectedPhotos?.length || 0} photos
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Stats */}
+                        <div className="flex items-center space-x-4 text-sm text-slate-400 mb-2">
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4" />
+                            <span>{collage.viewCount} views</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Heart className="h-4 w-4" />
+                            <span>{collage.likeCount} likes</span>
+                          </div>
+                          {collage.selectedPhotos && (
+                            <div className="flex items-center space-x-1">
+                              <Users className="h-4 w-4" />
+                              <span>{collage.selectedPhotos.length} photos</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Creator and Date */}
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <div className="flex items-center space-x-1">
+                            <User className="h-3 w-3" />
+                            <span>by {collage.createdBy.name}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{formatDate(collage.publishedAt || collage.createdAt)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col space-y-2 flex-shrink-0">
                         <button
-                          onClick={() => handleDownload(collage.collageImageUrl!, collage.title)}
-                          className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                          title="Download"
+                          onClick={() => handleLike(collage.id)}
+                          disabled={likingStates[collage.id]}
+                          className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center space-x-1"
                         >
-                          <Download className="h-3 w-3" />
+                          {likingStates[collage.id] ? (
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-white" />
+                          ) : (
+                            <Heart className="h-3 w-3" />
+                          )}
+                          <span>Like</span>
                         </button>
-                        <button
-                          onClick={() => handleShare(collage)}
-                          className="p-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                          title="Share"
-                        >
-                          <Share2 className="h-3 w-3" />
-                        </button>
+                        
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleDownload(collage.collageImageUrl!, collage.title)}
+                            className="p-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            title="Download"
+                          >
+                            <Download className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => handleShare(collage)}
+                            className="p-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                            title="Share"
+                          >
+                            <Share2 className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -10,7 +10,7 @@ interface UserPhotoWallTabProps {
 }
 
 const UserPhotoWallTab: React.FC<UserPhotoWallTabProps> = ({ onUploadSuccess }) => {
-  const [activeView, setActiveView] = useState<'collage' | 'upload' | 'gallery' | 'all-collages'>('collage');
+  const [activeView, setActiveView] = useState<'all-collages' | 'upload' | 'gallery' | 'collage'>('all-collages');
 
   const handleUploadSuccess = () => {
     onUploadSuccess?.();
@@ -31,20 +31,6 @@ const UserPhotoWallTab: React.FC<UserPhotoWallTabProps> = ({ onUploadSuccess }) 
       {/* Tab Navigation */}
       <div className="border-b border-slate-700">
         <nav className="flex space-x-8 overflow-x-auto">
-          <button
-            onClick={() => setActiveView('collage')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeView === 'collage'
-                ? 'border-purple-400 text-purple-300'
-                : 'border-transparent text-slate-400 hover:text-white hover:border-slate-500'
-            }`}
-          >
-            <div className="flex items-center space-x-2">
-              <ImageIcon className="h-4 w-4 text-slate-300" />
-              <span>Current Collage</span>
-            </div>
-          </button>
-
           <button
             onClick={() => setActiveView('all-collages')}
             className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
@@ -91,7 +77,6 @@ const UserPhotoWallTab: React.FC<UserPhotoWallTabProps> = ({ onUploadSuccess }) 
 
       {/* Content */}
       <div className="min-h-[400px] sm:min-h-[600px] max-h-[80vh] overflow-y-auto">
-        {activeView === 'collage' && <CollageViewer />}
         {activeView === 'all-collages' && <AllCollagesViewer />}
         {activeView === 'upload' && <PhotoUpload onUploadSuccess={handleUploadSuccess} />}
         {activeView === 'gallery' && <UserPhotoGallery />}
@@ -101,10 +86,6 @@ const UserPhotoWallTab: React.FC<UserPhotoWallTabProps> = ({ onUploadSuccess }) 
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
         <h3 className="text-sm font-medium text-purple-300 mb-2">Photo Wall Tips</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-slate-300">
-          <div>
-            <h4 className="font-medium mb-1 text-white">Current Collage</h4>
-            <p>View and like the latest team photo collage created by admins</p>
-          </div>
           <div>
             <h4 className="font-medium mb-1 text-white">All Collages</h4>
             <p>Browse through all published collages and discover amazing team moments</p>
