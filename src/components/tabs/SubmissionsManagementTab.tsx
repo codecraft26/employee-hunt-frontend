@@ -236,11 +236,22 @@ const SubmissionsManagementTab: React.FC<SubmissionsManagementTabProps> = ({
       return team;
     });
 
-    // Sort teams by completion rate (highest first)
+    // Sort teams by: 1) Most approved submissions first, 2) Earliest team in case of equal submissions
     return result.sort((a, b) => {
-      const aCompletionRate = a.totalStages > 0 ? a.completedStages / a.totalStages : 0;
-      const bCompletionRate = b.totalStages > 0 ? b.completedStages / b.totalStages : 0;
-      return bCompletionRate - aCompletionRate;
+      // First priority: Most approved submissions
+      if (a.completedStages !== b.completedStages) {
+        return b.completedStages - a.completedStages;
+      }
+      
+      // Second priority: If equal approved submissions, show earliest team (by first submission time)
+      if (a.submissions.length > 0 && b.submissions.length > 0) {
+        const aEarliestTime = new Date(a.submissions[0].createdAt).getTime();
+        const bEarliestTime = new Date(b.submissions[0].createdAt).getTime();
+        return aEarliestTime - bEarliestTime;
+      }
+      
+      // Fallback: If no submissions, sort by team name
+      return a.teamName.localeCompare(b.teamName);
     });
   };
 
