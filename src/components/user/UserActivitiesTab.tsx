@@ -299,7 +299,7 @@ const UserActivitiesTab: React.FC = () => {
                                 <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h3 className="text-lg sm:text-xl font-bold truncate">{activity.title}</h3>
+                                <h6 className="text-sm sm:text-sm font-bold">{activity.title}</h6>
                                 <p className="text-white text-opacity-90 text-sm font-medium">
                                   {getActivityTypeDisplay(activity.type)}
                                 </p>

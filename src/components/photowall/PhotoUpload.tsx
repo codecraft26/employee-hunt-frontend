@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Camera, Upload, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
+import imageCompression from 'browser-image-compression';
 
 interface PhotoUploadProps {
   onUploadSuccess?: (photo: Photo) => void;
@@ -15,25 +16,36 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, className = 
   const [dragActive, setDragActive] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  const handleFileSelect = useCallback((file: File) => {
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      alert('File size must be less than 10MB');
-      return;
-    }
-
+  const handleFileSelect = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
       return;
     }
-
-    setSelectedFile(file);
-    
-    // Create preview
+  
+    let processedFile = file;
+  
+    // Compress if larger than 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      try {
+        const options = {
+          maxSizeMB: file.size / (1024 * 1024 * 20), // reduce size 5 times
+          useWebWorker: true,
+        };
+        processedFile = await imageCompression(file, options);
+      } catch (error) {
+        console.error('Compression failed:', error);
+        alert('Failed to compress the image');
+        return;
+      }
+    }
+  
+    setSelectedFile(processedFile);
+  
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreview(e.target?.result as string);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(processedFile);
     clearError();
   }, [clearError]);
 
