@@ -197,15 +197,37 @@ export const usePhotoWall = () => {
     
     try {
       const response = await api.get<CollageResponse>('/photo-wall/current-collage');
-      return response.data.data;
-    } catch (err: any) {
-      // If no current collage, return null without setting error
-      if (err.response?.status === 404) {
-        return null;
+      
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error('Failed to fetch current collage');
       }
-      const errorMessage = err.response?.data?.message || 'Failed to fetch current collage';
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch collage';
       setError(errorMessage);
       return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getPublishedCollages = useCallback(async (): Promise<Collage[]> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.get<CollagesResponse>('/photo-wall/published-collages');
+      
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error('Failed to fetch published collages');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch published collages';
+      setError(errorMessage);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -601,6 +623,7 @@ export const usePhotoWall = () => {
     uploadPhoto,
     getUserPhotos,
     getCurrentCollage,
+    getPublishedCollages,
     likeCollage,
     
     // Admin functions
