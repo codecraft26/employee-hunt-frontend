@@ -258,13 +258,25 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
                   className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                 >
                   {/* Collage Image */}
-                  <div className="aspect-video bg-slate-900 relative group">
+                  <div className="aspect-video relative group">
                     {collage.collageImageUrl ? (
-                      <img
-                        src={collage.collageImageUrl}
-                        alt={collage.title}
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={collage.collageImageUrl}
+                          alt={collage.title}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Collage Download Icon Button */}
+                        <a
+                          href={collage.collageImageUrl}
+                          download={`collage_${collage.title.replace(/[^a-zA-Z0-9-_]/g, '_') || 'collage'}.jpg`}
+                          className="absolute bottom-2 right-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+                          title="Download collage image"
+                          target="_blank" rel="noopener noreferrer"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <ImageIcon className="h-12 w-12 text-slate-600" />
@@ -302,6 +314,16 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
                                 alt={photo.caption || `Photo ${index + 1}`}
                                 className="w-full h-full object-cover"
                               />
+                              {/* Individual Photo Download Button */}
+                              <a
+                                href={photo.imageUrl}
+                                download={`photo_${index + 1}.jpg`}
+                                className="absolute bottom-1 right-1 p-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+                                title="Download photo"
+                                target="_blank" rel="noopener noreferrer"
+                              >
+                                <Download className="h-3 w-3" />
+                              </a>
                               {photo.caption && (
                                 <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-200 flex items-end">
                                   <p className="text-xs text-white p-1 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -390,11 +412,23 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
                     {/* Thumbnail */}
                     <div className="w-24 h-24 bg-slate-900 rounded-lg overflow-hidden flex-shrink-0">
                       {collage.collageImageUrl ? (
-                        <img
-                          src={collage.collageImageUrl}
-                          alt={collage.title}
-                          className="w-full h-full object-cover"
-                        />
+                        <div className="aspect-video relative group">
+                          <img
+                            src={collage.collageImageUrl}
+                            alt={collage.title}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Collage Download Icon Button */}
+                          <a
+                            href={collage.collageImageUrl}
+                            download={`collage_${collage.title.replace(/[^a-zA-Z0-9-_]/g, '_') || 'collage'}.jpg`}
+                            className="absolute bottom-2 right-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+                            title="Download collage image"
+                            target="_blank" rel="noopener noreferrer"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <ImageIcon className="h-8 w-8 text-slate-600" />
@@ -432,6 +466,16 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
                                   alt={photo.caption || `Photo ${index + 1}`}
                                   className="w-full h-full object-cover"
                                 />
+                                {/* Individual Photo Download Button */}
+                                <a
+                                  href={photo.imageUrl}
+                                  download={`photo_${index + 1}.jpg`}
+                                  className="absolute bottom-1 right-1 p-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+                                  title="Download photo"
+                                  target="_blank" rel="noopener noreferrer"
+                                >
+                                  <Download className="h-3 w-3" />
+                                </a>
                                 {photo.caption && (
                                   <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-200 flex items-end">
                                     <p className="text-xs text-white p-1 line-clamp-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
