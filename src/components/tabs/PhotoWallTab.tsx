@@ -13,7 +13,8 @@ import {
   Palette,
   Eye,
   AlertCircle,
-  Settings
+  Settings,
+  Download
 } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
 import AdminCollageCreator from '../photowall/AdminCollageCreator';
@@ -137,6 +138,24 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
   const handleCollageCreated = () => {
     setSuccessMessage('Collage published successfully!');
     setActiveView('photos');
+  };
+
+  // Function to download an image
+  const downloadImage = async (imageUrl: string, filename?: string) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || `photo-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download image:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -323,7 +342,7 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
                   className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   {/* Photo Image */}
-                  <div className="aspect-square bg-gray-100 relative">
+                  <div className="aspect-square bg-gray-100 relative group">
                     <img
                       src={photo.imageUrl}
                       alt={photo.caption || 'Photo'}
@@ -336,9 +355,18 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
                       <span>{photo.status}</span>
                     </div>
 
-                    {/* In Collage Badge */}
+                    {/* Download Button - Always visible */}
+                    <button
+                      onClick={() => downloadImage(photo.imageUrl, `photo-${photo.user?.name || 'user'}-${Date.now()}.jpg`)}
+                      className="absolute top-2 right-2 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors z-20 shadow-lg"
+                      title="Download photo"
+                    >
+                      <Download className="h-5 w-5" />
+                    </button>
+
+                    {/* In Collage Badge - Positioned to not overlap with download button */}
                     {photo.isInCollage && (
-                      <div className="absolute top-2 right-2 px-2 py-1 bg-purple-600 text-white rounded-full text-xs font-medium">
+                      <div className="absolute top-2 right-14 px-2 py-1 bg-purple-600 text-white rounded-full text-xs font-medium">
                         In Collage
                       </div>
                     )}
