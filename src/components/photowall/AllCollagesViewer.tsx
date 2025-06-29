@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Heart, 
   Eye, 
@@ -24,10 +24,253 @@ interface AllCollagesViewerProps {
   className?: string;
 }
 
+// Fallback types if not defined
+// type Collage = any;
+// type Photo = any;
+
+type CollageType = any;
+type Photo = any;
+
+// Add a simple formatDate function if not present
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+interface AllCollageCardProps {
+  collage: CollageType;
+  isLiked: boolean;
+  likingState: boolean;
+  handleLike: (collageId: string) => void;
+}
+
+function AllCollageCard({ collage, isLiked, likingState, handleLike }: AllCollageCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const key = `viewed_collage_${collage.id}`;
+    if (typeof window === 'undefined' || localStorage.getItem(key) === 'true') {
+      console.log(`🔄 Collage ${collage.id} already viewed or SSR, skipping view tracking`);
+      return;
+    }
+
+    console.log(`👁️ Setting up view tracking for collage ${collage.id}`);
+
+    let hasTriggered = false;
+
+    const incrementViews = () => {
+      if (hasTriggered) return;
+      
+      console.log(`✅ Collage ${collage.id} is now visible, incrementing views...`);
+      hasTriggered = true;
+      
+      fetch(`https://backend.banndhann.com/api/photo-wall/collages/${collage.id}/increment-views`, { 
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          console.log(`✅ View count incremented successfully for collage ${collage.id}`);
+          localStorage.setItem(key, 'true');
+        } else {
+          console.error(`❌ Failed to increment view count for collage ${collage.id}:`, response.status, response.statusText);
+        }
+      })
+      .catch(error => {
+        console.error(`❌ Error incrementing view count for collage ${collage.id}:`, error);
+      });
+    };
+
+    // Use Intersection Observer
+    if ('IntersectionObserver' in window) {
+      console.log(`🔧 Using Intersection Observer for collage ${collage.id}`);
+      
+      const observer = new window.IntersectionObserver(
+        (entries) => {
+          console.log(`🔍 Observer callback triggered for collage ${collage.id}:`, {
+            isIntersecting: entries[0].isIntersecting,
+            intersectionRatio: entries[0].intersectionRatio
+          });
+          
+          if (entries[0].isIntersecting) {
+            incrementViews();
+            observer.disconnect();
+          }
+        },
+        { 
+          threshold: 0.1,
+          rootMargin: '50px'
+        }
+      );
+
+      if (cardRef.current) {
+        observer.observe(cardRef.current);
+        console.log(`👀 Observer attached to collage ${collage.id}`);
+      } else {
+        console.warn(`⚠️ Card ref not available for collage ${collage.id}`);
+      }
+
+      return () => observer.disconnect();
+    }
+  }, [collage.id]);
+
+  return (
+    <div
+      ref={cardRef}
+      className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+    >
+      {/* Collage Image */}
+      <div className="aspect-video relative group">
+        {collage.collageImageUrl ? (
+          <>
+            <img
+              src={collage.collageImageUrl}
+              alt={collage.title}
+              className="w-full h-full object-cover"
+            />
+            {/* Collage Download Icon Button */}
+            <a
+              href={collage.collageImageUrl}
+              download={`collage_${collage.title.replace(/[^a-zA-Z0-9-_]/g, '_') || 'collage'}.jpg`}
+              className="absolute bottom-2 right-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+              title="Download collage image"
+              target="_blank" rel="noopener noreferrer"
+            >
+              <Download className="h-4 w-4" />
+            </a>
+          </>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ImageIcon className="h-12 w-12 text-slate-600" />
+          </div>
+        )}
+      </div>
+
+      {/* Collage Details */}
+      <div className="p-4">
+        <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
+          {collage.title}
+        </h3>
+        
+        {collage.description && (
+          <p className="text-slate-300 text-sm mb-3 line-clamp-2">
+            {collage.description}
+          </p>
+        )}
+
+        {/* Selected Photos Section */}
+        {collage.selectedPhotos && collage.selectedPhotos.length > 0 && (
+          <div className="mb-3">
+            <h4 className="text-sm font-medium text-slate-300 mb-2 flex items-center">
+              <Users className="h-3 w-3 mr-1" />
+              Photos in this collage ({collage.selectedPhotos.length})
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {collage.selectedPhotos.slice(0, 6).map((photo: Photo, index: number) => (
+                <div
+                  key={photo.id}
+                  className="flex flex-col items-center"
+                >
+                  <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded overflow-hidden">
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.caption || `Photo ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Individual Photo Download Button */}
+                    <a
+                      href={photo.imageUrl}
+                      download={`photo_${index + 1}.jpg`}
+                      className="absolute bottom-1 right-1 p-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
+                      title="Download photo"
+                      target="_blank" rel="noopener noreferrer"
+                    >
+                      <Download className="h-3 w-3" />
+                    </a>
+                  </div>
+                  {photo.caption && (
+                    <p className="text-xs text-center text-slate-300 mt-1 w-28 sm:w-32 break-words">
+                      {photo.caption}
+                    </p>
+                  )}
+                  {photo.user?.name && (
+                    <p className="text-xs text-center text-slate-400 mt-0.5 w-28 sm:w-32 break-words">
+                      {photo.user.name}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {collage.selectedPhotos.length > 6 && (
+              <p className="text-xs text-slate-400 mt-1">
+                Showing 6 of {collage.selectedPhotos.length} photos
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Stats */}
+        <div className="flex items-center justify-between text-sm text-slate-400 mb-3">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1">
+              <Eye className="h-4 w-4" />
+              <span>{collage.viewCount}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Heart className="h-4 w-4" />
+              <span>{collage.likeCount}</span>
+            </div>
+            {collage.selectedPhotos && (
+              <div className="flex items-center space-x-1">
+                <Users className="h-4 w-4" />
+                <span>{collage.selectedPhotos.length}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Creator and Date */}
+        <div className="flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center space-x-1">
+            <User className="h-3 w-3" />
+            <span>{collage.createdBy.name}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Calendar className="h-3 w-3" />
+            <span>{formatDate(collage.publishedAt || collage.createdAt)}</span>
+          </div>
+        </div>
+
+        {/* Like Button */}
+        <button
+          onClick={() => handleLike(collage.id)}
+          disabled={isLiked || likingState}
+          className={`w-full mt-3 px-3 py-2 rounded-lg flex items-center justify-center space-x-2
+            ${isLiked ? 'bg-purple-700 text-white' : 'bg-purple-600 text-white hover:bg-purple-700'}
+            disabled:opacity-70`}
+        >
+          <Heart className={`h-4 w-4 ${isLiked ? 'fill-current text-white' : ''}`} fill={isLiked ? 'currentColor' : 'none'} />
+          <span>{isLiked ? 'Liked' : 'Like'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' }) => {
   const { getPublishedCollages, likeCollage, loading, error } = usePhotoWall();
-  const [collages, setCollages] = useState<Collage[]>([]);
-  const [filteredCollages, setFilteredCollages] = useState<Collage[]>([]);
+  const [collages, setCollages] = useState<CollageType[]>([]);
+  const [filteredCollages, setFilteredCollages] = useState<CollageType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
@@ -111,7 +354,7 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
     }
   };
 
-  const handleShare = async (collage: Collage) => {
+  const handleShare = async (collage: CollageType) => {
     if (navigator.share) {
       try {
         await navigator.share({
@@ -139,16 +382,6 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentCollages = filteredCollages.slice(startIndex, endIndex);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   if (loading && collages.length === 0) {
     return (
@@ -239,145 +472,15 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
           {/* Grid View */}
           {(
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentCollages.map((collage) => {
-                const isLiked = likedCollages[collage.id];
-                return (
-                  <div
-                    key={collage.id}
-                    className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                  >
-                    {/* Collage Image */}
-                    <div className="aspect-video relative group">
-                      {collage.collageImageUrl ? (
-                        <>
-                          <img
-                            src={collage.collageImageUrl}
-                            alt={collage.title}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Collage Download Icon Button */}
-                          <a
-                            href={collage.collageImageUrl}
-                            download={`collage_${collage.title.replace(/[^a-zA-Z0-9-_]/g, '_') || 'collage'}.jpg`}
-                            className="absolute bottom-2 right-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
-                            title="Download collage image"
-                            target="_blank" rel="noopener noreferrer"
-                          >
-                            <Download className="h-4 w-4" />
-                          </a>
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="h-12 w-12 text-slate-600" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Collage Details */}
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
-                        {collage.title}
-                      </h3>
-                      
-                      {collage.description && (
-                        <p className="text-slate-300 text-sm mb-3 line-clamp-2">
-                          {collage.description}
-                        </p>
-                      )}
-
-                      {/* Selected Photos Section */}
-                      {collage.selectedPhotos && collage.selectedPhotos.length > 0 && (
-                        <div className="mb-3">
-                          <h4 className="text-sm font-medium text-slate-300 mb-2 flex items-center">
-                            <Users className="h-3 w-3 mr-1" />
-                            Photos in this collage ({collage.selectedPhotos.length})
-                          </h4>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {collage.selectedPhotos.slice(0, 6).map((photo, index) => (
-                              <div
-                                key={photo.id}
-                                className="flex flex-col items-center"
-                              >
-                                <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded overflow-hidden">
-                                  <img
-                                    src={photo.imageUrl}
-                                    alt={photo.caption || `Photo ${index + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
-                                  {/* Individual Photo Download Button */}
-                                  <a
-                                    href={photo.imageUrl}
-                                    download={`photo_${index + 1}.jpg`}
-                                    className="absolute bottom-1 right-1 p-1 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors z-10 shadow pointer-events-auto"
-                                    title="Download photo"
-                                    target="_blank" rel="noopener noreferrer"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </a>
-                                </div>
-                                {photo.caption && (
-                                  <p className="text-xs text-center text-slate-300 mt-1 w-28 sm:w-32 break-words">
-                                    {photo.caption}
-                                  </p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          {collage.selectedPhotos.length > 6 && (
-                            <p className="text-xs text-slate-400 mt-1">
-                              Showing 6 of {collage.selectedPhotos.length} photos
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Stats */}
-                      <div className="flex items-center justify-between text-sm text-slate-400 mb-3">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-1">
-                            <Eye className="h-4 w-4" />
-                            <span>{collage.viewCount}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <Heart className="h-4 w-4" />
-                            <span>{collage.likeCount}</span>
-                          </div>
-                          {collage.selectedPhotos && (
-                            <div className="flex items-center space-x-1">
-                              <Users className="h-4 w-4" />
-                              <span>{collage.selectedPhotos.length}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Creator and Date */}
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <div className="flex items-center space-x-1">
-                          <User className="h-3 w-3" />
-                          <span>{collage.createdBy.name}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDate(collage.publishedAt || collage.createdAt)}</span>
-                        </div>
-                      </div>
-
-                      {/* Like Button */}
-                      <button
-                        onClick={() => handleLike(collage.id)}
-                        disabled={isLiked || likingStates[collage.id]}
-                        className={`w-full mt-3 px-3 py-2 rounded-lg flex items-center justify-center space-x-2
-                          ${isLiked ? 'bg-purple-700 text-white' : 'bg-purple-600 text-white hover:bg-purple-700'}
-                          disabled:opacity-70`}
-                      >
-                        <Heart className={`h-4 w-4 ${isLiked ? 'fill-current text-white' : ''}`} fill={isLiked ? 'currentColor' : 'none'} />
-                        <span>{isLiked ? 'Liked' : 'Like'}</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {currentCollages.map((collage) => (
+                <AllCollageCard
+                  key={collage.id}
+                  collage={collage}
+                  isLiked={likedCollages[collage.id]}
+                  likingState={likingStates[collage.id]}
+                  handleLike={handleLike}
+                />
+              ))}
             </div>
           )}
 
