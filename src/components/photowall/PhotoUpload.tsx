@@ -28,7 +28,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, className = 
     if (file.size > 2 * 1024 * 1024) {
       try {
         const options = {
-          maxSizeMB: file.size / (1024 * 1024 * 10), // reduce size 5 times
+          maxSizeMB: file.size / (1024 * 1024 * 20), // reduce size 5 times
           useWebWorker: true,
         };
         processedFile = await imageCompression(file, options);
