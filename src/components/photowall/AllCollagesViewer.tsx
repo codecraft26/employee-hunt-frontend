@@ -205,7 +205,7 @@ function AllCollageCard({ collage, isLiked, likingState, handleLike }: AllCollag
                   )}
                   {photo.user?.name && (
                     <p className="text-xs text-center text-slate-400 mt-0.5 w-28 sm:w-32 break-words">
-                      {photo.user.name}
+                      by {photo.user.name}
                     </p>
                   )}
                 </div>
