@@ -357,13 +357,45 @@ export const usePhotoWall = () => {
     }
   }, []);
 
+  // Helper function to compress image
+  const compressImage = (file: Blob, quality: number = 0.8, maxWidth: number = 1920): Promise<Blob> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          resolve(blob || file);
+        }, 'image/jpeg', quality);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const uploadCollageImage = useCallback(async (collageId: string, imageBlob: Blob): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
     try {
+      // Compress the image before uploading
+      const compressedBlob = await compressImage(imageBlob, 0.8, 1920);
+      
       const formData = new FormData();
-      formData.append('collageImage', imageBlob, `collage-${collageId}.jpg`);
+      formData.append('collageImage', compressedBlob, `collage-${collageId}.jpg`);
 
       await api.put(`/photo-wall/admin/collages/${collageId}/upload-image`, formData, {
         headers: {
