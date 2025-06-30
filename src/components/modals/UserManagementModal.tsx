@@ -19,10 +19,13 @@ import {
   Shield,
   CheckCircle,
   XCircle,
-  User
+  User,
+  Edit
 } from 'lucide-react';
 import { useUserManagement, CreateAdminRequest, User as UserType } from '../../hooks/useUserManagement';
 import { useToast } from '../shared/ToastContainer';
+import { uploadProfileImage, validateImageFile } from '../../services/s3Service';
+import { useCategories } from '../../hooks/useCategories';
 
 interface UserManagementModalProps {
   isOpen: boolean;
@@ -63,10 +66,18 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
     fetchAllUsers,
     refreshUsers,
     clearErrors,
-    getUserStats
+    getUserStats,
+    updateUser
   } = useUserManagement();
 
   const { showSuccess, showError, showInfo } = useToast();
+
+  const [editUser, setEditUser] = useState<UserType | null>(null);
+  const [editFormData, setEditFormData] = useState<any>({});
+  const [editProfileImageFile, setEditProfileImageFile] = useState<File | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
+
+  const { categories, fetchCategories, loading: categoriesLoading } = useCategories();
 
   // Fetch users on modal open
   useEffect(() => {
@@ -146,6 +157,8 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
   });
 
   const stats = getUserStats();
+
+  useEffect(() => { if (editUser) fetchCategories(); }, [editUser, fetchCategories]);
 
   if (!isOpen) return null;
 
@@ -334,6 +347,18 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                             Joined: {new Date(user.createdAt).toLocaleDateString()}
                           </div>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            className="ml-2 p-1 text-blue-500 hover:text-blue-700"
+                            onClick={() => {
+                              setEditUser(user);
+                              setEditFormData({ ...user, password: '' });
+                              setEditProfileImageFile(null);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -366,7 +391,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                   {/* Basic Information */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         Full Name *
                       </label>
                       <input
@@ -379,7 +404,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         Email Address *
                       </label>
                       <input
@@ -392,7 +417,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         Password *
                       </label>
                       <div className="relative">
@@ -414,7 +439,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         Department
                       </label>
                       <input
@@ -427,7 +452,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         Gender
                       </label>
                                              <select
@@ -445,7 +470,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                   {/* File Uploads */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         Profile Image
                       </label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
@@ -476,7 +501,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
                         ID Proof
                       </label>
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
@@ -532,6 +557,210 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Edit User Modal */}
+      {editUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-2xl xl:max-w-3xl relative p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-lg">
+            <button
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+              onClick={() => setEditUser(null)}
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h3 className="text-lg font-semibold mb-4">Edit User: {editUser.name}</h3>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setEditLoading(true);
+                let data: any = { ...editFormData };
+                // Handle profile image upload to S3 if a new file is selected
+                if (editProfileImageFile) {
+                  const validation = validateImageFile(editProfileImageFile);
+                  if (!validation.isValid) {
+                    showError('Invalid Image', validation.error || 'Invalid file');
+                    setEditLoading(false);
+                    return;
+                  }
+                  try {
+                    const url = await uploadProfileImage(editProfileImageFile);
+                    data.profileImage = url;
+                  } catch (err) {
+                    showError('Upload Failed', 'Failed to upload profile image');
+                    setEditLoading(false);
+                    return;
+                  }
+                }
+                const result = await updateUser(editUser.id, data);
+                setEditLoading(false);
+                if (result) {
+                  showSuccess('User Updated', 'User information updated successfully');
+                  setEditUser(null);
+                  await fetchAllUsers();
+                } else {
+                  showError('Update Failed', 'Failed to update user');
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={editFormData.name || ''}
+                  onChange={e => setEditFormData((f: any) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={editFormData.email || ''}
+                  onChange={e => setEditFormData((f: any) => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Password (leave blank to keep unchanged)</label>
+                <input
+                  type="password"
+                  value={editFormData.password || ''}
+                  onChange={e => setEditFormData((f: any) => ({ ...f, password: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Employee Code</label>
+                <input
+                  type="text"
+                  value={editFormData.employeeCode || ''}
+                  onChange={e => setEditFormData((f: any) => ({ ...f, employeeCode: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Department</label>
+                <input
+                  type="text"
+                  value={editFormData.department || ''}
+                  onChange={e => setEditFormData((f: any) => ({ ...f, department: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Gender</label>
+                <select
+                  value={editFormData.gender || ''}
+                  onChange={e => setEditFormData((f: any) => ({ ...f, gender: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded"
+                >
+                  <option value="">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Hobbies (comma separated)</label>
+                <input
+                  type="text"
+                  value={Array.isArray(editFormData.hobbies) ? editFormData.hobbies.join(', ') : (editFormData.hobbies || '')}
+                  onChange={e => setEditFormData((f: any) => ({ ...f, hobbies: e.target.value.split(',').map((h: string) => h.trim()) }))}
+                  className="w-full px-3 py-2 border rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Categories</label>
+                <div className="relative">
+                  <div
+                    className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg shadow-sm bg-white cursor-pointer"
+                    onClick={() => {
+                      const dropdown = document.getElementById('edit-categories-dropdown');
+                      if (dropdown) dropdown.classList.toggle('hidden');
+                    }}
+                  >
+                    <span className={(!editFormData.categoryIds || editFormData.categoryIds.length === 0) ? 'text-gray-400' : 'text-gray-900'}>
+                      {(!editFormData.categoryIds || editFormData.categoryIds.length === 0)
+                        ? 'Select categories'
+                        : `${editFormData.categoryIds.length} selected`}
+                    </span>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {/* Dropdown Options */}
+                  <div
+                    id="edit-categories-dropdown"
+                    className="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    {categoriesLoading ? (
+                      <div className="p-3 text-center text-sm text-gray-500">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        Loading categories...
+                      </div>
+                    ) : categories.length === 0 ? (
+                      <div className="p-3 text-center text-sm text-gray-500">
+                        No categories available
+                      </div>
+                    ) : categories.map(category => (
+                      <label key={category.id} className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          value={category.id}
+                          checked={Array.isArray(editFormData.categoryIds) && editFormData.categoryIds.includes(category.id)}
+                          onChange={e => {
+                            const { value, checked } = e.target;
+                            if (checked) {
+                              setEditFormData((f: any) => ({ ...f, categoryIds: [...f.categoryIds, value] }));
+                            } else {
+                              setEditFormData((f: any) => ({ ...f, categoryIds: f.categoryIds.filter((id: string) => id !== value) }));
+                            }
+                          }}
+                        />
+                        <span className="ml-2">{category.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-1">Profile Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setEditProfileImageFile(e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border rounded"
+                />
+                {editUser.profileImage && !editProfileImageFile && (
+                  <img src={editUser.profileImage} alt="Profile" className="mt-2 h-12 w-12 rounded-full object-cover" />
+                )}
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-gray-200 rounded"
+                  onClick={() => setEditUser(null)}
+                  disabled={editLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                  disabled={editLoading}
+                >
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

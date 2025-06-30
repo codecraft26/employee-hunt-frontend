@@ -278,6 +278,28 @@ export const useUserManagement = () => {
     };
   }, [state.users]);
 
+  // Update user information (admin or self)
+  const updateUser = useCallback(async (userId: string, updateData: any): Promise<User | null> => {
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    try {
+      const response = await apiService.updateUser(userId, updateData);
+      if (response.success) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          users: prev.users.map(user => user.id === userId ? response.data : user)
+        }));
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to update user');
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to update user';
+      setState(prev => ({ ...prev, loading: false, error: errorMessage }));
+      return null;
+    }
+  }, []);
+
   return {
     // State
     users: state.users,
@@ -291,6 +313,7 @@ export const useUserManagement = () => {
     fetchAllUsers,
     refreshUsers,
     clearErrors,
+    updateUser,
     
     // Computed
     getUserStats,
