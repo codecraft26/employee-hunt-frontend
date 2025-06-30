@@ -722,7 +722,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
                             }
                           }}
                         />
-                        <span className="ml-2">{category.name}</span>
+                        <span className="ml-2 text-gray-900">{category.name}</span>
                       </label>
                     ))}
                   </div>
