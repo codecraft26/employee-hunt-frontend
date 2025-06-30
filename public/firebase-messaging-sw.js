@@ -54,7 +54,7 @@ messaging.onBackgroundMessage(function (payload) {
     data: payload.data || {},
   };
 
-  self.registration.showNotification(title, notificationOptions);
+  // self.registration.showNotification(title, notificationOptions);
 });
 
 // UNIVERSAL PUSH HANDLER

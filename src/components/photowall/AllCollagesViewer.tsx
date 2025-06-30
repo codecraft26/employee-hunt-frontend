@@ -130,7 +130,7 @@ function AllCollageCard({ collage, isLiked, likingState, handleLike }: AllCollag
       className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
     >
       {/* Collage Image */}
-      <div className="aspect-video relative group">
+      <div className="relative group">
         {collage.collageImageUrl ? (
           <>
             <img
