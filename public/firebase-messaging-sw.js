@@ -54,57 +54,57 @@ messaging.onBackgroundMessage(function (payload) {
     data: payload.data || {},
   };
 
-  // self.registration.showNotification(title, notificationOptions);
+  self.registration.showNotification(title, notificationOptions);
 });
 
 // UNIVERSAL PUSH HANDLER
-self.addEventListener('push', function(event) {
-  let data = {};
-  try {
-    data = event.data.json();
-  } catch (e) {
-    data = {};
-  }
-
-  let title = "Notification";
-  let body = "";
-  let image = "";
-
-  if (data.notification) {
-    title = data.notification.title || title;
-    body = data.notification.body || body;
-    image = data.notification.image || image || fallbackImage;
-  } else if (data.title || data.body) {
-    title = data.title || title;
-    body = data.body || body;
-    image = data.image || image || fallbackImage;
-  } else {
-    // If the whole data is a stringified JSON
-    try {
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-      if (parsed.notification) {
-        title = parsed.notification.title || title;
-        body = parsed.notification.body || body;
-        image = parsed.notification.image || image || fallbackImage;
-      }
-    } catch (e) {
-      // fallback: show the stringified data
-      body = JSON.stringify(data);
-      image = fallbackImage;
-    }
-  }
-
-  const notificationOptions = {
-    body: body,
-    image: image || fallbackImage,
-    icon: "/icons/icon-192x192.png",
-    data: data.data || {},
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(title, notificationOptions)
-  );
-});
+// self.addEventListener('push', function(event) {
+//   let data = {};
+//   try {
+//     data = event.data.json();
+//   } catch (e) {
+//     data = {};
+//   }
+//
+//   let title = "Notification";
+//   let body = "";
+//   let image = "";
+//
+//   if (data.notification) {
+//     title = data.notification.title || title;
+//     body = data.notification.body || body;
+//     image = data.notification.image || image || fallbackImage;
+//   } else if (data.title || data.body) {
+//     title = data.title || title;
+//     body = data.body || body;
+//     image = data.image || image || fallbackImage;
+//   } else {
+//     // If the whole data is a stringified JSON
+//     try {
+//       const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+//       if (parsed.notification) {
+//         title = parsed.notification.title || title;
+//         body = parsed.notification.body || body;
+//         image = parsed.notification.image || image || fallbackImage;
+//       }
+//     } catch (e) {
+//       // fallback: show the stringified data
+//       body = JSON.stringify(data);
+//       image = fallbackImage;
+//     }
+//   }
+//
+//   const notificationOptions = {
+//     body: body,
+//     image: image || fallbackImage,
+//     icon: "/icons/icon-192x192.png",
+//     data: data.data || {},
+//   };
+//
+//   event.waitUntil(
+//     self.registration.showNotification(title, notificationOptions)
+//   );
+// });
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
