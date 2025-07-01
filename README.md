@@ -15,6 +15,9 @@ A modern Progressive Web App (PWA) for team activities, quizzes, treasure hunts,
 
 
 
+
+
+
 - **🎮 Gaming UI**: Beautiful, interactive design
 - **📊 Real-time Updates**: Live sync when online
 
