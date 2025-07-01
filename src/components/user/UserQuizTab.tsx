@@ -113,50 +113,50 @@ const UserQuizTab: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Timer for current question - DISABLED per requirement
-  // useEffect(() => {
-  //   if (showQuizModal && assignedQuestions.length > 0 && timeRemaining > 0 && !getCurrentQuestion()?.isCompleted) {
-  //     const timer = setInterval(() => {
-  //       setTimeRemaining(prev => {
-  //         if (prev <= 1) {
-  //           // Auto-submit when time runs out
-  //           handleAutoSubmit();
-  //           return 0;
-  //         }
-  //         return prev - 1;
-  //       });
-  //     }, 1000);
+  // Timer for current question - RE-ENABLED
+  useEffect(() => {
+    if (showQuizModal && assignedQuestions.length > 0 && timeRemaining > 0 && !getCurrentQuestion()?.isCompleted) {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => {
+          if (prev <= 1) {
+            // Auto-submit when time runs out
+            handleAutoSubmit();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-  //     return () => clearInterval(timer);
-  //   }
-  // }, [showQuizModal, timeRemaining, assignedQuestions, currentQuestionIndex]);
+      return () => clearInterval(timer);
+    }
+  }, [showQuizModal, timeRemaining, assignedQuestions, currentQuestionIndex]);
 
-  // Timer for entire quiz duration - DISABLED per requirement
-  // useEffect(() => {
-  //   if (showQuizModal && selectedQuiz) {
-  //     const updateQuizTimer = () => {
-  //       const now = new Date();
-  //       const endTime = new Date(selectedQuiz.endTime);
-  //       const remainingSeconds = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
+  // Timer for entire quiz duration - RE-ENABLED
+  useEffect(() => {
+    if (showQuizModal && selectedQuiz) {
+      const updateQuizTimer = () => {
+        const now = new Date();
+        const endTime = new Date(selectedQuiz.endTime);
+        const remainingSeconds = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
         
-  //       setQuizTimeRemaining(remainingSeconds);
+        setQuizTimeRemaining(remainingSeconds);
         
-  //       // Auto-close quiz when time runs out
-  //       if (remainingSeconds <= 0) {
-  //         alert('Quiz time has expired!');
-  //         handleCloseQuiz();
-  //       }
-  //     };
+        // Auto-close quiz when time runs out
+        if (remainingSeconds <= 0) {
+          alert('Quiz time has expired!');
+          handleCloseQuiz();
+        }
+      };
 
-  //     // Update immediately
-  //     updateQuizTimer();
+      // Update immediately
+      updateQuizTimer();
       
-  //     // Update every second
-  //     const timer = setInterval(updateQuizTimer, 1000);
+      // Update every second
+      const timer = setInterval(updateQuizTimer, 1000);
 
-  //     return () => clearInterval(timer);
-  //   }
-  // }, [showQuizModal, selectedQuiz]);
+      return () => clearInterval(timer);
+    }
+  }, [showQuizModal, selectedQuiz]);
 
   // Helper function to get current question
   const getCurrentQuestion = (): UserQuizQuestion | null => {
@@ -197,8 +197,9 @@ const UserQuizTab: React.FC = () => {
 
   const handleStartQuiz = async (quiz: UserQuiz) => {
     // Check if user has already completed this quiz
-    if (completedQuizzes.has(quiz.id)) {
-      alert('You have already completed this quiz!');
+    const completionStatus = quizzesWithCompletion.find(q => q.quiz.id === quiz.id)?.completionStatus;
+    if (completionStatus?.isCompleted) {
+      alert('You have already completed this quiz! You cannot retake it.');
       return;
     }
 
@@ -617,6 +618,9 @@ const UserQuizTab: React.FC = () => {
                       <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-lg text-center font-semibold text-sm">
                         ✅ Quiz Completed
                       </div>
+                      <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-center text-xs">
+                        ⚠️ Cannot retake this quiz
+                      </div>
                       {quiz.userScore !== undefined && (
                         <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-lg text-center text-xs">
                           Your Score: {quiz.userScore} / {quiz.maxScore || '?'} points
@@ -663,43 +667,40 @@ const UserQuizTab: React.FC = () => {
                 )}
               </div>
               
-              {/* Quiz Progress Ring */}
-              <div className="hidden sm:flex items-center space-x-4 ml-4">
-                <div className="text-center">
-                  <div className="relative w-12 h-12">
-                    <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="rgba(255,255,255,0.2)"
-                        strokeWidth="2"
-                      />
-                      <path
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeDasharray={`${((currentQuestionIndex + 1) / assignedQuestions.length) * 100}, 100`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold">{currentQuestionIndex + 1}</span>
-                    </div>
+              {/* Live Timer Display */}
+              <div className="flex flex-col items-end space-y-2 ml-4">
+                {/* Question Timer */}
+                {!showQuestionReview && timeRemaining > 0 && (
+                  <div className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-sm font-mono ${
+                    timeRemaining <= 10 
+                      ? 'bg-red-500 text-white' 
+                      : timeRemaining <= 30 
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-blue-500 text-white'
+                  }`}>
+                    <Timer className="h-4 w-4" />
+                    <span>{formatTime(timeRemaining)}</span>
                   </div>
-                </div>
+                )}
                 
-                <button
-                  onClick={handleCloseQuiz}
-                  className="text-blue-100 hover:text-white transition-colors p-1"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                {/* Quiz Timer */}
+                {quizTimeRemaining > 0 && (
+                  <div className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-sm font-mono ${
+                    quizTimeRemaining <= 300 
+                      ? 'bg-red-500 text-white' 
+                      : quizTimeRemaining <= 600 
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-green-500 text-white'
+                  }`}>
+                    <Clock className="h-4 w-4" />
+                    <span>{formatQuizTime(quizTimeRemaining)}</span>
+                  </div>
+                )}
               </div>
               
-              {/* Mobile close button */}
               <button
                 onClick={handleCloseQuiz}
-                className="sm:hidden text-blue-100 hover:text-white transition-colors p-1 ml-2"
+                className="ml-4 p-2 text-blue-100 hover:text-white hover:bg-blue-700 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -856,71 +857,38 @@ const UserQuizTab: React.FC = () => {
                   >
                     Previous
                   </button>
-                  <button
-                    onClick={handleNextQuestion}
-                    disabled={currentQuestionIndex === assignedQuestions.length - 1}
-                    className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
-                  </button>
                 </div>
 
                 <div className="flex space-x-2">
-                  {/* Skip button for unanswered questions */}
-                  {!showQuestionReview && (
-                    <button
-                      onClick={() => handleMoveToNextQuestion()}
-                      className="flex-1 sm:flex-none px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center space-x-2 transition-colors"
-                    >
-                      <SkipForward className="h-4 w-4" />
-                      <span>Skip</span>
-                    </button>
-                  )}
-
-                  {/* Submit button for unanswered questions */}
-                  {!showQuestionReview && (
-                    <button
-                      onClick={handleSubmitAnswer}
-                      disabled={selectedAnswer === null || isSubmitting}
-                      className="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all duration-200"
-                    >
-                      {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
-                      <span>
-                        {(() => {
-                          const completion = getQuizCompletionStatus();
-                          if (completion.remaining === 1) {
-                            return 'Finish Quiz';
-                          } else {
-                            return 'Submit Answer';
-                          }
-                        })()}
-                      </span>
+                  {/* Single Next button that handles both submit and next */}
+                  <button
+                    onClick={async () => {
+                      if (!showQuestionReview) {
+                        // For unanswered questions, submit answer first, then move to next
+                        await handleSubmitAnswer();
+                      } else {
+                        // For completed questions, just move to next
+                        handleMoveToNextQuestion();
+                      }
+                    }}
+                    disabled={(!showQuestionReview && selectedAnswer === null) || isSubmitting}
+                    className="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 transition-all duration-200"
+                  >
+                    {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />}
+                    <span>
                       {(() => {
                         const completion = getQuizCompletionStatus();
-                        return completion.remaining > 1 && <ArrowRight className="h-4 w-4" />;
+                        if (completion.remaining === 1 && !showQuestionReview) {
+                          return 'Finish Quiz';
+                        } else if (currentQuestionIndex === assignedQuestions.length - 1) {
+                          return 'Finish';
+                        } else {
+                          return 'Next';
+                        }
                       })()}
-                    </button>
-                  )}
-
-                  {/* Continue button for completed questions */}
-                  {showQuestionReview && (
-                    <button
-                      onClick={handleMoveToNextQuestion}
-                      className="flex-1 sm:flex-none px-4 sm:px-6 py-2 text-sm bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 flex items-center justify-center space-x-2 transition-all duration-200"
-                    >
-                      <span>
-                        {(() => {
-                          const nextUnanswered = findNextUnansweredQuestion(currentQuestionIndex + 1);
-                          if (nextUnanswered === -1) {
-                            return currentQuestionIndex === assignedQuestions.length - 1 ? 'Finish Review' : 'Continue Review';
-                          } else {
-                            return 'Continue to Unanswered';
-                          }
-                        })()}
-                      </span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  )}
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             </div>
