@@ -54,7 +54,7 @@ messaging.onBackgroundMessage(function (payload) {
     data: payload.data || {},
   };
 
-  self.registration.showNotification(title, notificationOptions);
+  // self.registration.showNotification(title, notificationOptions);
 });
 
 // UNIVERSAL PUSH HANDLER
@@ -101,9 +101,9 @@ self.addEventListener('push', function(event) {
     data: data.data || {},
   };
 
-  // event.waitUntil(
-  //   self.registration.showNotification(title, notificationOptions)
-  // );
+  event.waitUntil(
+    self.registration.showNotification(title, notificationOptions)
+  );
 });
 
 // Handle notification clicks
