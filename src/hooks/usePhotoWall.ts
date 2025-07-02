@@ -78,6 +78,12 @@ export interface Photo {
     name: string;
     email: string;
   };
+  submittedBy?: {
+    id: string;
+    name: string;
+    email: string;
+    profileImage?: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

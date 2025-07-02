@@ -378,10 +378,9 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
                     <div className="flex items-center space-x-2 mb-2">
                       <Users className="h-4 w-4 text-gray-400" />
                       <span className="text-sm font-medium text-gray-700">
-                        {photo.user?.name || 'Unknown User'}
-                      </span>
+                      {photo?.submittedBy?.name || 'Unknown User'}                      </span>
                       <span className="text-xs text-gray-500">
-                        ({photo.user?.email || 'No email'})
+                        {/* ({photo.submittedBy?.email || 'No email'}) */}
                       </span>
                     </div>
 
