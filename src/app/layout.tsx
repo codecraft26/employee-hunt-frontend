@@ -123,10 +123,10 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/favicon.ico" />
 
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" href="/icons/icon-180x180.png?v=2" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png?v=2" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png?v=2" />
-        <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167x167.png?v=2" />
+        <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167x167.png" />
 
         {/* Splash Screens for iOS */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
