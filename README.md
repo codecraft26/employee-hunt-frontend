@@ -12,7 +12,6 @@ A modern Progressive Web App (PWA) for team activities, quizzes, treasure hunts,
 - **📊 Real-time Updates**: Live sync when online
 
 
-
 ## 🛠️ Development
 ```bash
 # Install dependencies
