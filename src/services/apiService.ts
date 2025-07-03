@@ -125,6 +125,7 @@ const apiService = {
   assignRoomToUser: (userId: string, roomNumber: string) => 
     apiService.post(`/users/${userId}/assign-room`, { roomNumber }),
   createAdminUser: (data: FormData) => apiService.post('/auth/register/admin', data),
+  updateUser: (userId: string, data: any) => apiService.put(`/users/${userId}`, data),
 
   // Room management methods
   getMyRoom: () => apiService.get('/users/my-room'),

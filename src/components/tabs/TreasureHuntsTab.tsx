@@ -1,6 +1,6 @@
 // components/tabs/TreasureHuntsTab.tsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Trophy, Calendar, Users, Clock, AlertCircle, Edit, Trash2, MoreVertical, FileText } from 'lucide-react';
+import { Plus, Eye, Trophy, Calendar, Users, Clock, AlertCircle, Edit, Trash2, MoreVertical, FileText, Target } from 'lucide-react';
 import { useTreasureHunts } from '../../hooks/useTreasureHunts';
 import CreateTreasureHuntModal from '../modals/CreateTreasureHuntModal';
 import EditTreasureHuntModal from '../modals/EditTreasureHuntModal';
@@ -283,6 +283,16 @@ const TreasureHuntsTab: React.FC<TreasureHuntsTabProps> = ({
                               >
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Hunt
+                              </button>
+                              <button
+                                onClick={() => {
+                                  onViewClues(hunt.id);
+                                  setDropdownOpen(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                              >
+                                <Target className="h-4 w-4 mr-2" />
+                                Manage Stages
                               </button>
                               <button
                                 onClick={() => {

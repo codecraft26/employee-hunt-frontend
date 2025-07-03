@@ -1,7 +1,7 @@
 // components/tabs/CluesManagementTab.tsx
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, Target, AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { useTreasureHunts, TreasureHuntStage } from '../../hooks/useTreasureHunts';
+import { useTreasureHunts, TreasureHuntClue } from '../../hooks/useTreasureHunts';
 
 interface CluesManagementTabProps {
   treasureHuntId: string;
@@ -26,14 +26,14 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editModal, setEditModal] = useState<{
     isOpen: boolean;
-    clue: TreasureHuntStage | null;
+    clue: TreasureHuntClue | null;
   }>({
     isOpen: false,
     clue: null
   });
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
-    clue: TreasureHuntStage | null;
+    clue: TreasureHuntClue | null;
   }>({
     isOpen: false,
     clue: null
@@ -66,6 +66,7 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
       case 'APPROVED': return 'bg-green-100 text-green-800';
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
       case 'REJECTED': return 'bg-red-100 text-red-800';
+      case 'NOT_STARTED': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -75,6 +76,7 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
       case 'APPROVED': return <CheckCircle className="h-4 w-4" />;
       case 'PENDING': return <Clock className="h-4 w-4" />;
       case 'REJECTED': return <XCircle className="h-4 w-4" />;
+      case 'NOT_STARTED': return <AlertCircle className="h-4 w-4" />;
       default: return <AlertCircle className="h-4 w-4" />;
     }
   };
@@ -88,6 +90,7 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
 
     try {
       await addClue(treasureHuntId, {
+        clueNumber: formData.stageNumber,
         stageNumber: formData.stageNumber,
         description: formData.description.trim()
       });
@@ -133,7 +136,7 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
     }
   };
 
-  const handleEdit = (clue: TreasureHuntStage) => {
+  const handleEdit = (clue: TreasureHuntClue) => {
     setEditModal({
       isOpen: true,
       clue
@@ -144,14 +147,15 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
     });
   };
 
-  const handleDelete = (clue: TreasureHuntStage) => {
+  const handleDelete = (clue: TreasureHuntClue) => {
     setDeleteModal({
       isOpen: true,
       clue
     });
   };
 
-  const stages = currentTreasureHuntWithClues?.stages || [];
+  // Use clues array since that's what the API returns
+  const clues = currentTreasureHuntWithClues?.clues || [];
 
   if (loading && !currentTreasureHuntWithClues) {
     return (
@@ -231,46 +235,64 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
       )}
 
       {/* Stages List */}
-      {stages.length === 0 ? (
+      {clues.length === 0 ? (
         <div className="text-center py-12">
           <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No stages yet</h3>
-          <p className="text-gray-500 mb-6">Add stages to create your treasure hunt!</p>
+          <p className="text-gray-500 mb-6">
+            {currentTreasureHuntWithClues 
+              ? `This treasure hunt "${currentTreasureHuntWithClues.title}" doesn't have any stages yet.`
+              : 'Loading treasure hunt data...'
+            }
+          </p>
           <button 
             onClick={() => setIsAddModalOpen(true)}
             className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
           >
             Add First Stage
           </button>
+          
+          {/* Show treasure hunt info if available */}
+          {currentTreasureHuntWithClues && (
+            <div className="mt-8 p-4 bg-gray-50 rounded-lg max-w-md mx-auto">
+              <h4 className="font-medium text-gray-900 mb-2">Treasure Hunt Details</h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><strong>Title:</strong> {currentTreasureHuntWithClues.title}</p>
+                <p><strong>Description:</strong> {currentTreasureHuntWithClues.description}</p>
+                <p><strong>Status:</strong> {currentTreasureHuntWithClues.status}</p>
+                <p><strong>Teams:</strong> {currentTreasureHuntWithClues.assignedTeams?.length || 0}</p>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {stages.map((stage) => (
-            <div key={stage.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          {clues.map((clue) => (
+            <div key={clue.id} className="bg-white rounded-2xl shadow-sm border overflow-hidden">
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <span className="inline-flex items-center px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 rounded-full">
-                        Stage {stage.stageNumber}
+                        Stage {clue.stageNumber}
                       </span>
-                      <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(stage.status)}`}>
-                        {getStatusIcon(stage.status)}
-                        <span className="ml-1">{stage.status}</span>
+                      <span className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(clue.status)}`}>
+                        {getStatusIcon(clue.status)}
+                        <span className="ml-1">{clue.status}</span>
                       </span>
                     </div>
-                    <p className="text-gray-700">{stage.description}</p>
+                    <p className="text-gray-700">{clue.description}</p>
                   </div>
                   
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => handleEdit(stage)}
+                      onClick={() => handleEdit(clue)}
                       className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(stage)}
+                      onClick={() => handleDelete(clue)}
                       className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -278,16 +300,16 @@ const CluesManagementTab: React.FC<CluesManagementTabProps> = ({
                   </div>
                 </div>
 
-                {stage.adminFeedback && (
+                {clue.adminFeedback && (
                   <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-600">
-                      <strong>Admin Feedback:</strong> {stage.adminFeedback}
+                      <strong>Admin Feedback:</strong> {clue.adminFeedback}
                     </p>
                   </div>
                 )}
 
                 <div className="mt-4 text-xs text-gray-500">
-                  Created: {new Date(stage.createdAt).toLocaleDateString()}
+                  Created: {new Date(clue.createdAt).toLocaleDateString()}
                 </div>
               </div>
             </div>
