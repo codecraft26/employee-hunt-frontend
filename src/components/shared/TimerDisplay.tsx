@@ -132,7 +132,7 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({
       case 'upcoming':
         return {
           bg: currentUrgency === 'high' ? 'bg-orange-100' : 'bg-blue-100',
-          text: currentUrgency === 'high' ? 'text-orange-800' : 'text-blue-800',
+          text: currentUrgency === 'high' ? 'text-orange-800' : 'text-orange-800',
           border: currentUrgency === 'high' ? 'border-orange-200' : 'border-blue-200',
           dot: currentUrgency === 'high' ? 'bg-orange-500' : 'bg-blue-500'
         };

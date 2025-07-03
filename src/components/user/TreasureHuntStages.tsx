@@ -391,12 +391,7 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-slate-800 rounded-2xl p-6 shadow-[0_0_24px_0_rgba(0,255,180,0.08)]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-white">{hunt.title}</h2>
-            <p className="text-slate-200">{hunt.description}</p>
-          </div>
-          <div className="text-right">
+      <div className="text-right flex justify-between">
             <div className="flex items-center space-x-2 mb-2">
               <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
                 hunt.status === 'ACTIVE' || hunt.status === 'IN_PROGRESS' 
@@ -420,6 +415,12 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
               showCountdown={true}
             />
           </div>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white">{hunt.title}</h2>
+            <p className="text-slate-200">{hunt.description}</p>
+          </div>
+         
         </div>
 
         {/* Prominent Timer Display for Active Hunts */}
