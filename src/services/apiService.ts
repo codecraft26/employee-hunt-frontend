@@ -143,6 +143,9 @@ const apiService = {
   },
   createActivity: (data: FormData) => apiService.post('/activities/create', data),
   deleteActivity: (activityId: string) => apiService.delete(`/activities/${activityId}`),
+
+  assignRoomToMultipleUsers: (userIds: string[], roomNumber: string) =>
+    apiService.post('/users/assign-room-multiple', { userIds, roomNumber }),
 };
 
 export { apiService };

@@ -10,10 +10,10 @@ interface RoomAllotmentModalProps {
 }
 
 const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { assignRoomToUser, fetchAllRooms, rooms, loading, error, clearError } = useRoomAllotment();
+  const { assignRoomToUser, assignRoomToMultipleUsers, fetchAllRooms, rooms, loading, error, clearError } = useRoomAllotment();
   const { users, fetchAllUsers } = useUserManagement();
   
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [roomNumber, setRoomNumber] = useState<string>('');
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -45,30 +45,29 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-
-    if (!selectedUserId) {
-      errors.user = 'Please select a user';
+    if (selectedUserIds.length === 0) {
+      errors.user = 'Please select at least one user';
     }
-
     if (!roomNumber.trim()) {
       errors.roomNumber = 'Room number is required';
     } else if (roomNumber.trim().length < 2) {
       errors.roomNumber = 'Room number must be at least 2 characters';
     }
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       return;
     }
-
     try {
-      await assignRoomToUser(selectedUserId, roomNumber.trim());
+      if (selectedUserIds.length === 1) {
+        await assignRoomToUser(selectedUserIds[0], roomNumber.trim());
+      } else {
+        await assignRoomToMultipleUsers(selectedUserIds, roomNumber.trim());
+      }
       onSuccess();
       handleClose();
     } catch (err) {
@@ -77,7 +76,7 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
   };
 
   const handleClose = () => {
-    setSelectedUserId('');
+    setSelectedUserIds([]);
     setRoomNumber('');
     setUserSearchTerm('');
     setShowUserDropdown(false);
@@ -86,19 +85,15 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
   };
 
   const handleUserSelect = (user: any) => {
-    setSelectedUserId(user.id);
-    setUserSearchTerm(user.name);
+    setSelectedUserIds((prev) =>
+      prev.includes(user.id) ? prev.filter((id) => id !== user.id) : [...prev, user.id]
+    );
+    setUserSearchTerm('');
     setShowUserDropdown(false);
-    
-    // Check if user already has a room
-    const currentRoom = getUserCurrentRoom(user.id);
-    if (currentRoom) {
-      setRoomNumber(currentRoom.roomNumber);
-    }
   };
 
-  const selectedUser = users.find(u => u.id === selectedUserId);
-  const currentRoom = selectedUser ? getUserCurrentRoom(selectedUserId) : null;
+  const selectedUser = users.find(u => u.id === selectedUserIds[0]);
+  const currentRoom = selectedUser ? getUserCurrentRoom(selectedUserIds[0]) : null;
 
   if (!isOpen) return null;
 
@@ -189,12 +184,13 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
                       </div>
                       {filteredUsers.map((user) => {
                         const userRoom = getUserCurrentRoom(user.id);
+                        const isSelected = selectedUserIds.includes(user.id);
                         return (
                           <button
                             key={user.id}
                             type="button"
                             onClick={() => handleUserSelect(user)}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center space-x-3 border-b border-gray-100 last:border-b-0"
+                            className={`w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center space-x-3 border-b border-gray-100 last:border-b-0 ${isSelected ? 'bg-blue-100' : ''}`}
                           >
                             {user.profileImage ? (
                               <img
@@ -218,6 +214,7 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
                                 </p>
                               )}
                             </div>
+                            <input type="checkbox" checked={isSelected} readOnly className="ml-2" />
                           </button>
                         );
                       })}
@@ -244,42 +241,26 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
           </div>
 
           {/* Selected User Info */}
-          {selectedUser && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                {selectedUser.profileImage ? (
-                  <img
-                    src={selectedUser.profileImage}
-                    alt={selectedUser.name}
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-12 w-12 bg-blue-200 rounded-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-blue-600" />
-                  </div>
-                )}
-                <div>
-                  <h3 className="font-medium text-gray-900">{selectedUser.name}</h3>
-                  <p className="text-sm text-gray-600">{selectedUser.email}</p>
-                  <p className="text-sm text-gray-600">
-                    {selectedUser.employeeCode} • {selectedUser.department}
-                  </p>
-                </div>
-              </div>
-              
-              {currentRoom && (
-                <div className="mt-3 p-3 bg-orange-100 border border-orange-200 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <AlertCircle className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm font-medium text-orange-800">
-                      Currently assigned to Room {currentRoom.roomNumber}
+          {selectedUserIds.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <div className="flex flex-wrap gap-2">
+                {selectedUserIds.map((userId) => {
+                  const user = users.find(u => u.id === userId);
+                  if (!user) return null;
+                  return (
+                    <span key={user.id} className="flex items-center px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-sm">
+                      {user.name}
+                      <button
+                        type="button"
+                        className="ml-2 text-blue-600 hover:text-blue-900"
+                        onClick={() => setSelectedUserIds(selectedUserIds.filter(id => id !== user.id))}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </span>
-                  </div>
-                  <p className="text-xs text-orange-700 mt-1">
-                    This will update the existing assignment
-                  </p>
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -309,19 +290,17 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
           </div>
 
           {/* Room Assignment Preview */}
-          {selectedUser && roomNumber.trim() && (
+          {selectedUserIds.length > 0 && roomNumber.trim() && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 <span className="font-medium text-green-800">Assignment Preview</span>
               </div>
               <div className="mt-2 text-sm text-green-700">
-                <p><strong>{selectedUser.name}</strong> will be assigned to <strong>Room {roomNumber.trim()}</strong></p>
-                {currentRoom && (
-                  <p className="text-xs mt-1">
-                    This will replace the current assignment to Room {currentRoom.roomNumber}
-                  </p>
-                )}
+                <p>
+                  <strong>{selectedUserIds.length === 1 ? users.find(u => u.id === selectedUserIds[0])?.name : `${selectedUserIds.length} users`}</strong>
+                  {' '}will be assigned to <strong>Room {roomNumber.trim()}</strong>
+                </p>
               </div>
             </div>
           )}
@@ -338,10 +317,10 @@ const RoomAllotmentModal: React.FC<RoomAllotmentModalProps> = ({ isOpen, onClose
             </button>
             <button
               type="submit"
-              disabled={loading || !selectedUserId || !roomNumber.trim()}
+              disabled={loading || selectedUserIds.length === 0 || !roomNumber.trim()}
               className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Assigning...' : 'Assign Room'}
+              {loading ? 'Assigning...' : `Assign Room${selectedUserIds.length > 1 ? 's' : ''}`}
             </button>
           </div>
         </form>

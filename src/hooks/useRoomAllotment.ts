@@ -47,34 +47,6 @@ export const useRoomAllotment = () => {
   const [error, setError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
 
-  // Assign room to user
-  const assignRoomToUser = useCallback(async (userId: string, roomNumber: string): Promise<HotelRoom | null> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      console.log('Assigning room', roomNumber, 'to user', userId);
-      const response = await apiService.assignRoomToUser(userId, roomNumber);
-      
-      console.log('Assign room response:', response);
-      
-      if (response.success) {
-        // Refresh rooms list after assignment
-        await fetchAllRooms();
-        return response.data;
-      } else {
-        throw new Error(response.message || 'Failed to assign room');
-      }
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to assign room';
-      setError(errorMessage);
-      console.error('Assign room error:', err);
-      throw new Error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   // Get all rooms with assigned users
   const fetchAllRooms = useCallback(async (): Promise<HotelRoom[] | null> => {
     setLoading(true);
@@ -149,6 +121,55 @@ export const useRoomAllotment = () => {
     }
   }, []);
 
+  // Assign room to multiple users
+  const assignRoomToMultipleUsers = useCallback(async (userIds: string[], roomNumber: string): Promise<HotelRoom[] | null> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiService.assignRoomToMultipleUsers(userIds, roomNumber);
+      if (response.success) {
+        await fetchAllRooms();
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to assign room to multiple users');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to assign room to multiple users';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchAllRooms]);
+
+  // Assign room to user
+  const assignRoomToUser = useCallback(async (userId: string, roomNumber: string): Promise<HotelRoom | null> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Assigning room', roomNumber, 'to user', userId);
+      const response = await apiService.assignRoomToUser(userId, roomNumber);
+      
+      console.log('Assign room response:', response);
+      
+      if (response.success) {
+        // Refresh rooms list after assignment
+        await fetchAllRooms();
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to assign room');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to assign room';
+      setError(errorMessage);
+      console.error('Assign room error:', err);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Get room for a specific user
   const getUserRoom = useCallback(async (userId: string): Promise<HotelRoom | null> => {
     setLoading(true);
@@ -191,6 +212,7 @@ export const useRoomAllotment = () => {
     error,
     rooms,
     assignRoomToUser,
+    assignRoomToMultipleUsers,
     fetchAllRooms,
     getUserRoom,
     clearError,
