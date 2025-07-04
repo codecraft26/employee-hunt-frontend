@@ -319,7 +319,7 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
     setLikingStates(prev => ({ ...prev, [collageId]: true }));
     try {
       const result = await likeCollage(collageId);
-      if (result) {
+      if (result && typeof result === 'object') {
         setCollages(prev => 
           prev.map(collage => 
             collage.id === collageId 
@@ -329,6 +329,10 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
         );
         // Store in localStorage to prevent multiple likes
         localStorage.setItem(`liked_collage_${collageId}`, 'true');
+        setLikedCollages(prev => ({ ...prev, [collageId]: true }));
+      } else if (result === 'already-liked') {
+        localStorage.setItem(`liked_collage_${collageId}`, 'true');
+        setLikedCollages(prev => ({ ...prev, [collageId]: true }));
       }
     } catch (err) {
       // Error is handled by the hook

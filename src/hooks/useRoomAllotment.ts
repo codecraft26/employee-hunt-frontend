@@ -207,6 +207,22 @@ export const useRoomAllotment = () => {
     setError(null);
   }, []);
 
+  // Delete a room by ID or room number
+  const deleteRoom = useCallback(async (roomIdOrNumber: string): Promise<void> => {
+    setLoading(true);
+    setError(null);
+    try {
+      await apiService.deleteRoom(roomIdOrNumber);
+      await fetchAllRooms();
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete room';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchAllRooms]);
+
   return {
     loading,
     error,
@@ -216,5 +232,6 @@ export const useRoomAllotment = () => {
     fetchAllRooms,
     getUserRoom,
     clearError,
+    deleteRoom,
   };
 }; 

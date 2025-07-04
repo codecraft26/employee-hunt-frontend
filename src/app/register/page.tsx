@@ -429,7 +429,7 @@ export default function RegisterPage() {
         // Create registration data object with URLs
         const registrationData = {
           name: formData.name,
-          email: formData.email,
+          email: formData.email.toLowerCase(),
           password: formData.password,
           categoryIds: formData.categoryIds,
           employeeCode: formData.employeeCode,

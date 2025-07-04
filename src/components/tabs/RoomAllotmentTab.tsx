@@ -13,13 +13,15 @@ import {
   Home,
   AlertCircle,
   CheckCircle,
-  X
+  X,
+  Briefcase,
+  Trash
 } from 'lucide-react';
 import { useRoomAllotment, HotelRoom } from '../../hooks/useRoomAllotment';
 import RoomAllotmentModal from '../modals/RoomAllotmentModal';
 
 const RoomAllotmentTab: React.FC = () => {
-  const { fetchAllRooms, rooms, loading, error } = useRoomAllotment();
+  const { fetchAllRooms, rooms, loading, error, deleteRoom } = useRoomAllotment();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'occupied' | 'vacant'>('all');
@@ -296,13 +298,17 @@ const RoomAllotmentTab: React.FC = () => {
                           </div>
                           
                           <div className="bg-gray-50 rounded-lg p-3 space-y-1 mt-2">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Employee Code:</span>
-                              <span className="font-medium">{user.employeeCode || 'N/A'}</span>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="flex items-center text-gray-600">
+                                <Key className="h-4 w-4 mr-1 text-blue-500" /> Employee Code:
+                              </span>
+                              <span className="font-semibold text-blue-900">{user.employeeCode || <span className='text-gray-400'>N/A</span>}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Department:</span>
-                              <span className="font-medium">{user.department || 'N/A'}</span>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="flex items-center text-gray-600">
+                                <Briefcase className="h-4 w-4 mr-1 text-purple-500" /> Department:
+                              </span>
+                              <span className="font-semibold text-purple-900">{user.department || <span className='text-gray-400'>N/A</span>}</span>
                             </div>
                           </div>
                         </div>
@@ -329,13 +335,17 @@ const RoomAllotmentTab: React.FC = () => {
                         </div>
                         
                         <div className="bg-gray-50 rounded-lg p-3 space-y-1 mt-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Employee Code:</span>
-                            <span className="font-medium">{room.user.employeeCode || 'N/A'}</span>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center text-gray-600">
+                              <Key className="h-4 w-4 mr-1 text-blue-500" /> Employee Code:
+                            </span>
+                            <span className="font-semibold text-blue-900">{room.user.employeeCode || <span className='text-gray-400'>N/A</span>}</span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Department:</span>
-                            <span className="font-medium">{room.user.department || 'N/A'}</span>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center text-gray-600">
+                              <Briefcase className="h-4 w-4 mr-1 text-purple-500" /> Department:
+                            </span>
+                            <span className="font-semibold text-purple-900">{room.user.department || <span className='text-gray-400'>N/A</span>}</span>
                           </div>
                         </div>
                       </div>
@@ -352,12 +362,28 @@ const RoomAllotmentTab: React.FC = () => {
                 )}
 
                 {/* Actions */}
-                <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
                   <button
                     onClick={() => setIsModalOpen(true)}
                     className="w-full px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
                   >
                     {room.user ? 'Reassign Room' : 'Assign User'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete Room ${room.roomNumber}? This cannot be undone.`)) {
+                        try {
+                          await deleteRoom(room.id || room.roomNumber);
+                        } catch (e) {
+                          // Optionally show error
+                        }
+                      }
+                    }}
+                    className="px-3 py-2 text-sm bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium flex items-center gap-1"
+                    title="Delete Room"
+                    disabled={loading}
+                  >
+                    <Trash className="h-4 w-4" />
                   </button>
                 </div>
               </div>

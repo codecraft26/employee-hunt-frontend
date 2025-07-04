@@ -131,6 +131,7 @@ const apiService = {
   getMyRoom: () => apiService.get('/users/my-room'),
   getUserRoom: (userId: string) => apiService.get(`/users/rooms/${userId}`),
   getAllRooms: () => apiService.get('/users/rooms'),
+  deleteRoom: (roomIdOrNumber: string) => apiService.delete(`/users/rooms/${roomIdOrNumber}`),
 
   // Activities methods
   getMyActivities: () => apiService.get('/activities/my-activities'),

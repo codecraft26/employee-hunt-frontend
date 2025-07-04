@@ -133,12 +133,21 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                 )}
               </div>
               <p className="text-white-600">{user.email}</p>
-              <div className="flex items-center space-x-2 mt-1">
+              <div className="flex items-center space-x-2 mt-1 flex-wrap gap-y-1">
                 <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
                   {user.role}
                 </span>
                 {user.employeeCode && (
-                  <span className="text-sm text-gray-600">{user.employeeCode}</span>
+                  <span className="flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-800 border border-blue-200">
+                    <Key className="h-4 w-4 mr-1 text-blue-500" />
+                    {user.employeeCode}
+                  </span>
+                )}
+                {user.department && (
+                  <span className="flex items-center px-2 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-800 border border-purple-200">
+                    <Briefcase className="h-4 w-4 mr-1 text-purple-500" />
+                    {user.department}
+                  </span>
                 )}
                 {userRoom && (
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
@@ -276,10 +285,10 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
           <div className="space-y-4">
             {user.employeeCode && (
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <UserIcon className="h-5 w-5 text-gray-400" />
+                <Key className="h-5 w-5 text-blue-500" />
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Employee Code</p>
-                  <p className="text-gray-900">{user.employeeCode}</p>
+                  <p className="text-sm font-medium text-blue-700">Employee Code</p>
+                  <p className="text-blue-900 font-semibold">{user.employeeCode}</p>
                 </div>
               </div>
             )}
@@ -293,11 +302,11 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
               </div>
             )}
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <Building2 className="h-5 w-5 text-gray-400" />
+              <Briefcase className="h-5 w-5 text-purple-500" />
               <div>
-                <p className="text-sm font-medium text-gray-700">Department</p>
-                <p className="text-gray-900">
-                  {user.department || 'Not assigned'}
+                <p className="text-sm font-medium text-purple-700">Department</p>
+                <p className="text-purple-900 font-semibold">
+                  {user.department || <span className='text-gray-400'>Not assigned</span>}
                 </p>
               </div>
             </div>
@@ -332,7 +341,7 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                     {teamLoading ? 'Loading...' : (myTeam?.name || user.team?.name || 'Not assigned')}
                   </p>
                   {isTeamLeader && (
-                    <Crown className="h-4 w-4 text-yellow-500" title="Team Leader" />
+                    <Crown className="h-4 w-4 text-yellow-500" />
                   )}
                 </div>
               </div>

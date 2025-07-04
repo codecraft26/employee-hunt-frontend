@@ -130,7 +130,7 @@ export default function LoginPage() {
             setIsPendingApproval(true);
           }
         } else {
-          const result = await dispatch(loginWithOTP(otpData.email));
+          const result = await dispatch(loginWithOTP(otpData.email.toLowerCase()));
           if (result.meta.requestStatus === 'fulfilled') {
             setOtpSent(true);
           }
@@ -140,7 +140,10 @@ export default function LoginPage() {
           ...formData,
           ...(deviceToken && { deviceToken })
         };
-        const result = await dispatch(loginUser(loginDataWithToken));
+        const result = await dispatch(loginUser({
+          email: loginDataWithToken.email.toLowerCase(),
+          password: loginDataWithToken.password
+        }));
         if (result.type.includes('rejected') && result.payload && typeof result.payload === 'string' && result.payload.includes('pending approval')) {
           setIsPendingApproval(true);
         }
