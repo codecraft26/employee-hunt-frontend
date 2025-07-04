@@ -73,6 +73,7 @@ export interface Photo {
   adminFeedback?: string;
   isInCollage: boolean;
   collagePosition?: number;
+  isPrivate?: boolean;
   user: {
     id: string;
     name: string;
@@ -153,7 +154,7 @@ export const usePhotoWall = () => {
   }, []);
 
   // User Functions
-  const uploadPhoto = useCallback(async (file: File, caption?: string): Promise<Photo | null> => {
+  const uploadPhoto = useCallback(async (file: File, caption?: string, isPrivate?: boolean): Promise<Photo | null> => {
     setLoading(true);
     setError(null);
     
@@ -162,6 +163,9 @@ export const usePhotoWall = () => {
       formData.append('photo', file);
       if (caption) {
         formData.append('caption', caption);
+      }
+      if (isPrivate !== undefined) {
+        formData.append('isPrivate', isPrivate.toString());
       }
 
       const response = await api.post<PhotoUploadResponse>('/photo-wall/photos/upload', formData, {

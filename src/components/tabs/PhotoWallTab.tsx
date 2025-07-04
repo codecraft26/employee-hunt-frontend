@@ -14,7 +14,8 @@ import {
   Eye,
   AlertCircle,
   Settings,
-  Download
+  Download,
+  Lock
 } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
 import AdminCollageCreator from '../photowall/AdminCollageCreator';
@@ -173,6 +174,15 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
       case 'REJECTED': return <XCircle className="h-4 w-4" />;
       case 'PENDING': return <Clock className="h-4 w-4" />;
       default: return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'APPROVED': return 'Approved';
+      case 'REJECTED': return 'Rejected';
+      case 'PENDING': return 'Pending';
+      default: return 'Unknown';
     }
   };
 
@@ -352,13 +362,21 @@ const PhotoWallTab: React.FC<PhotoWallTabProps> = ({ className = '' }) => {
                     {/* Status Badge */}
                     <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(photo.status)}`}>
                       {getStatusIcon(photo.status)}
-                      <span>{photo.status}</span>
+                      <span>{getStatusText(photo.status)}</span>
                     </div>
+
+                    {/* Private Badge */}
+                    {photo.isPrivate && (
+                      <div className="absolute top-2 right-2 z-20 px-2 py-1 bg-purple-600 text-white rounded-full text-xs font-medium border border-purple-700 flex items-center space-x-1 shadow">
+                        <Lock className="h-3 w-3" />
+                        <span>Private</span>
+                      </div>
+                    )}
 
                     {/* Download Button - Always visible */}
                     <button
                       onClick={() => downloadImage(photo.imageUrl, `photo-${photo.user?.name || 'user'}-${Date.now()}.jpg`)}
-                      className="absolute top-2 right-2 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors z-20 shadow-lg"
+                      className="absolute top-2 right-24 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors z-10 shadow-lg"
                       title="Download photo"
                     >
                       <Download className="h-5 w-5" />

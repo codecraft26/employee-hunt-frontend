@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Camera, Upload, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Camera, Upload, X, CheckCircle, AlertCircle, Lock } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
 import imageCompression from 'browser-image-compression';
 
@@ -12,6 +12,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, className = 
   const { uploadPhoto, loading, error, clearError } = usePhotoWall();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [caption, setCaption] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -194,12 +195,13 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, className = 
     if (!selectedFile) return;
 
     try {
-      const photo = await uploadPhoto(selectedFile, caption);
+      const photo = await uploadPhoto(selectedFile, caption, isPrivate);
       if (photo) {
         setUploadSuccess(true);
         setSelectedFile(null);
         setPreview(null);
         setCaption('');
+        setIsPrivate(false);
         onUploadSuccess?.(photo);
         
         // Clear success message after 3 seconds
@@ -208,12 +210,13 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, className = 
     } catch (err) {
       // Error is handled by the hook
     }
-  }, [selectedFile, caption, uploadPhoto, onUploadSuccess]);
+  }, [selectedFile, caption, isPrivate, uploadPhoto, onUploadSuccess]);
 
   const handleClear = useCallback(() => {
     setSelectedFile(null);
     setPreview(null);
     setCaption('');
+    setIsPrivate(false);
     clearError();
   }, [clearError]);
 
@@ -312,22 +315,46 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, className = 
 
       {/* Caption Input */}
       {selectedFile && (
-        <div className="mt-4 space-y-2">
-          <label htmlFor="caption" className="block text-sm font-medium text-gray-700">
-            Caption (Optional)
-          </label>
-          <textarea
-            id="caption"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Add a caption to your photo..."
-            maxLength={500}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-          />
-          <div className="text-right text-xs text-gray-500">
-            {caption.length}/500 characters
+        <div className="mt-4 space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="caption" className="block text-sm font-medium text-gray-700">
+              Caption (Optional)
+            </label>
+            <textarea
+              id="caption"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Add a caption to your photo..."
+              maxLength={500}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+            />
+            <div className="text-right text-xs text-gray-500">
+              {caption.length}/500 characters
+            </div>
           </div>
+
+          {/* Privacy Setting */}
+          <div className="flex items-center space-x-2">
+            <input
+              id="isPrivate"
+              type="checkbox"
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <label htmlFor="isPrivate" className="flex items-center space-x-2 text-sm text-gray-700">
+              <Lock className="h-4 w-4 text-gray-500" />
+              <span>Mark as Private</span>
+            </label>
+          </div>
+          {isPrivate && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>Private photos</strong> will only be visible to admins and won't be included in public collages.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

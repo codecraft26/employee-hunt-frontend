@@ -9,7 +9,8 @@ import {
   Image as ImageIcon, 
   Users,
   Sparkles,
-  Download
+  Download,
+  Lock
 } from 'lucide-react';
 import { usePhotoWall, Photo } from '../../hooks/usePhotoWall';
 
@@ -279,6 +280,14 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
                       {isSelected && (
                         <div className="absolute top-2 right-2 bg-purple-600 text-white rounded-full w-6 h-6 flex items-center justify-center">
                           <Check className="h-4 w-4" />
+                        </div>
+                      )}
+
+                      {/* Private Badge */}
+                      {photo.isPrivate && (
+                        <div className="absolute top-2 left-2 px-2 py-1 bg-purple-600 text-white rounded-full text-xs font-medium border border-purple-700 flex items-center space-x-1">
+                          <Lock className="h-3 w-3" />
+                          <span>Private</span>
                         </div>
                       )}
 
