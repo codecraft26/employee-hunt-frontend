@@ -748,6 +748,25 @@ const UserQuizTab: React.FC = () => {
                   ? 'bg-green-50 border-green-200' 
                   : 'bg-gray-50 border-gray-200'
               }`}>
+                {/* Question Number and Status */}
+                <div className="flex items-center justify-between mb-4 sm:mb-6">
+                  <div className="flex items-center space-x-3">
+                    <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                      Question {currentQuestionIndex + 1} of {assignedQuestions.length}
+                    </span>
+                    {showQuestionReview && (
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
+                        ✓ Answered
+                      </span>
+                    )}
+                  </div>
+                  {!showQuestionReview && (
+                    <div className="text-sm text-gray-500">
+                      Time: {formatTime(timeRemaining)}
+                    </div>
+                  )}
+                </div>
+                
                 <h4 className="text-lg sm:text-xl font-medium text-gray-900 mb-4 sm:mb-6 leading-relaxed">
                   {assignedQuestions[currentQuestionIndex]?.question?.question || 'Loading question...'}
                 </h4>
