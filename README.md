@@ -6,6 +6,7 @@ A modern Progressive Web App (PWA) for team activities, quizzes, treasure hunts,
 
 - **🔄 Offline Support**: Works without internet connection
 - **📱 App-like Experience**: Install on mobile and desktop
+- 
 - **🔔 Push Notifications**: Stay updated with team activities
 - **⚡ Fast Loading**: Optimized caching and performance
 - **🎮 Gaming UI**: Beautiful, interactive design
