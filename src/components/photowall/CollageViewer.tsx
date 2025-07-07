@@ -31,17 +31,32 @@ const CollageViewer: React.FC<CollageViewerProps> = ({ className = '' }) => {
   const handleLike = async () => {
     if (!collage || liking || hasLiked) return;
 
+    // Immediately update UI to show liked state and disable button
+    setHasLiked(true);
+    setCollage(prev => prev ? { ...prev, likeCount: prev.likeCount + 1 } : null);
+    localStorage.setItem(`liked_collage_${collage.id}`, 'true');
     setLiking(true);
+
+    // Make API call in background
     try {
       const result = await likeCollage(collage.id);
-      if (result) {
+      if (result && typeof result === 'object' && result.likeCount !== undefined) {
+        // Update with actual server response
         setCollage(prev => prev ? { ...prev, likeCount: result.likeCount } : null);
-        setHasLiked(true);
-        // Store in localStorage to prevent multiple likes
-        localStorage.setItem(`liked_collage_${collage.id}`, 'true');
+      } else if (result === 'already-liked') {
+        // Keep the optimistic update
+      } else {
+        // Revert optimistic update on unexpected result
+        setHasLiked(false);
+        setCollage(prev => prev ? { ...prev, likeCount: Math.max(0, prev.likeCount - 1) } : null);
+        localStorage.removeItem(`liked_collage_${collage.id}`);
       }
     } catch (err) {
-      // Error is handled by the hook
+      console.error('Error in handleLike:', err);
+      // Revert optimistic update on error
+      setHasLiked(false);
+      setCollage(prev => prev ? { ...prev, likeCount: Math.max(0, prev.likeCount - 1) } : null);
+      localStorage.removeItem(`liked_collage_${collage.id}`);
     } finally {
       setLiking(false);
     }
@@ -276,16 +291,22 @@ const CollageViewer: React.FC<CollageViewerProps> = ({ className = '' }) => {
           <button
             onClick={handleLike}
             disabled={liking || hasLiked}
-            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg transition-colors ${
+            className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg transition-all duration-200 transform ${
               hasLiked
-                ? 'bg-pink-100 text-pink-700 border border-pink-200'
-                : 'bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                ? 'bg-pink-100 text-pink-700 border border-pink-200 scale-105 shadow-lg'
+                : 'bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white hover:scale-105'
+            } ${(liking || hasLiked) ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
           >
             {liking && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />}
-            <Heart className={`h-5 w-5 ${hasLiked ? 'fill-current' : ''}`} />
+            <Heart 
+              className={`h-5 w-5 transition-all duration-200 ${
+                hasLiked 
+                  ? 'fill-current animate-pulse' 
+                  : 'hover:scale-110'
+              }`} 
+            />
             <span className="font-medium">
-              {liking ? 'Liking...' : hasLiked ? 'Already Liked!' : 'Like this Collage'}
+              {hasLiked ? 'Liked!' : (liking ? 'Liking...' : 'Like this Collage')}
             </span>
           </button>
         </div>

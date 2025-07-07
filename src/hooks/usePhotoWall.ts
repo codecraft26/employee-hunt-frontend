@@ -243,16 +243,39 @@ export const usePhotoWall = () => {
     }
   }, []);
 
-  const likeCollage = useCallback(async (collageId: string): Promise<{ likeCount: number } | null> => {
+  const likeCollage = useCallback(async (collageId: string): Promise<{ likeCount: number } | 'already-liked' | null> => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await api.post(`/photo-wall/collages/${collageId}/like`);
-      return response.data.data;
+      const response = await api.post(`/photo-wall/collages/${collageId}/like`) as any;
+      
+      // Check if the response has the expected structure
+      if (response && response.success && response.data) {
+        return response.data;
+      } else if (response && response.message && response.message.includes('already liked')) {
+        return 'already-liked';
+      } else {
+        console.error('Unexpected response format:', response);
+        throw new Error('Invalid response format from server');
+      }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to like collage';
-      setError(errorMessage);
+      console.error('Like collage error:', err);
+      
+      // Handle specific error cases
+      if (err.response?.status === 409) {
+        // Conflict - already liked
+        return 'already-liked';
+      } else if (err.response?.data?.message) {
+        const errorMessage = err.response.data.message;
+        if (errorMessage.includes('already liked')) {
+          return 'already-liked';
+        }
+        setError(errorMessage);
+      } else {
+        const errorMessage = err.message || 'Failed to like collage';
+        setError(errorMessage);
+      }
       return null;
     } finally {
       setLoading(false);

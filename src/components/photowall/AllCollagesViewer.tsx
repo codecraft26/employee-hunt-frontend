@@ -253,14 +253,29 @@ function AllCollageCard({ collage, isLiked, likingState, handleLike }: AllCollag
 
         {/* Like Button */}
         <button
-          onClick={() => handleLike(collage.id)}
+          onClick={() => {
+            console.log('Like button clicked for collage:', collage.id);
+            handleLike(collage.id);
+          }}
           disabled={isLiked || likingState}
-          className={`w-full mt-3 px-3 py-2 rounded-lg flex items-center justify-center space-x-2
-            ${isLiked ? 'bg-purple-700 text-white' : 'bg-purple-600 text-white hover:bg-purple-700'}
-            disabled:opacity-70`}
+          className={`w-full mt-3 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform
+            ${isLiked 
+              ? 'bg-purple-700 text-white scale-105 shadow-lg' 
+              : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'
+            }
+            ${(isLiked || likingState) ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
         >
-          <Heart className={`h-4 w-4 ${isLiked ? 'fill-current text-white' : ''}`} fill={isLiked ? 'currentColor' : 'none'} />
-          <span>{isLiked ? 'Liked' : 'Like'}</span>
+          <Heart 
+            className={`h-4 w-4 transition-all duration-200 ${
+              isLiked 
+                ? 'fill-current text-white animate-pulse' 
+                : 'hover:scale-110'
+            }`} 
+            fill={isLiked ? 'currentColor' : 'none'} 
+          />
+          <span className="font-medium">
+            {isLiked ? 'Liked' : (likingState ? 'Liking...' : 'Like')}
+          </span>
         </button>
       </div>
     </div>
@@ -314,12 +329,34 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
   };
 
   const handleLike = async (collageId: string) => {
-    if (likingStates[collageId]) return;
+    console.log('Like button clicked for collage:', collageId);
+    
+    if (likingStates[collageId] || likedCollages[collageId]) {
+      console.log('Already liking or already liked, ignoring click');
+      return;
+    }
 
+    // Immediately update UI to show liked state and disable button
+    setLikedCollages(prev => ({ ...prev, [collageId]: true }));
+    setCollages(prev => 
+      prev.map(collage => 
+        collage.id === collageId 
+          ? { ...collage, likeCount: collage.likeCount + 1 }
+          : collage
+      )
+    );
+    localStorage.setItem(`liked_collage_${collageId}`, 'true');
     setLikingStates(prev => ({ ...prev, [collageId]: true }));
+    
+    // Make API call in background
     try {
+      console.log('Calling likeCollage API...');
       const result = await likeCollage(collageId);
-      if (result && typeof result === 'object') {
+      console.log('Like result:', result);
+      
+      if (result && typeof result === 'object' && result.likeCount !== undefined) {
+        console.log('Updating collage like count to:', result.likeCount);
+        // Update with actual server response
         setCollages(prev => 
           prev.map(collage => 
             collage.id === collageId 
@@ -327,15 +364,34 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
               : collage
           )
         );
-        // Store in localStorage to prevent multiple likes
-        localStorage.setItem(`liked_collage_${collageId}`, 'true');
-        setLikedCollages(prev => ({ ...prev, [collageId]: true }));
       } else if (result === 'already-liked') {
-        localStorage.setItem(`liked_collage_${collageId}`, 'true');
-        setLikedCollages(prev => ({ ...prev, [collageId]: true }));
+        console.log('Collage already liked');
+        // Keep the optimistic update
+      } else {
+        console.log('Unexpected result format:', result);
+        // Revert optimistic update on unexpected result
+        setLikedCollages(prev => ({ ...prev, [collageId]: false }));
+        setCollages(prev => 
+          prev.map(collage => 
+            collage.id === collageId 
+              ? { ...collage, likeCount: Math.max(0, collage.likeCount - 1) }
+              : collage
+          )
+        );
+        localStorage.removeItem(`liked_collage_${collageId}`);
       }
     } catch (err) {
-      // Error is handled by the hook
+      console.error('Error in handleLike:', err);
+      // Revert optimistic update on error
+      setLikedCollages(prev => ({ ...prev, [collageId]: false }));
+      setCollages(prev => 
+        prev.map(collage => 
+          collage.id === collageId 
+            ? { ...collage, likeCount: Math.max(0, collage.likeCount - 1) }
+            : collage
+        )
+      );
+      localStorage.removeItem(`liked_collage_${collageId}`);
     } finally {
       setLikingStates(prev => ({ ...prev, [collageId]: false }));
     }

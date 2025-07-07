@@ -71,6 +71,9 @@ const apiService = {
   async delete(endpoint: string) {
     try {
       const token = getAuthToken();
+      console.log('DELETE request to:', `${API_BASE_URL}${endpoint}`);
+      console.log('Using token:', token ? `${token.substring(0, 20)}...` : 'No token');
+      
       const response = await axios.delete(`${API_BASE_URL}${endpoint}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : undefined
@@ -79,6 +82,8 @@ const apiService = {
       return response.data;
     } catch (error) {
       console.error('API DELETE Error:', error);
+      console.error('DELETE endpoint:', endpoint);
+      console.error('Full URL:', `${API_BASE_URL}${endpoint}`);
       throw error;
     }
   },
@@ -126,6 +131,7 @@ const apiService = {
     apiService.post(`/users/${userId}/assign-room`, { roomNumber }),
   createAdminUser: (data: FormData) => apiService.post('/auth/register/admin', data),
   updateUser: (userId: string, data: any) => apiService.put(`/users/${userId}`, data),
+  deleteUser: (userId: string) => apiService.delete(`/users/${userId}`),
 
   // Room management methods
   getMyRoom: () => apiService.get('/users/my-room'),

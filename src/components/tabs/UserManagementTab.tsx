@@ -6,10 +6,13 @@ import { useUserManagement } from '../../hooks/useUserManagement';
 import UserManagementModal from '../modals/UserManagementModal';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { apiService } from '../../services/apiService';
 
 const UserManagementTab: React.FC = () => {
   const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'create'>('overview');
+  const [selectedUserForEdit, setSelectedUserForEdit] = useState<any>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const {
     users,
@@ -27,11 +30,55 @@ const UserManagementTab: React.FC = () => {
   }, [fetchAllUsers]);
 
   const handleOpenCreateAdmin = useCallback(() => {
+    setSelectedUserForEdit(null);
     setUserManagementModalOpen(true);
   }, []);
 
+  const handleEditUser = useCallback((user: any) => {
+    setSelectedUserForEdit(user);
+    setUserManagementModalOpen(true);
+  }, []);
+
+  const handleDeleteUser = useCallback(async (user: any) => {
+    if (!confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingUserId(user.id);
+    try {
+      console.log('Attempting to delete user:', user.id, user.name);
+      const response = await apiService.deleteUser(user.id);
+      console.log('Delete response:', response);
+
+      if (response.success) {
+        // Refresh the users list to reflect the deletion
+        await fetchAllUsers();
+        alert(`User "${user.name}" has been deleted successfully.`);
+      } else {
+        throw new Error(response.message || 'Failed to delete user');
+      }
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      console.error('Error response:', error.response);
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
+      
+      let errorMessage = 'Failed to delete user';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Failed to delete user: ${errorMessage}`);
+    } finally {
+      setDeletingUserId(null);
+    }
+  }, [fetchAllUsers]);
+
   const handleCloseModal = useCallback(() => {
     setUserManagementModalOpen(false);
+    setSelectedUserForEdit(null);
   }, []);
 
   const handleRefresh = useCallback(async () => {
@@ -175,10 +222,13 @@ const UserManagementTab: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Team
-                </th>
-              </tr>
+                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Team
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map((user) => (
@@ -241,6 +291,25 @@ const UserManagementTab: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {user.team?.name || 'No Team'}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleEditUser(user)}
+                        className="text-blue-600 hover:text-blue-900 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user)}
+                        disabled={deletingUserId === user.id}
+                        className={`text-red-600 hover:text-red-900 hover:underline ${
+                          deletingUserId === user.id ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        {deletingUserId === user.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -252,7 +321,8 @@ const UserManagementTab: React.FC = () => {
       <UserManagementModal
         isOpen={userManagementModalOpen}
         onClose={handleCloseModal}
-        initialTab="create"
+        initialTab={selectedUserForEdit ? "view" : "create"}
+        initialEditUser={selectedUserForEdit}
       />
     </div>
   );

@@ -31,6 +31,7 @@ interface UserManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: 'create' | 'view';
+  initialEditUser?: UserType | null;
 }
 
 type TabType = 'create' | 'view';
@@ -39,7 +40,8 @@ type FilterType = 'all' | 'admin' | 'user' | 'approved' | 'pending';
 const UserManagementModal: React.FC<UserManagementModalProps> = ({
   isOpen,
   onClose,
-  initialTab = 'view'
+  initialTab = 'view',
+  initialEditUser = null
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [showPassword, setShowPassword] = useState(false);
@@ -85,6 +87,15 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
       fetchAllUsers();
     }
   }, [isOpen, activeTab, fetchAllUsers]);
+
+  // Handle initial edit user
+  useEffect(() => {
+    if (initialEditUser && isOpen) {
+      setEditUser(initialEditUser);
+      setEditFormData({ ...initialEditUser, password: '' });
+      setEditProfileImageFile(null);
+    }
+  }, [initialEditUser, isOpen]);
 
   // Reset form on tab change
   useEffect(() => {
@@ -164,7 +175,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden" data-modal="user-management">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
