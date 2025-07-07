@@ -31,29 +31,26 @@ const CollageViewer: React.FC<CollageViewerProps> = ({ className = '' }) => {
   const handleLike = async () => {
     if (!collage || liking || hasLiked) return;
 
-    // Immediately update UI to show liked state and disable button
+    // Set UI state to liked and disable button
     setHasLiked(true);
+    setLiking(true);
     setCollage(prev => prev ? { ...prev, likeCount: prev.likeCount + 1 } : null);
     localStorage.setItem(`liked_collage_${collage.id}`, 'true');
-    setLiking(true);
 
-    // Make API call in background
     try {
       const result = await likeCollage(collage.id);
       if (result && typeof result === 'object' && result.likeCount !== undefined) {
-        // Update with actual server response
         setCollage(prev => prev ? { ...prev, likeCount: result.likeCount } : null);
       } else if (result === 'already-liked') {
-        // Keep the optimistic update
+        // Do nothing, keep optimistic update
       } else {
-        // Revert optimistic update on unexpected result
+        // Unexpected result, revert
         setHasLiked(false);
         setCollage(prev => prev ? { ...prev, likeCount: Math.max(0, prev.likeCount - 1) } : null);
         localStorage.removeItem(`liked_collage_${collage.id}`);
       }
     } catch (err) {
-      console.error('Error in handleLike:', err);
-      // Revert optimistic update on error
+      // On error, revert
       setHasLiked(false);
       setCollage(prev => prev ? { ...prev, likeCount: Math.max(0, prev.likeCount - 1) } : null);
       localStorage.removeItem(`liked_collage_${collage.id}`);
@@ -62,7 +59,6 @@ const CollageViewer: React.FC<CollageViewerProps> = ({ className = '' }) => {
     }
   };
 
-  // Check if user has already liked this collage
   useEffect(() => {
     if (collage) {
       const hasLikedBefore = localStorage.getItem(`liked_collage_${collage.id}`) === 'true';

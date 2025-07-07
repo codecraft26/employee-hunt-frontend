@@ -15,7 +15,8 @@ import {
   RefreshCw,
   Clock,
   CheckCircle,
-  Key
+  Key,
+  Trash2
 } from 'lucide-react';
 import { useAdminStats } from '../../hooks/useAdminStats';
 import UserManagementModal from '../modals/UserManagementModal';
@@ -60,6 +61,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ onQuickAction }) => {
     { title: 'Manage Categories', icon: Building2, color: 'from-indigo-500 to-indigo-600', type: 'create-category' },
     { title: 'Room Allotment', icon: Key, color: 'from-cyan-500 to-cyan-600', type: 'room-allotment' },
     { title: 'User Management', icon: User, color: 'from-teal-500 to-teal-600', type: 'user-management' },
+    { title: 'Delete Users', icon: Trash2, color: 'from-red-500 to-red-600', type: 'delete-users' },
     { title: 'Manage Approval', icon: User, color: 'from-pink-500 to-pink-600', type: 'approve-user' }
   ];
 
