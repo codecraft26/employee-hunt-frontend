@@ -168,8 +168,19 @@ export const useUserQuizzes = () => {
       console.log('Assigned questions response:', response.data); // Debug log
       
       if (response.data.success) {
-        const questions = response.data.data;
-        console.log('Number of questions received:', questions?.length || 0);
+        let questions = response.data.data;
+        // Shuffle if quiz is random order
+        if (questions && questions.length > 0) {
+          // Try to get the order mode from the first question's quiz property
+          const orderMode = questions[0]?.quiz?.questionDistributionType || questions[0]?.quiz?.questionOrderMode;
+          if (orderMode && orderMode.toUpperCase() === 'RANDOM') {
+            // Fisher-Yates shuffle
+            for (let i = questions.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [questions[i], questions[j]] = [questions[j], questions[i]];
+            }
+          }
+        }
         setAssignedQuestions(questions || []);
         return questions || [];
       } else {
