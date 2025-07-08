@@ -32,7 +32,7 @@ export default function RootLayout({
   }, []);
 
   useEffect(() => {
-    // Register firebase-messaging-sw.js as the main service worker for FCM notifications
+    // Register service worker with enhanced mobile support
     if ('serviceWorker' in navigator) {
       const registerServiceWorker = async () => {
         try {
@@ -46,13 +46,12 @@ export default function RootLayout({
             }
           }
 
-          // Register only firebase-messaging-sw.js
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+          const registration = await navigator.serviceWorker.register('/sw.js', {
             scope: '/',
             updateViaCache: 'none'
           });
           
-          console.log('Firebase Messaging Service Worker registered successfully:', registration);
+          console.log('Service Worker registered successfully:', registration);
           
           // Enhanced update checking
           registration.addEventListener('updatefound', () => {
@@ -74,7 +73,7 @@ export default function RootLayout({
           registration.update();
           
         } catch (error) {
-          console.error('Firebase Messaging Service Worker registration failed:', error);
+          console.error('Service Worker registration failed:', error);
         }
       };
 
