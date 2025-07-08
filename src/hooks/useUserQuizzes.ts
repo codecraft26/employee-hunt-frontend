@@ -157,24 +157,25 @@ export const useUserQuizzes = () => {
     setError(null);
     try {
       console.log('Fetching assigned questions for quiz:', quizId); // Debug log
-      
       // Check if user has authentication
       const token = Cookies.get('token');
       if (!token) {
         throw new Error('No authentication token found. Please log in again.');
       }
-      
       const response = await api.get(`/quizzes/${quizId}/assigned-questions`);
       console.log('Assigned questions response:', response.data); // Debug log
-      
       if (response.data.success) {
         let questions = response.data.data;
+        // Block access if any question has isAccessClosed true
+        if (questions && questions.some((q: any) => q.isAccessClosed)) {
+          setError('Quiz access has been closed. You cannot continue this quiz.');
+          setAssignedQuestions([]);
+          return [];
+        }
         // Shuffle if quiz is random order
         if (questions && questions.length > 0) {
-          // Try to get the order mode from the first question's quiz property
           const orderMode = questions[0]?.quiz?.questionDistributionType || questions[0]?.quiz?.questionOrderMode;
           if (orderMode && orderMode.toUpperCase() === 'RANDOM') {
-            // Fisher-Yates shuffle
             for (let i = questions.length - 1; i > 0; i--) {
               const j = Math.floor(Math.random() * (i + 1));
               [questions[i], questions[j]] = [questions[j], questions[i]];
@@ -190,7 +191,6 @@ export const useUserQuizzes = () => {
       }
     } catch (err: any) {
       console.error('Get assigned questions error:', err); // Debug log
-      
       let errorMessage = 'Failed to fetch questions';
       if (err.response?.status === 401) {
         errorMessage = 'Authentication required. Please log in again.';
@@ -203,9 +203,46 @@ export const useUserQuizzes = () => {
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
       setError(errorMessage);
       return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Mark a quiz as completed in local state
+  const markQuizAsCompleted = useCallback((quizId: string) => {
+    setQuizzesWithCompletion(prev => 
+      prev.map(item => 
+        item.quiz.id === quizId 
+          ? {
+              ...item,
+              completionStatus: {
+                ...item.completionStatus,
+                isCompleted: true,
+                completionPercentage: 100,
+                completedCount: item.completionStatus?.totalAssigned || 0,
+                remainingCount: 0
+              }
+            }
+          : item
+      )
+    );
+  }, []);
+
+  // Close quiz access for a user
+  const closeQuizAccess = useCallback(async (quizId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.post(`/quizzes/${quizId}/close-access`);
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to close quiz access');
+      }
+      return true;
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to close quiz access');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -450,6 +487,8 @@ export const useUserQuizzes = () => {
     isQuizExpired,
     getQuizDisplayStatus,
     clearError,
-    resetState
+    resetState,
+    closeQuizAccess,
+    markQuizAsCompleted,
   };
 };

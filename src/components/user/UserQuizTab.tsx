@@ -74,7 +74,9 @@ const UserQuizTab: React.FC = () => {
     isQuizExpired,
     getQuizDisplayStatus,
     clearError,
-    resetState
+    resetState,
+    closeQuizAccess,
+    markQuizAsCompleted
   } = useUserQuizzes();
 
   // Component state
@@ -420,7 +422,16 @@ const UserQuizTab: React.FC = () => {
     setSubmitError(null); // Clear error on new selection
   };
 
-  const handleCloseQuiz = () => {
+  const handleCloseQuiz = async () => {
+    if (selectedQuiz) {
+      await closeQuizAccess(selectedQuiz.id);
+      
+      // Immediately mark this quiz as completed in local state
+      markQuizAsCompleted(selectedQuiz.id);
+      
+      // Refresh quiz list to get updated data from backend
+      await fetchMyQuizzes();
+    }
     setShowQuizModal(false);
     setSelectedQuiz(null);
     setCurrentQuestionIndex(0);
@@ -429,7 +440,6 @@ const UserQuizTab: React.FC = () => {
     setQuizTimeRemaining(0);
     setQuizStartTime(null);
     setShowQuestionReview(false);
-    // Removed immediate feedback cleanup - no longer used
     resetState();
   };
 
@@ -629,16 +639,19 @@ const UserQuizTab: React.FC = () => {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => canAccess && handleStartQuiz(quiz)}
-                        disabled={!canAccess}
-                        className="btn-gaming w-full disabled:opacity-50 disabled:cursor-not-allowed group/play-btn"
-                      >
-                        <div className="flex items-center justify-center">
-                          <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover/play-btn:scale-125" />
-                          <span>{canAccess ? 'Start Quiz' : 'Locked'}</span>
-                        </div>
-                      </button>
+                      {/* Start/Resume/Review Button */}
+                      <div className="mt-4 flex flex-col space-y-2">
+                        <button
+                          className="w-full btn-gaming"
+                          onClick={() => handleStartQuiz(quiz)}
+                          disabled={!canAccess || isCompleted}
+                        >
+                          Start Quiz
+                        </button>
+                        {isCompleted && (
+                          <p className="text-green-500 text-xs mt-1">You have already completed this quiz. Retake is not allowed.</p>
+                        )}
+                      </div>
                       {!canAccess && message && (
                         <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 text-xs mt-1 text-center">
                           {message}
