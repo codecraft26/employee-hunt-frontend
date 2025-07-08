@@ -69,7 +69,9 @@ self.addEventListener('push', function(event) {
   let title = "Notification";
   let body = "";
   let image = "";
-
+  if (data.notification) {
+    return;
+  }
   if (data.notification) {
     title = data.notification.title || title;
     body = data.notification.body || body;
