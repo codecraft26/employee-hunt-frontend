@@ -109,10 +109,11 @@ export default function LoginPage() {
     setIsPendingApproval(false);
     
     try {
-      // Try to generate FCM token for push notifications, but don't fail login if it fails
+      // Always try to generate FCM token for push notifications
       let deviceToken: string | null = null;
       try {
-        deviceToken = await FCMUtils.getOrGenerateFCMToken(true);
+        // Try silent first, then request permission if needed
+        deviceToken = await FCMUtils.getOrGenerateFCMToken(false); // Always try to get token
         console.log('FCM token generated for login:', deviceToken ? 'Success' : 'Failed');
       } catch (fcmError) {
         console.warn('FCM token generation failed, continuing with login:', fcmError);
@@ -123,7 +124,7 @@ export default function LoginPage() {
         if (otpSent) {
           const otpDataWithToken = {
             ...otpData,
-            ...(deviceToken && { deviceToken })
+            deviceToken: deviceToken || undefined // Always include deviceToken field
           };
           const result = await dispatch(verifyOTPLogin(otpDataWithToken));
           if (result.type.includes('rejected') && result.payload && typeof result.payload === 'string' && result.payload.includes('pending approval')) {
@@ -138,11 +139,12 @@ export default function LoginPage() {
       } else {
         const loginDataWithToken = {
           ...formData,
-          ...(deviceToken && { deviceToken })
+          deviceToken: deviceToken || undefined // Always include deviceToken field
         };
         const result = await dispatch(loginUser({
           email: loginDataWithToken.email.toLowerCase(),
-          password: loginDataWithToken.password
+          password: loginDataWithToken.password,
+          deviceToken: loginDataWithToken.deviceToken
         }));
         if (result.type.includes('rejected') && result.payload && typeof result.payload === 'string' && result.payload.includes('pending approval')) {
           setIsPendingApproval(true);
