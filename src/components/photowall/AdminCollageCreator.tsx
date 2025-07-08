@@ -48,7 +48,12 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
 
   const fetchApprovedPhotos = async () => {
     const photos = await getApprovedPhotosForCollage();
-    setApprovedPhotos(photos);
+    // Map 'private' to 'isPrivate' for compatibility
+    const normalizedPhotos = photos.map(photo => ({
+      ...photo,
+      isPrivate: photo.isPrivate !== undefined ? photo.isPrivate : (photo as any).private
+    }));
+    setApprovedPhotos(normalizedPhotos);
   };
 
   const handlePhotoSelection = (photo: Photo) => {
@@ -57,7 +62,8 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
       if (isSelected) {
         return prev.filter(p => p.id !== photo.id);
       } else if (prev.length < 10) {
-        return [...prev, photo];
+        // Ensure 'isPrivate' is set for selected photo
+        return [...prev, { ...photo, isPrivate: photo.isPrivate !== undefined ? photo.isPrivate : (photo as any).private }];
       } else {
         alert('Maximum 10 photos can be selected for a collage');
         return prev;
@@ -350,6 +356,12 @@ const AdminCollageCreator: React.FC<AdminCollageCreatorProps> = ({
                   <div className="absolute top-1 left-1 bg-purple-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {index + 1}
                   </div>
+                  {photo.isPrivate && (
+                    <div className="absolute top-1 right-1 px-2 py-1 bg-purple-600 text-white rounded-full text-xs font-medium border border-purple-700 flex items-center space-x-1">
+                      <Lock className="h-3 w-3" />
+                      <span>Private</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
