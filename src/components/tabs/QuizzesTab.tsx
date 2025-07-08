@@ -89,13 +89,20 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     points: 10,
     timeLimit: 30
   });
-  const [currentQuestion, setCurrentQuestion] = useState({
+  const [currentQuestion, setCurrentQuestion] = useState<{
+    question: string;
+    options: string[];
+    correctAnswer: number | null;
+    points: number;
+    timeLimit: number;
+  }>({
     question: '',
     options: ['', '', '', ''],
-    correctAnswer: 0,
+    correctAnswer: null,
     points: 10,
     timeLimit: 30
   });
+  const [createQuizError, setCreateQuizError] = useState<string | null>(null);
 
   // Fetch quizzes on component mount
   useEffect(() => {
@@ -129,7 +136,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
 
   const handleCreateQuiz = () => {
     setShowCreateModal(true);
-    // Reset form data
+    setCreateQuizError(null); // Reset error on open
     setCreateQuizData({
       title: '',
       description: '',
@@ -140,14 +147,22 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
       questionsPerParticipant: 1,
       questions: []
     });
+    setCurrentQuestion({
+      question: '',
+      options: ['', '', '', ''],
+      correctAnswer: null,
+      points: 10,
+      timeLimit: 30
+    });
     externalOnCreateQuiz?.();
   };
 
   const handleSubmitQuiz = async () => {
+    setCreateQuizError(null);
     if (!createQuizData.title.trim() || !createQuizData.description.trim() || 
         !createQuizData.startTime || !createQuizData.endTime || 
         createQuizData.questions.length === 0) {
-      alert('Please fill in all required fields and add at least one question.');
+      setCreateQuizError('Please fill in all required fields and add at least one question.');
       return;
     }
 
@@ -165,6 +180,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     try {
       await createQuiz(quizPayload);
       setShowCreateModal(false);
+      setCreateQuizError(null); // Reset error on success
       // Reset form
       setCreateQuizData({
         title: '',
@@ -179,7 +195,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
       alert('Quiz created successfully!');
     } catch (err: any) {
       console.error('Failed to create quiz:', err);
-      alert(`Failed to create quiz: ${err.message}`);
+      setCreateQuizError(err.message || 'Failed to create quiz. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -191,20 +207,21 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
       alert('Please fill in the question and all options.');
       return;
     }
-
-    setCreateQuizData(prev => ({
-      ...prev,
-      questions: [...prev.questions, { ...currentQuestion }]
-    }));
-
-    // Reset current question
-    setCurrentQuestion({
+    if (currentQuestion.correctAnswer === null || currentQuestion.correctAnswer === undefined) {
+      alert('Please select the correct answer.');
+      return;
+    }
+    setCreateQuizData(prev => {
+      const newQuestions = [...prev.questions, { ...currentQuestion }];
+      return { ...prev, questions: newQuestions };
+    });
+    setCurrentQuestion(() => ({
       question: '',
       options: ['', '', '', ''],
-      correctAnswer: 0,
+      correctAnswer: null,
       points: 10,
       timeLimit: 30
-    });
+    }));
   };
 
   const handleRemoveQuestion = (index: number) => {
@@ -691,7 +708,11 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                 <X className="h-6 w-6" />
               </button>
             </div>
-
+            {createQuizError && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded">
+                {createQuizError}
+              </div>
+            )}
             <div className="space-y-6">
               {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -845,6 +866,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                               checked={currentQuestion.correctAnswer === index}
                               onChange={() => setCurrentQuestion(prev => ({ ...prev, correctAnswer: index }))}
                               className="text-indigo-600"
+                              disabled={!currentQuestion.options[index].trim()}
                             />
                             <input
                               type="text"

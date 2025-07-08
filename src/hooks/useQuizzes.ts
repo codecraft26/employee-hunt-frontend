@@ -7,7 +7,7 @@ export interface QuizQuestion {
   id?: string;
   question: string;
   options: string[];
-  correctAnswer: number;
+  correctAnswer: number | null;
   points: number;
   timeLimit: number;
   createdAt?: string;
@@ -71,7 +71,7 @@ export interface UpdateQuizRequest {
 export interface UpdateQuestionRequest {
   question: string;
   options: string[];
-  correctAnswer: number;
+  correctAnswer: number | null;
   points: number;
   timeLimit: number;
 }
