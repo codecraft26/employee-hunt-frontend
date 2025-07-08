@@ -36,6 +36,7 @@ export interface AuthState {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  isInitializing: boolean; // Add this new field
 }
 
 interface AuthResponse {
@@ -216,10 +217,11 @@ export const updateDeviceToken = createAsyncThunk(
 // Initial state
 const initialState: AuthState = {
   user: null,
-  token: null,
+  token: typeof window !== 'undefined' ? Cookies.get('token') || null : null,
   isLoading: false,
   error: null,
-  isAuthenticated: false,
+  isAuthenticated: typeof window !== 'undefined' ? !!Cookies.get('token') : false,
+  isInitializing: typeof window !== 'undefined' ? !!Cookies.get('token') : false, // Set to true if token exists
 };
 
 // Auth slice
@@ -234,6 +236,7 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.isInitializing = false;
       state.error = null;
       Cookies.remove('token');
     },
@@ -241,6 +244,7 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+      state.isInitializing = false;
     },
   },
   extraReducers: (builder) => {
@@ -333,11 +337,16 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
+        state.isInitializing = false;
       })
       .addCase(getProfile.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;
+        state.isInitializing = false;
+        // Clear invalid token
+        state.token = null;
+        Cookies.remove('token');
       })
       
       // Update Device Token
