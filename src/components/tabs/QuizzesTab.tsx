@@ -1025,20 +1025,8 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-600">Questions</p>
-                      <p className="font-medium">{quiz.totalQuestions}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Per Participant</p>
-                      <p className="font-medium">{quiz.questionsPerParticipant}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Teams</p>
-                      <p className="font-medium">{quiz.totalTeams}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Participants</p>
-                      <p className="font-medium">{quiz.totalParticipants}</p>
+                      <p className="text-black">Questions</p>
+                      <p className="font-medium text-black">{quiz.totalQuestions}</p>
                     </div>
                   </div>
 
@@ -1176,20 +1164,8 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                   <h4 className="font-medium text-gray-900 mb-3">Statistics</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-blue-600 font-medium">{selectedQuiz.totalQuestions}</p>
-                      <p className="text-blue-800 text-xs">Total Questions</p>
-                    </div>
-                    <div className="bg-green-50 p-3 rounded-lg">
-                      <p className="text-green-600 font-medium">{selectedQuiz.totalParticipants}</p>
-                      <p className="text-green-800 text-xs">Participants</p>
-                    </div>
-                    <div className="bg-purple-50 p-3 rounded-lg">
-                      <p className="text-purple-600 font-medium">{selectedQuiz.totalTeams}</p>
-                      <p className="text-purple-800 text-xs">Teams</p>
-                    </div>
-                    <div className="bg-orange-50 p-3 rounded-lg">
-                      <p className="text-orange-600 font-medium">{selectedQuiz.questionsPerParticipant}</p>
-                      <p className="text-orange-800 text-xs">Per Participant</p>
+                      <p className="text-black font-medium">{selectedQuiz.totalQuestions}</p>
+                      <p className="text-black text-xs">Total Questions</p>
                     </div>
                   </div>
                 </div>
