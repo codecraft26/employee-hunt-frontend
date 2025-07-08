@@ -17,45 +17,45 @@ const messaging = firebase.messaging();
 
 const fallbackImage = "/dashboard_tiles/app-logo.svg";
 
-messaging.onBackgroundMessage(function (payload) {
-  console.log("[firebase-messaging-sw.js] Background message:", payload);
+// messaging.onBackgroundMessage(function (payload) {
+//   console.log("[firebase-messaging-sw.js] Background message:", payload);
 
-  let title = "Notification";
-  let body = "";
-  let image = "";
+//   let title = "Notification";
+//   let body = "";
+//   let image = "";
 
-  if (payload.notification) {
-    title = payload.notification.title || title;
-    body = payload.notification.body || body;
-    image = payload.notification.image || image || fallbackImage;
-  } else if (payload.data) {
-    try {
-      const data = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
-      if (data.notification) {
-        title = data.notification.title || title;
-        body = data.notification.body || body;
-        image = data.notification.image || image || fallbackImage;
-      } else {
-        title = data.title || title;
-        body = data.body || body;
-        image = data.image || image || fallbackImage;
-      }
-    } catch (e) {
-      title = payload.data.title || title;
-      body = payload.data.body || body;
-      image = payload.data.image || image || fallbackImage;
-    }
-  }
+//   if (payload.notification) {
+//     title = payload.notification.title || title;
+//     body = payload.notification.body || body;
+//     image = payload.notification.image || image || fallbackImage;
+//   } else if (payload.data) {
+//     try {
+//       const data = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
+//       if (data.notification) {
+//         title = data.notification.title || title;
+//         body = data.notification.body || body;
+//         image = data.notification.image || image || fallbackImage;
+//       } else {
+//         title = data.title || title;
+//         body = data.body || body;
+//         image = data.image || image || fallbackImage;
+//       }
+//     } catch (e) {
+//       title = payload.data.title || title;
+//       body = payload.data.body || body;
+//       image = payload.data.image || image || fallbackImage;
+//     }
+//   }
 
-  const notificationOptions = {
-    body: body,
-    image: image || fallbackImage,
-    icon: "/icons/icon-192x192.png",
-    data: payload.data || {},
-  };
+//   const notificationOptions = {
+//     body: body,
+//     image: image || fallbackImage,
+//     icon: "/icons/icon-192x192.png",
+//     data: payload.data || {},
+//   };
 
-  // self.registration.showNotification(title, notificationOptions);
-});
+//   self.registration.showNotification(title, notificationOptions);
+// });
 
 // UNIVERSAL PUSH HANDLER
 self.addEventListener('push', function(event) {
