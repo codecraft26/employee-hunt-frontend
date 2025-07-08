@@ -197,11 +197,11 @@ export class FCMUtils {
   static async getOrGenerateFCMToken(requestPermission: boolean = true): Promise<string | null> {
     try {
       // First, check if we have a stored token
-      const storedToken = this.getStoredFCMToken();
-      if (storedToken) {
-        console.log("Using stored FCM token");
-        return storedToken;
-      }
+      // const storedToken = this.getStoredFCMToken();
+      // if (storedToken) {
+      //   console.log("Using stored FCM token");
+      //   return storedToken;
+      // }
 
       // If no stored token, try to generate one silently first
       let newToken = await this.generateFCMToken(true); // Silent mode
