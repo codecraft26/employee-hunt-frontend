@@ -402,7 +402,7 @@ const ActivitiesTab: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Users className="h-4 w-4" />
-                      <span>{activity.user?.name || 'Unknown User'}</span>
+                      <span>{activity.type === 'announcement' ? 'Admin' : (activity.user?.name || 'Admin')}</span>
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
                       <Calendar className="h-4 w-4" />
@@ -493,7 +493,7 @@ const ActivitiesTab: React.FC = () => {
                 <div>
                   <h4 className="font-medium text-gray-900">Created By</h4>
                   <p className="text-gray-700">
-                    {selectedActivity.user?.name || 'Unknown User'} 
+                    {selectedActivity.type === 'announcement' ? 'Admin' : (selectedActivity.user?.name || 'Admin')}
                     {selectedActivity.user?.email && ` (${selectedActivity.user.email})`}
                   </p>
                 </div>

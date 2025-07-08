@@ -352,8 +352,8 @@ const UserActivitiesTab: React.FC = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2 text-sm text-gray-500">
                               <User className="h-4 w-4" />
-                              <span className="hidden sm:inline">Created by {activity.user?.name || 'Unknown User'}</span>
-                              <span className="sm:hidden">{activity.user?.name || 'Unknown'}</span>
+                              <span className="hidden sm:inline">Created by {activity.type === 'announcement' ? 'Admin' : (activity.user?.name || (activity.user?.role === 'admin' ? 'Admin' : 'Admin'))}</span>
+                              <span className="sm:hidden">{activity.type === 'announcement' ? 'Admin' : (activity.user?.name || (activity.user?.role === 'admin' ? 'Admin' : 'Admin'))}</span>
                               <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
                                 {activity.user?.role || 'N/A'}
                               </span>
@@ -469,7 +469,7 @@ const UserActivitiesTab: React.FC = () => {
                                     <div>
                                       <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Created By</h4>
                                       <div className="flex items-center space-x-2">
-                                        <span className="text-gray-900 font-medium">{activity.user?.name || 'Unknown User'}</span>
+                                        <span className="text-gray-900 font-medium">{activity.type === 'announcement' ? 'Admin' : (activity.user?.name || (activity.user?.role === 'admin' ? 'Admin' : 'Admin'))}</span>
                                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
                                           {activity.user?.role || 'N/A'}
                                         </span>
