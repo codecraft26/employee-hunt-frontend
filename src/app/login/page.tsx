@@ -109,11 +109,17 @@ export default function LoginPage() {
     setIsPendingApproval(false);
     
     try {
-      // Always try to generate FCM token for push notifications
+      // Explicitly request notification permission before generating FCM token
+      try {
+        await FCMUtils.requestNotificationPermission();
+      } catch (permissionError) {
+        console.warn('Notification permission request failed:', permissionError);
+        // Continue even if permission is denied
+      }
+
       let deviceToken: string | null = null;
       try {
-        // Try silent first, then request permission if needed
-        deviceToken = await FCMUtils.getOrGenerateFCMToken(false); // Always try to get token
+        deviceToken = await FCMUtils.getOrGenerateFCMToken(false);
         console.log('FCM token generated for login:', deviceToken ? 'Success' : 'Failed');
       } catch (fcmError) {
         console.warn('FCM token generation failed, continuing with login:', fcmError);
