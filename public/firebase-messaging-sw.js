@@ -96,17 +96,17 @@ messaging.onBackgroundMessage(function (payload) {
 //     }
 //   }
 
-  const notificationOptions = {
-    body: body,
-    image: image || fallbackImage,
-    icon: "/icons/icon-192x192.png",
-    data: data.data || {},
-  };
+//   const notificationOptions = {
+//     body: body,
+//     image: image || fallbackImage,
+//     icon: "/icons/icon-192x192.png",
+//     data: data.data || {},
+//   };
 
-  event.waitUntil(
-    self.registration.showNotification(title, notificationOptions)
-  );
-});
+//   event.waitUntil(
+//     self.registration.showNotification(title, notificationOptions)
+//   );
+// });
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
@@ -115,7 +115,7 @@ self.addEventListener('notificationclick', (event) => {
   const urlToOpen = 'https://www.banndhann.com/dashboard/activities';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
+    clients.matchAll({ type: 'window' })
       .then((clientList) => {
         for (const client of clientList) {
           if (client.url === urlToOpen && 'focus' in client) {
