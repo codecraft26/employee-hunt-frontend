@@ -109,21 +109,22 @@ self.addEventListener('push', function(event) {
 });
 
 // Handle notification clicks
-self.addEventListener("notificationclick", function (event) {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  const targetUrl =
-    event.notification?.data?.url || "https://www.banndhann.com/dashboard/activities";
+  const urlToOpen = 'https://www.banndhann.com/dashboard/activities';
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      if (clientList.length > 0) {
-        // If at least one client (tab or PWA window) is open
-        return clientList[0].navigate(targetUrl).then((client) => client.focus());
-      } else {
-        // No clients open, open a new one
-        return clients.openWindow(targetUrl);
-      }
-    })
+    clients.matchAll({ type: 'window', includeUncontrolled: true  })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url === urlToOpen && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
   );
 });
