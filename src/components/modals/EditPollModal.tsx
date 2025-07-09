@@ -170,6 +170,13 @@ const EditPollModal: React.FC<EditPollModalProps> = ({ isOpen, onClose, onSucces
       errors.endTime = 'End time must be after start time';
     }
 
+    // Validate result display time if provided
+    if (formData.resultDisplayTime && formData.endTime) {
+      if (new Date(formData.resultDisplayTime) < new Date(formData.endTime)) {
+        errors.resultDisplayTime = 'Result display time must be after end time';
+      }
+    }
+
     if (formData.votingOptionType === VotingOptionType.CUSTOM_OPTIONS) {
       const validOptions = options.filter(option => option.name.trim());
       if (validOptions.length < 2) {
@@ -396,9 +403,14 @@ const EditPollModal: React.FC<EditPollModalProps> = ({ isOpen, onClose, onSucces
               type="datetime-local"
               value={formData.resultDisplayTime}
               onChange={(e) => setFormData({ ...formData, resultDisplayTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                validationErrors.resultDisplayTime ? 'border-red-300' : 'border-gray-300'
+              }`}
               disabled={!canEdit}
             />
+            {validationErrors.resultDisplayTime && (
+              <p className="text-red-500 text-sm mt-1">{validationErrors.resultDisplayTime}</p>
+            )}
           </div>
 
           {/* Voting Options */}

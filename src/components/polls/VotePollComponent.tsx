@@ -56,13 +56,25 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   const isAdmin = user?.role === 'admin';
   const isUpcoming = poll.status === VoteStatus.UPCOMING;
   
+  // Check if results should be displayed based on resultDisplayTime
+  const isResultDisplayTimeReached = () => {
+    if (!poll.resultDisplayTime) {
+      // If no resultDisplayTime is set, show results immediately when published (no time restriction)
+      return true;
+    }
+    // If resultDisplayTime is set, check if current time has passed it
+    const now = new Date().getTime();
+    const resultDisplayTime = new Date(poll.resultDisplayTime).getTime();
+    return now >= resultDisplayTime;
+  };
+
   // Determine what results to show:
   // - Admins: Always see full results when available
   // - Users who voted: See only their vote unless they toggle to see full results
   // - Users who haven't voted: No results shown during active poll
-  // - Published results: Everyone can see full results
-  const shouldShowResults = showResults || poll.status === VoteStatus.COMPLETED || poll.isResultPublished;
-  const shouldShowFullResults = isAdmin || showFullResults || poll.isResultPublished || poll.status === VoteStatus.COMPLETED;
+  // - Published results: Users can see full results only if resultDisplayTime has passed
+  const shouldShowResults = showResults || poll.status === VoteStatus.COMPLETED || (poll.isResultPublished && isResultDisplayTimeReached());
+  const shouldShowFullResults = isAdmin || showFullResults || (poll.isResultPublished && isResultDisplayTimeReached()) || poll.status === VoteStatus.COMPLETED;
   const shouldShowUserVoteOnly = hasVoted && !shouldShowFullResults;
 
   // Fetch user's voting status when component mounts
@@ -477,9 +489,14 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                 <span className="font-medium">{new Date(poll.endTime).toLocaleString()}</span>
               </div>
               {poll.resultDisplayTime && (
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Results Display:</span>
-                  <span className="font-medium">{new Date(poll.resultDisplayTime).toLocaleString()}</span>
+                <div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">Results Display:</span>
+                    <span className="font-medium">{new Date(poll.resultDisplayTime).toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Results will only be visible to users after this time
+                  </p>
                 </div>
               )}
             </div>
@@ -594,6 +611,26 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           </div>
         )}
 
+        {/* Results Published but Display Time Not Reached Message */}
+        {!isAdmin && poll.isResultPublished && !isResultDisplayTimeReached() && poll.resultDisplayTime && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-700 text-sm font-medium">📊 Results Published</p>
+            <p className="text-yellow-600 text-xs mt-1">
+              Results will be displayed on {new Date(poll.resultDisplayTime).toLocaleString()}
+            </p>
+          </div>
+        )}
+
+        {/* Results Published and Available Message (for polls without resultDisplayTime) */}
+        {!isAdmin && poll.isResultPublished && !poll.resultDisplayTime && shouldShowResults && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700 text-sm font-medium">✅ Results Available</p>
+            <p className="text-green-600 text-xs mt-1">
+              Poll results have been published and are now visible
+            </p>
+          </div>
+        )}
+
         {/* Poll Options */}
         {(canVote || shouldShowResults) && poll.options && poll.options.length > 0 ? (
           <>
@@ -694,7 +731,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                     <span>Poll Results</span>
                   </h3>
                   <div className="text-sm text-gray-600">
-                    Total: {poll.totalVotes} votes from {poll.totalVoters} participants
+                    Total: {poll.totalVotes} votes
                   </div>
                 </div>
               </div>

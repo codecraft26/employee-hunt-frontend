@@ -321,7 +321,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
                         </span>
                         <span className="text-sm text-gray-600 flex items-center">
                           <Users className="h-4 w-4 mr-1" />
-                          {poll.totalVotes} votes from {poll.totalVoters} voters
+                          {poll.totalVotes} votes
                         </span>
                         {poll.status === VoteStatus.ACTIVE && (
                           <span className="text-sm text-orange-600 flex items-center">
@@ -503,14 +503,6 @@ const PollsTab: React.FC<PollsTabProps> = ({
 
                 <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center">
                   <div className="flex space-x-2">
-                    <button 
-                      onClick={() => onViewResults(poll.id)}
-                      className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-1"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>View Results</span>
-                    </button>
-                    
                     <button 
                       onClick={() => handleEditPoll(poll)}
                       className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-1"

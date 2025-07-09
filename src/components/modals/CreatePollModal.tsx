@@ -223,6 +223,13 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
       errors.endTime = 'End time must be after start time';
     }
 
+    // Validate result display time if provided
+    if (formData.resultDisplayTime && formData.endTime) {
+      if (new Date(formData.resultDisplayTime) < new Date(formData.endTime)) {
+        errors.resultDisplayTime = 'Result display time must be after end time';
+      }
+    }
+
     if (formData.categoryType === 'SPECIFIC' && formData.allowedCategories.length === 0) {
       errors.categories = 'Please select at least one category';
     }
@@ -554,8 +561,13 @@ const CreatePollModal: React.FC<CreatePollModalProps> = ({ isOpen, onClose, onSu
               type="datetime-local"
               value={formData.resultDisplayTime}
               onChange={(e) => setFormData({ ...formData, resultDisplayTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                validationErrors.resultDisplayTime ? 'border-red-300' : 'border-gray-300'
+              }`}
             />
+            {validationErrors.resultDisplayTime && (
+              <p className="text-red-500 text-sm mt-1">{validationErrors.resultDisplayTime}</p>
+            )}
             <p className="text-sm text-gray-500 mt-1">
               When results should be displayed to users. Leave empty to show results immediately after poll ends.
             </p>
