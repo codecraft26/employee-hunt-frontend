@@ -306,8 +306,12 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
       collage.createdBy.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredCollages(filtered);
-    setCurrentPage(1); // Reset to first page when filtering
   }, [collages, searchTerm]);
+
+  // Separate effect to reset page only when search term changes
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filtering
+  }, [searchTerm]);
 
   useEffect(() => {
     const liked: { [key: string]: boolean } = {};
