@@ -1,7 +1,6 @@
 # Bann Dhann - Progressive Web App
 
 A modern Progressive Web App (PWA) for team activities, quizzes, treasure hunts, and polls. Built with Next.js, TypeScript, and Tailwind CSS.
-
 ## 🚀 PWA Features
 
 - **🔄 Offline Support**: Works without internet connection
