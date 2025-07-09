@@ -29,6 +29,7 @@ messaging.onBackgroundMessage(function (payload) {
     body = payload.notification.body || body;
     image = payload.notification.image || image || fallbackImage;
   } else if (payload.data) {
+    return;
     try {
       const data = typeof payload.data === 'string' ? JSON.parse(payload.data) : payload.data;
       if (data.notification) {
