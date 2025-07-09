@@ -2,7 +2,6 @@
 
 A modern Progressive Web App (PWA) for team activities, quizzes, treasure hunts, and polls. Built with Next.js, TypeScript, and Tailwind CSS.
 ## 🚀 PWA Features
-
 - **🔄 Offline Support**: Works without internet connection
 - **📱 App-like Experience**: Install on mobile and desktop
 - 
