@@ -257,13 +257,13 @@ function AllCollageCard({ collage, isLiked, likingState, handleLike }: AllCollag
             console.log('Like button clicked for collage:', collage.id);
             handleLike(collage.id);
           }}
-          disabled={isLiked || likingState}
+          disabled={isLiked === true || likingState === true}
           className={`w-full mt-3 px-3 py-2 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200 transform
             ${isLiked 
               ? 'bg-purple-700 text-white scale-105 shadow-lg' 
               : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'
             }
-            ${(isLiked || likingState) ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
+            ${(isLiked === true || likingState === true) ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
         >
           <Heart 
             className={`h-4 w-4 transition-all duration-200 ${
@@ -274,7 +274,7 @@ function AllCollageCard({ collage, isLiked, likingState, handleLike }: AllCollag
             fill={isLiked ? 'currentColor' : 'none'} 
           />
           <span className="font-medium">
-            {isLiked ? 'Liked' : (likingState ? 'Liking...' : 'Like')}
+            {isLiked === true ? 'Liked' : (likingState === true ? 'Liking...' : 'Like')}
           </span>
         </button>
       </div>
@@ -335,12 +335,14 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
   const handleLike = async (collageId: string) => {
     console.log('Like button clicked for collage:', collageId);
     
-    if (likingStates[collageId] || likedCollages[collageId]) {
+    // Check both loading states and liked state more explicitly
+    if (likingStates[collageId] === true || likedCollages[collageId] === true) {
       console.log('Already liking or already liked, ignoring click');
       return;
     }
 
-    // Immediately update UI to show liked state and disable button
+    // Immediately update both UI states together to prevent race conditions
+    setLikingStates(prev => ({ ...prev, [collageId]: true }));
     setLikedCollages(prev => ({ ...prev, [collageId]: true }));
     setCollages(prev => 
       prev.map(collage => 
@@ -350,7 +352,6 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
       )
     );
     localStorage.setItem(`liked_collage_${collageId}`, 'true');
-    setLikingStates(prev => ({ ...prev, [collageId]: true }));
     
     // Make API call in background
     try {
@@ -540,8 +541,8 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
                 <AllCollageCard
                   key={collage.id}
                   collage={collage}
-                  isLiked={likedCollages[collage.id]}
-                  likingState={likingStates[collage.id]}
+                  isLiked={likedCollages[collage.id] === true}
+                  likingState={likingStates[collage.id] === true}
                   handleLike={handleLike}
                 />
               ))}
