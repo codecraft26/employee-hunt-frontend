@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { useUserQuizzes, UserQuiz, UserQuizQuestion } from '../../hooks/useUserQuizzes';
 import QuizNotifications from '../quiz/QuizNotifications';
+import TimedQuizComponent from '../quiz/TimedQuizComponent';
+import Cookies from 'js-cookie';
 
 const UserQuizTab: React.FC = () => {
   // Add CSS animation for progress bar and pulse effect
@@ -97,11 +99,61 @@ const UserQuizTab: React.FC = () => {
   const [completedQuizzes, setCompletedQuizzes] = useState<Set<string>>(new Set());
   // Error message for answer submission
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Timed quiz state
+  const [showTimedQuiz, setShowTimedQuiz] = useState(false);
+  const [timedQuizData, setTimedQuizData] = useState<UserQuiz | null>(null);
+  // Session status for timed quizzes
+  const [quizSessionStatus, setQuizSessionStatus] = useState<Record<string, any>>({});
+
+  // Helper function to determine if quiz should use timed system
+  // For now, we'll use timed system for all active quizzes
+  // In the future, this could be based on quiz configuration
+  const shouldUseTimedSystem = useCallback((quiz: UserQuiz) => {
+    // Use timed system for active quizzes (this can be modified based on quiz properties)
+    return quiz.status === 'ACTIVE';
+  }, []);
+
+  // Function to fetch session status for timed quizzes
+  const fetchTimedQuizSessionStatus = useCallback(async () => {
+    const timedQuizzes = quizzesWithCompletion.filter(item => shouldUseTimedSystem(item.quiz));
+    const sessionStatuses: Record<string, any> = {};
+    
+    for (const item of timedQuizzes) {
+      try {
+        const token = Cookies.get('token');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/${item.quiz.id}/session-status`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const sessionData = await response.json();
+          if (sessionData.success) {
+            sessionStatuses[item.quiz.id] = sessionData.data;
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to fetch session status for quiz ${item.quiz.id}:`, error);
+      }
+    }
+    
+    setQuizSessionStatus(sessionStatuses);
+  }, [quizzesWithCompletion, shouldUseTimedSystem]);
 
   // Fetch quizzes on component mount
   useEffect(() => {
     fetchMyQuizzes();
   }, [fetchMyQuizzes]);
+
+  // Fetch session status for timed quizzes when quizzes are loaded
+  useEffect(() => {
+    if (quizzesWithCompletion.length > 0) {
+      fetchTimedQuizSessionStatus();
+    }
+  }, [quizzesWithCompletion, fetchTimedQuizSessionStatus]);
 
   // No need to check completion status manually; handled by API
 
@@ -197,6 +249,20 @@ const UserQuizTab: React.FC = () => {
     fetchMyQuizzes();
   }, [clearError, fetchMyQuizzes]);
 
+  // Handle timed quiz completion
+  const handleTimedQuizComplete = useCallback((score: number) => {
+    setShowTimedQuiz(false);
+    setTimedQuizData(null);
+    alert('🎉 Quiz Completed! Your answers have been submitted successfully.');
+    fetchMyQuizzes(); // Refresh quiz list
+  }, [fetchMyQuizzes]);
+
+  // Handle timed quiz close
+  const handleTimedQuizClose = useCallback(() => {
+    setShowTimedQuiz(false);
+    setTimedQuizData(null);
+  }, []);
+
   const handleStartQuiz = async (quiz: UserQuiz) => {
     // Check if user has already completed this quiz
     const completionStatus = quizzesWithCompletion.find(q => q.quiz.id === quiz.id)?.completionStatus;
@@ -205,8 +271,43 @@ const UserQuizTab: React.FC = () => {
       return;
     }
 
+    // Check if quiz should use timed system
+    if (shouldUseTimedSystem(quiz)) {
+      console.log('Using timed quiz system for:', quiz.title);
+      
+      // For timed quizzes, check session status first to prevent opening modal for started quizzes
+      try {
+        const token = Cookies.get('token');
+        
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/${quiz.id}/session-status`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const sessionData = await response.json();
+          if (sessionData.success && sessionData.data.hasStarted) {
+            alert('You have already attempted this quiz. You can only attempt it once.');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check session status:', error);
+        // Continue to show modal if session check fails
+      }
+      
+      setTimedQuizData(quiz);
+      setShowTimedQuiz(true);
+      return;
+    }
+
+    // Traditional quiz system (fallback)
     try {
-      console.log('Starting quiz:', quiz); // Debug log
+      console.log('Starting traditional quiz:', quiz); // Debug log
+      console.log('Quiz order mode:', quiz.questionOrderMode); // Debug log
       setSelectedQuiz(quiz);
       setQuizStartTime(new Date());
       
@@ -220,6 +321,7 @@ const UserQuizTab: React.FC = () => {
       const questions = await getAssignedQuestions(quiz.id);
       
       console.log('Fetched questions:', questions); // Debug log
+      console.log('Question order:', questions?.map((q: UserQuizQuestion) => ({ id: q.question.id, question: q.question.question.substring(0, 50) + '...' }))); // Debug log
       
       if (questions && questions.length > 0) {
         console.log('First question:', questions[0]); // Debug log
@@ -299,13 +401,15 @@ const UserQuizTab: React.FC = () => {
     setIsSubmitting(true);
     
     const timeTaken = (currentQuestion.question?.timeLimit || 30) - timeRemaining;
+    const isLastQuestion = currentQuestionIndex === assignedQuestions.length - 1;
     
     console.log('Submitting answer with data:', {
       quizId: selectedQuiz.id,
       questionId: currentQuestion.question.id,
       selectedAnswer,
       timeTaken,
-      currentQuestion
+      currentQuestion,
+      isLastQuestion
     }); // Debug log
     
     try {
@@ -315,7 +419,32 @@ const UserQuizTab: React.FC = () => {
       });
 
       if (success) {
-        handleMoveToNextQuestion();
+        console.log('Answer submitted successfully. Is last question:', isLastQuestion); // Debug log
+        
+        if (isLastQuestion) {
+          // For the last question, add a small delay to ensure state update completes
+          console.log('Last question submitted, checking completion after state update...'); // Debug log
+          
+          // Also manually check if this was the last unanswered question
+          const currentUnanswered = assignedQuestions.filter(q => !q.isCompleted).length;
+          console.log('Before submission - unanswered questions remaining:', currentUnanswered); // Debug log
+          
+          if (currentUnanswered === 1) {
+            // This was the last question, force completion
+            console.log('🎯 This was the last unanswered question - forcing quiz completion!'); // Debug log
+            setTimeout(() => {
+              setShowQuizModal(false);
+              alert('🎉 Quiz Completed! Your answers have been submitted successfully.');
+              fetchMyQuizzes();
+            }, 200); // Slightly longer delay for state propagation
+          } else {
+            setTimeout(() => {
+              handleMoveToNextQuestion();
+            }, 100);
+          }
+        } else {
+          handleMoveToNextQuestion();
+        }
       }
     } catch (err: any) {
       console.error('Failed to submit answer:', err);
@@ -337,35 +466,54 @@ const UserQuizTab: React.FC = () => {
   const handleMoveToNextQuestion = () => {
     setSubmitError(null); // Clear error on navigation
     const completionStatus = getQuizCompletionStatus();
+    console.log('=== MOVE TO NEXT QUESTION DEBUG ==='); // Debug log
+    console.log('Current index:', currentQuestionIndex); // Debug log
+    console.log('Total questions:', assignedQuestions.length); // Debug log
+    console.log('Completion status:', completionStatus); // Debug log
+    console.log('All questions completed status:', assignedQuestions.map((q, idx) => ({ 
+      index: idx, 
+      id: q.question.id, 
+      isCompleted: q.isCompleted,
+      userAnswer: q.userAnswer 
+    }))); // Debug log
+    
     // Check if all questions are now completed
     if (completionStatus.isAllCompleted) {
+      console.log('🎉 All questions completed! Closing quiz...'); // Debug log
       setShowQuizModal(false);
       alert('🎉 Quiz Completed! Your answers have been submitted successfully.');
       fetchMyQuizzes();
       return;
     }
+    
     // Find next unanswered question
     const nextUnansweredIndex = findNextUnansweredQuestion(currentQuestionIndex + 1);
+    console.log('Next unanswered question index:', nextUnansweredIndex); // Debug log
+    
     if (nextUnansweredIndex !== -1) {
       setCurrentQuestionIndex(nextUnansweredIndex);
       setSelectedAnswer(null);
       setShowQuestionReview(false);
       const nextQuestion = assignedQuestions[nextUnansweredIndex];
+      console.log('Moving to unanswered question:', nextQuestion?.question?.id, nextQuestion?.question?.question?.substring(0, 50) + '...'); // Debug log
       const timeLimit = nextQuestion?.question?.timeLimit || 30;
       setTimeRemaining(typeof timeLimit === 'number' ? timeLimit : parseInt(timeLimit) || 30);
     } else {
       if (currentQuestionIndex < assignedQuestions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         const nextQuestion = assignedQuestions[currentQuestionIndex + 1];
+        console.log('Moving to completed question:', nextQuestion?.question?.id); // Debug log
         setSelectedAnswer(nextQuestion?.userAnswer || null);
         setShowQuestionReview(true);
         setTimeRemaining(0);
       } else {
+        console.log('Reached end of questions, finishing quiz...'); // Debug log
         setShowQuizModal(false);
         setShowResultsModal(true);
         fetchMyQuizzes();
       }
     }
+    console.log('=== END MOVE TO NEXT DEBUG ==='); // Debug log
   };
 
   const handlePreviousQuestion = () => {
@@ -533,21 +681,40 @@ const UserQuizTab: React.FC = () => {
             const statusColor = getQuizStatusColor(status);
             const progress = completionStatus?.completionPercentage || 0;
             const isCompleted = completionStatus?.isCompleted;
+            
+            // For timed quizzes, check if user has started (treat as completed for one-time attempt)
+            const isTimedQuiz = shouldUseTimedSystem(quiz);
+            const sessionStatus = quizSessionStatus[quiz.id];
+            const isTimedQuizStarted = isTimedQuiz && sessionStatus?.hasStarted;
+            const shouldShowAsCompleted = isCompleted || isTimedQuizStarted;
             const now = new Date();
             const endTime = new Date(quiz.endTime);
             const remainingTimeSeconds = Math.max(0, Math.floor((endTime.getTime() - now.getTime()) / 1000));
 
             // Progress bar color
+            let actualProgress = progress;
+            if (isTimedQuiz && sessionStatus && sessionStatus.session) {
+              const totalQuestions = sessionStatus.session.totalQuestions || quiz.totalQuestions;
+              const questionsAnswered = sessionStatus.session.questionsAnswered || 0;
+              if (totalQuestions > 0) {
+                actualProgress = (questionsAnswered / totalQuestions) * 100;
+              }
+            }
+            
             let progressBarColor = 'bg-gradient-to-r from-blue-500 to-indigo-500';
-            if (progress === 100) progressBarColor = 'bg-gradient-to-r from-green-500 to-emerald-500';
-            else if (progress >= 80) progressBarColor = 'bg-gradient-to-r from-yellow-400 to-yellow-600';
-            else if (progress <= 30) progressBarColor = 'bg-gradient-to-r from-red-500 to-orange-500';
+            if (shouldShowAsCompleted || actualProgress === 100) {
+              progressBarColor = 'bg-gradient-to-r from-green-500 to-emerald-500';
+            } else if (actualProgress >= 80) {
+              progressBarColor = 'bg-gradient-to-r from-yellow-400 to-yellow-600';
+            } else if (actualProgress <= 30) {
+              progressBarColor = 'bg-gradient-to-r from-red-500 to-orange-500';
+            }
 
             return (
               <div
                 key={quiz.id}
                 className={`gaming-card p-4 sm:p-5 flex flex-col justify-between hover-lift group ${
-                  isCompleted ? 'opacity-95 bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/50' : ''
+                  shouldShowAsCompleted ? 'opacity-95 bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-500/50' : ''
                 }`}
               >
                 <div>
@@ -567,18 +734,32 @@ const UserQuizTab: React.FC = () => {
                   <div className="mb-3">
                     <div className="flex justify-between items-center text-xs text-gray-400 mb-1">
                       <span>Progress</span>
-                      <span>{completionStatus?.completedCount || 0} / {completionStatus?.totalAssigned || 0} completed</span>
+                      <span>
+                        {isTimedQuiz && sessionStatus ? (
+                          // For timed quizzes, show session-based progress
+                          sessionStatus.isCompleted ? (
+                            `Quiz Completed (${sessionStatus.session?.questionsAnswered || 0}/${sessionStatus.session?.totalQuestions || quiz.totalQuestions})`
+                          ) : sessionStatus.hasStarted ? (
+                            `In Progress (${sessionStatus.session?.questionsAnswered || 0}/${sessionStatus.session?.totalQuestions || quiz.totalQuestions})`
+                          ) : (
+                            `Ready to Start (${quiz.totalQuestions} questions)`
+                          )
+                        ) : (
+                          // For traditional quizzes, show normal completion status
+                          `${completionStatus?.completedCount || 0} / ${completionStatus?.totalAssigned || 0} completed`
+                        )}
+                      </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
                         className={`${progressBarColor} h-2 rounded-full transition-all duration-300`}
-                        style={{ width: `${progress}%` }}
+                        style={{ width: `${actualProgress}%` }}
                       ></div>
                     </div>
                   </div>
 
                   {/* Quiz Timer Display */}
-                  {status === 'ACTIVE' && !isCompleted && canAccess && (
+                  {status === 'ACTIVE' && !shouldShowAsCompleted && canAccess && (
                     <div className={`mb-3 p-3 rounded-lg border-2 ${
                       remainingTimeSeconds <= 300 
                         ? 'bg-red-50 border-red-200 text-red-800' 
@@ -623,7 +804,7 @@ const UserQuizTab: React.FC = () => {
                 </div>
 
                 <div className="mt-6">
-                  {isCompleted ? (
+                  {shouldShowAsCompleted ? (
                     <div className="flex flex-col gap-2">
                       <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-lg text-center font-semibold text-sm">
                         ✅ Quiz Completed
@@ -631,26 +812,64 @@ const UserQuizTab: React.FC = () => {
                       <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-center text-xs">
                         ⚠️ Cannot retake this quiz
                       </div>
-                      {quiz.userScore !== undefined && (
-                        <div className="bg-gray-100 text-gray-800 px-3 py-2 rounded-lg text-center text-xs">
-                          Your Score: {quiz.userScore} / {quiz.maxScore || '?'} points
-                        </div>
-                      )}
+                      {/* Score display removed for completed quizzes */}
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2">
                       {/* Start/Resume/Review Button */}
                       <div className="mt-4 flex flex-col space-y-2">
-                        <button
-                          className="w-full btn-gaming"
-                          onClick={() => handleStartQuiz(quiz)}
-                          disabled={!canAccess || isCompleted}
-                        >
-                          Start Quiz
-                        </button>
-                        {isCompleted && (
-                          <p className="text-green-500 text-xs mt-1">You have already completed this quiz. Retake is not allowed.</p>
-                        )}
+                        {(() => {
+                          const isTimedQuiz = shouldUseTimedSystem(quiz);
+                          const isExpired = isQuizExpired(quiz);
+                          
+                          // Show different button text and state for timed vs traditional quizzes
+                          if (isExpired) {
+                            return (
+                              <>
+                                <button className="w-full btn-gaming opacity-50 cursor-not-allowed" disabled>
+                                  Quiz Expired
+                                </button>
+                                <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 text-xs text-center">
+                                  This quiz has expired and is no longer available
+                                </div>
+                              </>
+                            );
+                          }
+                          
+                          if (isTimedQuiz) {
+                            return (
+                              <>
+                                <button
+                                  className="w-full btn-gaming flex items-center justify-center space-x-2"
+                                  onClick={() => handleStartQuiz(quiz)}
+                                  disabled={!canAccess || shouldShowAsCompleted}
+                                >
+                                  <Timer className="h-4 w-4" />
+                                  <span>Start Timed Quiz</span>
+                                </button>
+                                <div className="bg-blue-50 text-blue-700 border border-blue-200 rounded-lg px-3 py-2 text-xs text-center">
+                                  ⏱️ 30 seconds per question • One attempt only
+                                </div>
+                              </>
+                            );
+                          }
+                          
+                          // Traditional quiz
+                          return (
+                            <>
+                              <button
+                                className="w-full btn-gaming"
+                                onClick={() => handleStartQuiz(quiz)}
+                                disabled={!canAccess || shouldShowAsCompleted}
+                              >
+                                Start Quiz
+                              </button>
+                              {shouldShowAsCompleted && (
+                                <p className="text-green-500 text-xs mt-1">You have already completed this quiz. Retake is not allowed.</p>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       {!canAccess && message && (
                         <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 text-xs mt-1 text-center">
@@ -743,9 +962,8 @@ const UserQuizTab: React.FC = () => {
                     <div>
                       <p className="font-medium text-green-900 text-sm sm:text-base">Question Already Answered</p>
                       <p className="text-xs sm:text-sm text-green-700">
-                        Score: {assignedQuestions[currentQuestionIndex]?.score || 0} points
                         {assignedQuestions[currentQuestionIndex]?.isCorrect !== undefined && (
-                          <span className="ml-2">
+                          <span>
                             {assignedQuestions[currentQuestionIndex].isCorrect ? '✓ Correct' : '✗ Incorrect'}
                           </span>
                         )}
@@ -945,6 +1163,15 @@ const UserQuizTab: React.FC = () => {
           </div>
         </div>
       )} */}
+
+      {/* Timed Quiz Component */}
+      {showTimedQuiz && timedQuizData && (
+        <TimedQuizComponent
+          quiz={timedQuizData}
+          onClose={handleTimedQuizClose}
+          onComplete={handleTimedQuizComplete}
+        />
+      )}
     </div>
   );
 };

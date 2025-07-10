@@ -42,7 +42,7 @@ export interface Quiz {
   title: string;
   description: string;
   status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'DRAFT';
-  questionDistributionType: 'SEQUENTIAL' | 'RANDOM';
+  questionOrderMode: 'SEQUENTIAL' | 'RANDOM';
   startTime: string;
   endTime: string;
   resultDisplayTime: string;
@@ -64,7 +64,7 @@ export interface UpdateQuizRequest {
   startTime: string;
   endTime: string;
   resultDisplayTime: string;
-  questionDistributionType: 'SEQUENTIAL' | 'RANDOM';
+  questionOrderMode: 'SEQUENTIAL' | 'RANDOM';
   questionsPerParticipant: number;
 }
 
@@ -82,7 +82,7 @@ export interface CreateQuizRequest {
   startTime: string;
   endTime: string;
   resultDisplayTime: string;
-  questionDistributionType: 'SEQUENTIAL' | 'RANDOM';
+  questionOrderMode: 'SEQUENTIAL' | 'RANDOM';
   questionsPerParticipant: number;
   questions: Omit<QuizQuestion, 'id' | 'createdAt' | 'updatedAt'>[];
 }

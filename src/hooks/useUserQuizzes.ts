@@ -12,6 +12,7 @@ export interface UserQuiz {
   title: string;
   description: string;
   status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
+  questionOrderMode?: 'SEQUENTIAL' | 'RANDOM';
   startTime: string;
   endTime: string;
   resultDisplayTime: string;
@@ -47,7 +48,7 @@ export interface QuizData {
   title: string;
   description: string;
   status: string;
-  questionDistributionType: string;
+  questionOrderMode: 'SEQUENTIAL' | 'RANDOM';
   startTime: string;
   endTime: string;
   resultDisplayTime: string;
@@ -172,14 +173,29 @@ export const useUserQuizzes = () => {
           setAssignedQuestions([]);
           return [];
         }
-        // Shuffle if quiz is random order
+        // Check if backend already shuffled or if we need to shuffle client-side
         if (questions && questions.length > 0) {
-          const orderMode = questions[0]?.quiz?.questionDistributionType || questions[0]?.quiz?.questionOrderMode;
+          const orderMode = questions[0]?.quiz?.questionOrderMode;
+          console.log('Question order mode:', orderMode); // Debug log
+          console.log('Questions received from API (in order):', questions.map(q => ({ id: q.question.id, order: questions.indexOf(q) }))); // Debug log
+          
           if (orderMode && orderMode.toUpperCase() === 'RANDOM') {
-            for (let i = questions.length - 1; i > 0; i--) {
+            console.log('⚠️ WARNING: Quiz is set to RANDOM but we are shuffling client-side. This should ideally be done server-side for consistency.'); // Debug log
+            console.log('Shuffling questions for random order'); // Debug log
+            
+            // Create a copy to avoid mutating the original array
+            const shuffledQuestions = [...questions];
+            
+            // Fisher-Yates shuffle algorithm
+            for (let i = shuffledQuestions.length - 1; i > 0; i--) {
               const j = Math.floor(Math.random() * (i + 1));
-              [questions[i], questions[j]] = [questions[j], questions[i]];
+              [shuffledQuestions[i], shuffledQuestions[j]] = [shuffledQuestions[j], shuffledQuestions[i]];
             }
+            
+            console.log('Questions after shuffle:', shuffledQuestions.map(q => ({ id: q.question.id, order: shuffledQuestions.indexOf(q) }))); // Debug log
+            questions = shuffledQuestions;
+          } else {
+            console.log('Using sequential order (no shuffle needed):', orderMode); // Debug log
           }
         }
         setAssignedQuestions(questions || []);
@@ -296,9 +312,11 @@ export const useUserQuizzes = () => {
       
       const response = await api.post(`/quizzes/${quizId}/questions/${questionId}/answer`, requestBody);
       if (response.data.success) {
+        console.log('✅ Answer submitted successfully to backend:', { questionId, response: response.data.data }); // Debug log
+        
         // Update the question in assignedQuestions
-        setAssignedQuestions(prev => 
-          prev.map(q => q.question.id === questionId ? { 
+        setAssignedQuestions(prev => {
+          const updated = prev.map(q => q.question.id === questionId ? { 
             ...q, 
             isCompleted: true,
             answer: answerData.selectedOption,
@@ -306,8 +324,16 @@ export const useUserQuizzes = () => {
             timeTaken: answerData.timeTaken,
             isCorrect: response.data.data.isCorrect || false,
             score: response.data.data.score || 0
-          } : q)
-        );
+          } : q);
+          
+          console.log('📝 Updated assignedQuestions state:', updated.map(q => ({ 
+            id: q.question.id, 
+            isCompleted: q.isCompleted, 
+            userAnswer: q.userAnswer 
+          }))); // Debug log
+          
+          return updated;
+        });
         return true;
       } else {
         throw new Error(response.data.message || 'Failed to submit answer');

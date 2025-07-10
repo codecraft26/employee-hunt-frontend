@@ -55,10 +55,13 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
+  const [showTeamScoresModal, setShowTeamScoresModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null);
   const [quizForWinner, setQuizForWinner] = useState<Quiz | null>(null);
+  const [quizForTeamScores, setQuizForTeamScores] = useState<Quiz | null>(null);
   const [teamRankings, setTeamRankings] = useState<TeamRankingItem[]>([]);
+  const [teamScoresRankings, setTeamScoresRankings] = useState<TeamRankingItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingRankings, setIsLoadingRankings] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
@@ -69,7 +72,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     startTime: '',
     endTime: '',
     resultDisplayTime: '',
-    questionDistributionType: 'SEQUENTIAL',
+    questionOrderMode: 'SEQUENTIAL',
     questionsPerParticipant: 1,
     questions: []
   });
@@ -79,7 +82,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     startTime: '',
     endTime: '',
     resultDisplayTime: '',
-    questionDistributionType: 'SEQUENTIAL',
+    questionOrderMode: 'SEQUENTIAL',
     questionsPerParticipant: 1
   });
   const [editQuestionData, setEditQuestionData] = useState<UpdateQuestionRequest>({
@@ -137,16 +140,16 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
   const handleCreateQuiz = () => {
     setShowCreateModal(true);
     setCreateQuizError(null); // Reset error on open
-    setCreateQuizData({
-      title: '',
-      description: '',
-      startTime: '',
-      endTime: '',
-      resultDisplayTime: '',
-      questionDistributionType: 'SEQUENTIAL',
-      questionsPerParticipant: 1,
-      questions: []
-    });
+          setCreateQuizData({
+        title: '',
+        description: '',
+        startTime: '',
+        endTime: '',
+        resultDisplayTime: '',
+        questionOrderMode: 'SEQUENTIAL',
+        questionsPerParticipant: 1,
+        questions: []
+      });
     setCurrentQuestion({
       question: '',
       options: ['', '', '', ''],
@@ -188,7 +191,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
         startTime: '',
         endTime: '',
         resultDisplayTime: '',
-        questionDistributionType: 'SEQUENTIAL',
+        questionOrderMode: 'SEQUENTIAL',
         questionsPerParticipant: 1,
         questions: []
       });
@@ -254,7 +257,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
         startTime: quiz.startTime.slice(0, 16), // Convert to datetime-local format
         endTime: quiz.endTime.slice(0, 16),
         resultDisplayTime: quiz.resultDisplayTime.slice(0, 16),
-        questionDistributionType: quiz.questionDistributionType,
+        questionOrderMode: quiz.questionOrderMode,
         questionsPerParticipant: quiz.questionsPerParticipant
       });
       setShowEditModal(true);
@@ -360,6 +363,47 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
       points: 10,
       timeLimit: 30
     });
+  };
+
+  const handleViewTeamScores = async (quiz: Quiz) => {
+    setQuizForTeamScores(quiz);
+    setIsLoadingRankings(true);
+    setTeamScoresRankings([]); // Clear previous rankings
+    setShowTeamScoresModal(true); // Show modal immediately with loading state
+    
+    try {
+      console.log('Fetching team scores for quiz:', quiz.id); // Debug log
+      
+      // Fetch team rankings for this quiz
+      const rankings = await getTeamRankings(quiz.id);
+      console.log('Received team scores rankings:', rankings); // Debug log
+      
+      if (rankings && rankings.length > 0) {
+        setTeamScoresRankings(rankings);
+      } else {
+        console.warn('No team scores received or empty rankings array');
+        setTeamScoresRankings([]);
+      }
+    } catch (err: any) {
+      console.error('Failed to load team scores:', err);
+      
+      let errorMessage = 'Failed to load team scores. ';
+      if (err.response?.status === 404) {
+        errorMessage += 'Quiz results not found. No teams may have participated in this quiz yet.';
+      } else if (err.response?.status === 403) {
+        errorMessage += 'Access denied. Admin permissions required.';
+      } else if (err.response?.status === 500) {
+        errorMessage += 'Server error. Please contact support.';
+      } else {
+        errorMessage += err.message || 'Please try again.';
+      }
+      
+      // Show error but keep modal open
+      alert(errorMessage);
+      setTeamScoresRankings([]);
+    } finally {
+      setIsLoadingRankings(false);
+    }
   };
 
   const handleDeclareWinner = async (quiz: Quiz) => {
@@ -659,8 +703,8 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Question Distribution</label>
                 <select
-                  value={editQuizData.questionDistributionType}
-                  onChange={(e) => setEditQuizData(prev => ({ ...prev, questionDistributionType: e.target.value as 'SEQUENTIAL' | 'RANDOM' }))}
+                                      value={editQuizData.questionOrderMode}
+                    onChange={(e) => setEditQuizData(prev => ({ ...prev, questionOrderMode: e.target.value as 'SEQUENTIAL' | 'RANDOM' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="SEQUENTIAL">Sequential</option>
@@ -783,8 +827,8 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Question Distribution</label>
                 <select
-                  value={createQuizData.questionDistributionType}
-                  onChange={(e) => setCreateQuizData(prev => ({ ...prev, questionDistributionType: e.target.value as 'SEQUENTIAL' | 'RANDOM' }))}
+                                      value={createQuizData.questionOrderMode}
+                    onChange={(e) => setCreateQuizData(prev => ({ ...prev, questionOrderMode: e.target.value as 'SEQUENTIAL' | 'RANDOM' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="SEQUENTIAL">Sequential</option>
@@ -1076,13 +1120,27 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
 
               <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
                 <div className="flex justify-between items-center">
-                  <button 
-                    onClick={() => handleViewQuiz(quiz)}
-                    className="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center space-x-1"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>View Details</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => handleViewQuiz(quiz)}
+                      className="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center space-x-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>View Details</span>
+                    </button>
+                    {quiz.status === 'COMPLETED' && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewTeamScores(quiz);
+                        }}
+                        className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1"
+                      >
+                        <Trophy className="h-4 w-4" />
+                        <span>View Team Scores</span>
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center space-x-2">
                     {quiz.status === 'COMPLETED' && !quiz.winningTeam && (
                       <button 
@@ -1177,7 +1235,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                     </div>
                     <div>
                       <span className="text-gray-600">Distribution:</span>
-                      <span className="ml-2">{selectedQuiz.questionDistributionType}</span>
+                      <span className="ml-2">{selectedQuiz.questionOrderMode}</span>
                     </div>
                   </div>
                 </div>
@@ -1404,6 +1462,169 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Team Scores Modal */}
+      {showTeamScoresModal && quizForTeamScores && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <Trophy className="h-6 w-6 text-blue-600" />
+                <h3 className="text-xl font-semibold text-gray-900">Team Scores & Results</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowTeamScoresModal(false);
+                  setQuizForTeamScores(null);
+                  setTeamScoresRankings([]);
+                  setIsLoadingRankings(false);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+                disabled={isLoadingRankings}
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="text-lg font-medium text-gray-900 mb-2">{quizForTeamScores.title}</h4>
+              <p className="text-gray-600 mb-4">Complete team-wise performance results for this quiz:</p>
+              
+              {/* Loading State */}
+              {isLoadingRankings && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-gray-600">Loading team scores...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Team Scores Display */}
+              {!isLoadingRankings && teamScoresRankings.length > 0 && (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-bold text-blue-600">{teamScoresRankings.length}</div>
+                        <div className="text-sm text-blue-800">Teams Participated</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-green-600">
+                          {teamScoresRankings[0]?.score || 0}
+                        </div>
+                        <div className="text-sm text-green-800">Highest Score</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-orange-600">
+                          {teamScoresRankings.length > 0 ? 
+                            Math.round(teamScoresRankings.reduce((sum, team) => sum + team.score, 0) / teamScoresRankings.length) : 0}
+                        </div>
+                        <div className="text-sm text-orange-800">Average Score</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-purple-600">
+                          {teamScoresRankings[0]?.totalQuestions || 0}
+                        </div>
+                        <div className="text-sm text-purple-800">Total Questions</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Team Rankings List */}
+                  <div className="space-y-3">
+                    {teamScoresRankings.map((ranking, index) => (
+                      <div 
+                        key={ranking.team.id}
+                        className={`p-4 border-2 rounded-lg transition-all duration-200 ${
+                          index === 0 ? 'border-yellow-300 bg-yellow-50' :
+                          index === 1 ? 'border-gray-300 bg-gray-50' :
+                          index === 2 ? 'border-orange-300 bg-orange-50' : 
+                          'border-gray-200 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg ${
+                              index === 0 ? 'bg-yellow-500' : 
+                              index === 1 ? 'bg-gray-400' : 
+                              index === 2 ? 'bg-orange-400' : 'bg-gray-300'
+                            }`}>
+                              {ranking.rank}
+                            </div>
+                            <div>
+                              <h5 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
+                                <span>{ranking.team.name}</span>
+                                {index === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                              </h5>
+                              <p className="text-sm text-gray-600">{ranking.team.description}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-gray-900">{ranking.score} pts</div>
+                            <div className="text-sm text-gray-500">
+                              {ranking.correctAnswers}/{ranking.totalQuestions} correct
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Accuracy: {ranking.totalQuestions > 0 ? Math.round((ranking.correctAnswers / ranking.totalQuestions) * 100) : 0}%
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              Avg Time: {ranking.averageTime.toFixed(1)}s
+                            </div>
+                          </div>
+                        </div>
+                        {index === 0 && (
+                          <div className="mt-3 text-xs font-medium text-yellow-700 flex items-center">
+                            <Trophy className="h-3 w-3 mr-1" />
+                            🏆 Top Performing Team
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* No Scores State */}
+              {!isLoadingRankings && teamScoresRankings.length === 0 && (
+                <div className="text-center py-12">
+                  <Trophy className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Team Scores Available</h3>
+                  <p className="text-gray-500 mb-4">
+                    This could mean:
+                  </p>
+                  <ul className="text-sm text-gray-500 space-y-1 text-left max-w-md mx-auto">
+                    <li>• No teams have participated in this quiz yet</li>
+                    <li>• Quiz answers haven't been submitted by any teams</li>
+                    <li>• Teams haven't completed enough questions to generate scores</li>
+                    <li>• Quiz results are still being calculated</li>
+                  </ul>
+                  <button
+                    onClick={() => handleViewTeamScores(quizForTeamScores)}
+                    disabled={isLoadingRankings}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Refresh Scores
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowTeamScoresModal(false);
+                  setQuizForTeamScores(null);
+                  setTeamScoresRankings([]);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

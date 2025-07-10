@@ -23,7 +23,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
     startTime: '',
     endTime: '',
     resultDisplayTime: '',
-    questionDistributionType: 'SEQUENTIAL',
+    questionOrderMode: 'SEQUENTIAL',
     questionsPerParticipant: 1,
     questions: []
   });
@@ -55,7 +55,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
       startTime: '',
       endTime: '',
       resultDisplayTime: '',
-      questionDistributionType: 'SEQUENTIAL',
+      questionOrderMode: 'SEQUENTIAL',
       questionsPerParticipant: 1,
       questions: []
     });
@@ -350,8 +350,8 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
                 Question Distribution
               </label>
               <select
-                value={quizData.questionDistributionType}
-                onChange={(e) => handleQuizDataChange('questionDistributionType', e.target.value)}
+                value={quizData.questionOrderMode}
+                onChange={(e) => handleQuizDataChange('questionOrderMode', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="SEQUENTIAL">Sequential (in order)</option>

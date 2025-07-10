@@ -5,7 +5,7 @@ export interface Quiz {
   title: string;
   description?: string;
   status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
-  questionDistributionType: 'SEQUENTIAL' | 'RANDOM';
+  questionOrderMode: 'SEQUENTIAL' | 'RANDOM';
   startTime: Date;
   endTime: Date;
   resultDisplayTime?: Date;
@@ -84,7 +84,7 @@ export interface CreateQuizRequest {
   startTime: string;
   endTime: string;
   resultDisplayTime?: string;
-  questionDistributionType: 'SEQUENTIAL' | 'RANDOM';
+  questionOrderMode: 'SEQUENTIAL' | 'RANDOM';
   questionsPerParticipant: number;
   questions: CreateQuestionRequest[];
 }
@@ -181,8 +181,8 @@ export interface DeclareWinnerRequest {
 // Quiz Status Types
 export type QuizStatus = 'UPCOMING' | 'ACTIVE' | 'COMPLETED';
 
-// Question Distribution Types
-export type QuestionDistributionType = 'SEQUENTIAL' | 'RANDOM';
+// Question Order Mode Types
+export type QuestionOrderMode = 'SEQUENTIAL' | 'RANDOM';
 
 // Quiz Statistics
 export interface QuizStats {
@@ -204,4 +204,94 @@ export interface UserQuizProgress {
   totalScore: number;
   teamRank?: number;
   isCompleted: boolean;
+}
+
+// Timed Quiz Session Types
+export interface TimedQuizSession {
+  id: string;
+  quiz: Quiz;
+  user: User;
+  team: Team;
+  startedAt: string;
+  completedAt?: string;
+  totalScore: number;
+  questionsAnswered: number;
+  questionsTimedOut: number;
+  currentQuestionIndex: number;
+  totalQuestions: number;
+  isCompleted: boolean;
+  answers: TimedQuizAnswer[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimedQuizAnswer {
+  id: string;
+  session: TimedQuizSession;
+  question: QuizQuestion;
+  selectedOption?: number;
+  isCorrect: boolean;
+  pointsEarned: number;
+  timeTaken: number;
+  timedOut: boolean;
+  answeredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimedQuizSessionStatus {
+  hasStarted: boolean;
+  isCompleted: boolean;
+  canStart: boolean;
+  message: string;
+  session?: TimedQuizSession;
+}
+
+export interface TimedQuizCurrentQuestion {
+  question?: QuizQuestion;
+  questionNumber: number;
+  totalQuestions: number;
+  timeRemaining: number;
+  isCompleted: boolean;
+}
+
+export interface StartTimedQuizResponse {
+  success: boolean;
+  message: string;
+  data: {
+    sessionId: string;
+    quiz: Quiz;
+    currentQuestion: QuizQuestion;
+    questionNumber: number;
+    totalQuestions: number;
+    timeLimit: number;
+    startedAt: string;
+  };
+}
+
+export interface SubmitTimedAnswerRequest {
+  selectedOption?: number;
+}
+
+export interface SubmitTimedAnswerResponse {
+  success: boolean;
+  message: string;
+  data: {
+    isCorrect: boolean;
+    pointsEarned: number;
+    nextQuestion?: QuizQuestion;
+    questionNumber: number;
+    totalQuestions: number;
+    isQuizCompleted: boolean;
+  };
+}
+
+export interface TimedQuizSessionStatusResponse {
+  success: boolean;
+  data: TimedQuizSessionStatus;
+}
+
+export interface TimedQuizCurrentQuestionResponse {
+  success: boolean;
+  data: TimedQuizCurrentQuestion;
 } 

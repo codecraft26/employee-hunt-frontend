@@ -538,9 +538,11 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                   <strong>Members:</strong> {selectedTeam.members.length} 
                   {selectedTeam.members.length > 0 && " (members will be unassigned)"}
                 </p>
-                <p className="text-sm text-gray-700">
-                  <strong>Score:</strong> {selectedTeam.score}
-                </p>
+                {selectedTeam.score && selectedTeam.score > 0 && (
+                  <p className="text-sm text-gray-700">
+                    <strong>Score:</strong> {selectedTeam.score}
+                  </p>
+                )}
               </div>
 
               <p className="text-sm text-red-600 mt-3">
@@ -672,15 +674,17 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid gap-4 ${team.score && team.score > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     <div>
                       <p className="text-sm text-gray-600">Members</p>
                       <p className="text-2xl font-bold text-gray-900">{team.members.length}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Score</p>
-                      <p className="text-2xl font-bold text-gray-900">{team.score}</p>
-                    </div>
+                    {team.score && team.score > 0 && (
+                      <div>
+                        <p className="text-sm text-gray-600">Score</p>
+                        <p className="text-2xl font-bold text-gray-900">{team.score}</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -919,24 +923,28 @@ const TeamsTab: React.FC<TeamsTabProps> = ({
                   <p className="text-2xl font-bold text-blue-900">{selectedTeam.members.length}</p>
                 </div>
 
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Award className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-medium text-green-600">Total Score</span>
+                {selectedTeam.score && selectedTeam.score > 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Award className="h-5 w-5 text-green-600" />
+                      <span className="text-sm font-medium text-green-600">Total Score</span>
+                    </div>
+                    <p className="text-2xl font-bold text-green-900">{selectedTeam.score}</p>
                   </div>
-                  <p className="text-2xl font-bold text-green-900">{selectedTeam.score}</p>
-                </div>
+                )}
               </div>
 
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Target className="h-5 w-5 text-purple-600" />
-                  <span className="text-sm font-medium text-purple-600">Average Score per Member</span>
+              {selectedTeam.score && selectedTeam.score > 0 && (
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Target className="h-5 w-5 text-purple-600" />
+                    <span className="text-sm font-medium text-purple-600">Average Score per Member</span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {selectedTeam.members.length > 0 ? Math.round(selectedTeam.score / selectedTeam.members.length) : 0}
+                  </p>
                 </div>
-                <p className="text-2xl font-bold text-purple-900">
-                  {selectedTeam.members.length > 0 ? Math.round(selectedTeam.score / selectedTeam.members.length) : 0}
-                </p>
-              </div>
+              )}
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
