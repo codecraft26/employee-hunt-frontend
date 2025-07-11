@@ -791,7 +791,13 @@ const UserQuizTab: React.FC = () => {
                       <span>{quiz.questionsPerParticipant} Questions</span>
                     </div>
                     <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-3 text-yellow-400" />
+                      <Calendar className="w-4 h-4 mr-3 text-green-400" />
+                      <span>
+                        Starts: {formatQuizDate(quiz.startTime)}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-3 text-yellow-400" />
                       <span>
                         Ends: {formatQuizDate(quiz.endTime)}
                       </span>
