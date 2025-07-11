@@ -282,6 +282,28 @@ export const usePhotoWall = () => {
     }
   }, []);
 
+  // Fetch liked collages for the current user
+  const getLikedCollageIds = useCallback(async (): Promise<string[]> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<{ success: boolean; data: string[] }>(
+        '/photo-wall/collages/liked'
+      );
+      if (response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      } else {
+        throw new Error('Failed to fetch liked collages');
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to fetch liked collages';
+      setError(errorMessage);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   // Admin Functions
   const getAllPhotos = useCallback(async (status?: string): Promise<Photo[]> => {
     setLoading(true);
@@ -690,6 +712,7 @@ export const usePhotoWall = () => {
     getCurrentCollage,
     getPublishedCollages,
     likeCollage,
+    getLikedCollageIds,
     
     // Admin functions
     getAllPhotos,

@@ -283,7 +283,7 @@ function AllCollageCard({ collage, isLiked, likingState, handleLike }: AllCollag
 }
 
 const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' }) => {
-  const { getPublishedCollages, likeCollage, loading, error } = usePhotoWall();
+  const { getPublishedCollages, likeCollage, getLikedCollageIds, loading, error } = usePhotoWall();
   const [collages, setCollages] = useState<CollageType[]>([]);
   const [filteredCollages, setFilteredCollages] = useState<CollageType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -314,12 +314,21 @@ const AllCollagesViewer: React.FC<AllCollagesViewerProps> = ({ className = '' })
   }, [searchTerm]);
 
   useEffect(() => {
-    const liked: { [key: string]: boolean } = {};
-    collages.forEach((collage) => {
-      liked[collage.id] = localStorage.getItem(`liked_collage_${collage.id}`) === 'true';
-    });
-    setLikedCollages(liked);
-  }, [collages]);
+    // Fetch liked collage IDs from API and update likedCollages state
+    const fetchLikedCollages = async () => {
+      try {
+        const likedIds = await getLikedCollageIds();
+        const liked: { [key: string]: boolean } = {};
+        likedIds.forEach((id) => {
+          liked[id] = true;
+        });
+        setLikedCollages(liked);
+      } catch (err) {
+        setLikedCollages({});
+      }
+    };
+    fetchLikedCollages();
+  }, [collages, getLikedCollageIds]);
 
   const fetchCollages = async () => {
     const publishedCollages = await getPublishedCollages();
