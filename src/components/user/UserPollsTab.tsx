@@ -112,25 +112,27 @@ const UserPollsTab: React.FC<UserPollsTabProps> = ({ onVoteSuccess }) => {
     }
   };
 
-  // Check if results should be displayed based on resultDisplayTime
+  // Check if results should be displayed based on resultDisplayTime and publish status
   const canShowPollResults = (poll: Vote) => {
-    if (poll.status === VoteStatus.COMPLETED) {
-      return true; // Always show results for completed polls
-    }
-    
+    // Results can only be shown if they have been published by admin
     if (!poll.isResultPublished) {
-      return false; // Results not published yet
+      return false; // Results not published yet by admin
     }
 
-    if (!poll.resultDisplayTime) {
-      // If no resultDisplayTime is set, show results immediately when published (no time restriction)
-      return true;
+    // If poll is completed and results are published, check if display time has passed
+    if (poll.status === VoteStatus.COMPLETED) {
+      if (!poll.resultDisplayTime) {
+        // If no resultDisplayTime is set, show results immediately when published (no time restriction)
+        return true;
+      }
+      
+      // If resultDisplayTime is set, check if current time has passed it
+      const now = new Date().getTime();
+      const resultDisplayTime = new Date(poll.resultDisplayTime).getTime();
+      return now >= resultDisplayTime;
     }
     
-    // If resultDisplayTime is set, check if current time has passed it
-    const now = new Date().getTime();
-    const resultDisplayTime = new Date(poll.resultDisplayTime).getTime();
-    return now >= resultDisplayTime;
+    return false; // For non-completed polls, don't show results even if published
   };
 
   if (loading && polls.length === 0) {
