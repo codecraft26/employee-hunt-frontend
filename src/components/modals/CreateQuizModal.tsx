@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { X, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
-import { useQuizzes } from '../../hooks/useQuizzes';
-import { CreateQuizRequest, CreateQuestionRequest } from '../../types/quiz';
+import { useQuizzes, CreateQuizRequest, QuizQuestion } from '../../hooks/useQuizzes';
+import { CreateQuestionRequest } from '../../types/quiz';
 import { useToast } from '../shared/ToastContainer';
 
 interface CreateQuizModalProps {
@@ -28,7 +28,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
     questions: []
   });
 
-  const [currentQuestion, setCurrentQuestion] = useState<CreateQuestionRequest>({
+  const [currentQuestion, setCurrentQuestion] = useState<Omit<QuizQuestion, 'id' | 'createdAt' | 'updatedAt'>>({
     question: '',
     options: ['', '', '', ''],
     correctAnswer: 0,
@@ -38,7 +38,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const { createQuiz, createLoading } = useQuizzes();
+  const { createQuiz, loading } = useQuizzes();
   const { showSuccess, showError } = useToast();
 
   // Reset form when modal opens/closes
@@ -77,7 +77,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
       newErrors.title = 'Quiz title is required';
     }
 
-    if (!quizData.description.trim()) {
+    if (!quizData.description || !quizData.description.trim()) {
       newErrors.description = 'Quiz description is required';
     }
 
@@ -98,7 +98,11 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
       }
     }
 
-    if (quizData.questionsPerParticipant < 1) {
+    const questionsPerParticipant = typeof quizData.questionsPerParticipant === 'string' ? 
+      parseInt(quizData.questionsPerParticipant) || 0 : 
+      quizData.questionsPerParticipant;
+    
+    if (questionsPerParticipant < 1) {
       newErrors.questionsPerParticipant = 'Questions per participant must be at least 1';
     }
 
@@ -117,6 +121,10 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
 
     if (currentQuestion.options.some(option => !option.trim())) {
       return 'All options must be filled';
+    }
+
+    if (currentQuestion.correctAnswer === null || currentQuestion.correctAnswer === undefined) {
+      return 'Please select the correct answer';
     }
 
     if (currentQuestion.points < 1) {
@@ -140,7 +148,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
     }
   }, [errors]);
 
-  const handleQuestionChange = useCallback((field: keyof CreateQuestionRequest, value: any) => {
+  const handleQuestionChange = useCallback((field: keyof Omit<QuizQuestion, 'id' | 'createdAt' | 'updatedAt'>, value: any) => {
     setCurrentQuestion(prev => ({ ...prev, [field]: value }));
   }, []);
 
@@ -263,10 +271,26 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
                   type="number"
                   min="1"
                   value={quizData.questionsPerParticipant}
-                  onChange={(e) => handleQuizDataChange('questionsPerParticipant', parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') {
+                      handleQuizDataChange('questionsPerParticipant', '' as any);
+                    } else {
+                      const numValue = parseInt(value);
+                      if (!isNaN(numValue) && numValue > 0) {
+                        handleQuizDataChange('questionsPerParticipant', numValue);
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                      handleQuizDataChange('questionsPerParticipant', 1);
+                    }
+                  }}
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     errors.questionsPerParticipant ? 'border-red-300' : 'border-gray-300'
                   }`}
+                  placeholder="Enter number of questions"
                 />
                 {errors.questionsPerParticipant && (
                   <p className="text-red-600 text-sm mt-1">{errors.questionsPerParticipant}</p>
@@ -506,10 +530,10 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={createLoading}
+              disabled={loading}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
-              {createLoading ? (
+                              {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
                   <span>Creating...</span>

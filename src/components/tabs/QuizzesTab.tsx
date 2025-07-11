@@ -162,9 +162,15 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
 
   const handleSubmitQuiz = async () => {
     setCreateQuizError(null);
+    
+    // Ensure questionsPerParticipant is a valid number
+    const questionsPerParticipant = typeof createQuizData.questionsPerParticipant === 'string' ? 
+      parseInt(createQuizData.questionsPerParticipant) || 1 : 
+      createQuizData.questionsPerParticipant || 1;
+    
     if (!createQuizData.title.trim() || !createQuizData.description.trim() || 
         !createQuizData.startTime || !createQuizData.endTime || 
-        createQuizData.questions.length === 0) {
+        createQuizData.questions.length === 0 || questionsPerParticipant < 1) {
       setCreateQuizError('Please fill in all required fields and add at least one question.');
       return;
     }
@@ -172,6 +178,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     // Convert datetime-local to ISO string format
     const quizPayload = {
       ...createQuizData,
+      questionsPerParticipant,
       startTime: new Date(createQuizData.startTime).toISOString(),
       endTime: new Date(createQuizData.endTime).toISOString(),
       resultDisplayTime: createQuizData.resultDisplayTime ? 
@@ -290,7 +297,12 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
   };
 
   const handleUpdateQuiz = async () => {
-    if (!selectedQuiz || !editQuizData.title.trim() || !editQuizData.description.trim()) {
+    // Ensure questionsPerParticipant is a valid number
+    const questionsPerParticipant = typeof editQuizData.questionsPerParticipant === 'string' ? 
+      parseInt(editQuizData.questionsPerParticipant) || 1 : 
+      editQuizData.questionsPerParticipant || 1;
+      
+    if (!selectedQuiz || !editQuizData.title.trim() || !editQuizData.description.trim() || questionsPerParticipant < 1) {
       alert('Please fill in all required fields.');
       return;
     }
@@ -298,6 +310,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     // Convert datetime-local to ISO string format
     const quizPayload = {
       ...editQuizData,
+      questionsPerParticipant,
       startTime: new Date(editQuizData.startTime).toISOString(),
       endTime: new Date(editQuizData.endTime).toISOString(),
       resultDisplayTime: new Date(editQuizData.resultDisplayTime).toISOString(),
@@ -652,8 +665,24 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                     type="number"
                     min="1"
                     value={editQuizData.questionsPerParticipant}
-                    onChange={(e) => setEditQuizData(prev => ({ ...prev, questionsPerParticipant: parseInt(e.target.value) || 1 }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setEditQuizData(prev => ({ ...prev, questionsPerParticipant: '' as any }));
+                      } else {
+                        const numValue = parseInt(value);
+                        if (!isNaN(numValue) && numValue > 0) {
+                          setEditQuizData(prev => ({ ...prev, questionsPerParticipant: numValue }));
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                        setEditQuizData(prev => ({ ...prev, questionsPerParticipant: 1 }));
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter number of questions"
                   />
                 </div>
               </div>
@@ -776,8 +805,24 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                     type="number"
                     min="1"
                     value={createQuizData.questionsPerParticipant}
-                    onChange={(e) => setCreateQuizData(prev => ({ ...prev, questionsPerParticipant: parseInt(e.target.value) || 1 }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '') {
+                        setCreateQuizData(prev => ({ ...prev, questionsPerParticipant: '' as any }));
+                      } else {
+                        const numValue = parseInt(value);
+                        if (!isNaN(numValue) && numValue > 0) {
+                          setCreateQuizData(prev => ({ ...prev, questionsPerParticipant: numValue }));
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                        setCreateQuizData(prev => ({ ...prev, questionsPerParticipant: 1 }));
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Enter number of questions"
                   />
                 </div>
               </div>
