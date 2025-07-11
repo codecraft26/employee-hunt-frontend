@@ -970,7 +970,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                       <p className="text-xs text-gray-500 mt-1">Select the radio button for the correct answer</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
                         <input
@@ -978,16 +978,6 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                           min="1"
                           value={currentQuestion.points}
                           onChange={(e) => setCurrentQuestion(prev => ({ ...prev, points: parseInt(e.target.value) || 10 }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Time Limit (seconds)</label>
-                        <input
-                          type="number"
-                          min="10"
-                          value={currentQuestion.timeLimit}
-                          onChange={(e) => setCurrentQuestion(prev => ({ ...prev, timeLimit: parseInt(e.target.value) || 30 }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
@@ -1388,7 +1378,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
                               <input
@@ -1396,16 +1386,6 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                                 min="1"
                                 value={editQuestionData.points}
                                 onChange={(e) => setEditQuestionData(prev => ({ ...prev, points: parseInt(e.target.value) || 10 }))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Time Limit (seconds)</label>
-                              <input
-                                type="number"
-                                min="10"
-                                value={editQuestionData.timeLimit}
-                                onChange={(e) => setEditQuestionData(prev => ({ ...prev, timeLimit: parseInt(e.target.value) || 30 }))}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                               />
                             </div>

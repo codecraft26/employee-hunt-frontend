@@ -131,10 +131,6 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
       return 'Points must be at least 1';
     }
 
-    if (currentQuestion.timeLimit < 10) {
-      return 'Time limit must be at least 10 seconds';
-    }
-
     return null;
   }, [currentQuestion]);
 
@@ -481,7 +477,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
                   <p className="text-xs text-gray-500 mt-1">Select the radio button for the correct answer</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
                     <input
@@ -489,16 +485,6 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
                       min="1"
                       value={currentQuestion.points}
                       onChange={(e) => handleQuestionChange('points', parseInt(e.target.value) || 10)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Time Limit (seconds)</label>
-                    <input
-                      type="number"
-                      min="10"
-                      value={currentQuestion.timeLimit}
-                      onChange={(e) => handleQuestionChange('timeLimit', parseInt(e.target.value) || 30)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
