@@ -296,7 +296,12 @@ export const useUserQuizzes = () => {
     if (isQuestionAnswered(questionId)) {
       console.log('Question already answered locally, skipping submission');
       setLoading(false);
-      return true;
+      return {
+        success: true,
+        isCorrect: false, // Unknown since it was already answered
+        pointsEarned: 0,
+        selectedOption: answerData.selectedOption
+      };
     }
     
     try {
@@ -311,6 +316,10 @@ export const useUserQuizzes = () => {
       console.log('Request body:', requestBody); // Debug log
       
       const response = await api.post(`/quizzes/${quizId}/questions/${questionId}/answer`, requestBody);
+      console.log('🔍 Full backend response:', response.data);
+      console.log('🔍 Response data fields:', Object.keys(response.data.data || {}));
+      console.log('🔍 Response data values:', response.data.data);
+      
       if (response.data.success) {
         console.log('✅ Answer submitted successfully to backend:', { questionId, response: response.data.data }); // Debug log
         
@@ -334,7 +343,14 @@ export const useUserQuizzes = () => {
           
           return updated;
         });
-        return true;
+        
+        // Return the response data for immediate feedback
+        return {
+          success: true,
+          isCorrect: response.data.data.isCorrect || false,
+          pointsEarned: response.data.data.pointsEarned || response.data.data.score || 0,
+          selectedOption: answerData.selectedOption
+        };
       } else {
         throw new Error(response.data.message || 'Failed to submit answer');
       }
@@ -359,8 +375,13 @@ export const useUserQuizzes = () => {
           } : q)
         );
         
-        // Return true since the question is effectively answered
-        return true;
+        // Return success data since the question is effectively answered
+        return {
+          success: true,
+          isCorrect: false, // Unknown since it was already answered
+          pointsEarned: 0,
+          selectedOption: answerData.selectedOption
+        };
       }
       
       setError(errorMessage);
