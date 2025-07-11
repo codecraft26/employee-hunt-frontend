@@ -265,18 +265,16 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     return (
       <div
         key={option.id}
-        className={`border rounded-lg p-4 transition-all ${
+        className={`border rounded-lg p-4 transition-all bg-slate-700 border-slate-600 ${
           canVote ? 'cursor-pointer' : ''
         } ${
           canVote
             ? isSelected
-              ? 'ring-2 ring-indigo-500 shadow-lg bg-slate-700 border-slate-600'
-              : 'hover:ring-1 hover:ring-indigo-400 bg-slate-700 border-slate-600'
-            : hasVoted && isUserSelection
-              ? 'ring-2 ring-green-500 bg-green-900/20 border-green-600'
-              : shouldShowUserVoteOnly && isUserSelection
-                ? 'ring-2 ring-green-500 bg-green-900/20 border-green-600'
-                : 'bg-slate-700 border-slate-600'
+              ? 'ring-2 ring-indigo-500 shadow-lg'
+              : 'hover:ring-1 hover:ring-indigo-400'
+            : shouldShowUserVoteOnly && isUserSelection
+              ? 'ring-2 ring-green-500'
+              : ''
         }`}
         onClick={() => canVote && handleOptionSelect(option.id)}
       >
@@ -362,12 +360,11 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                 </div>
               )}
               
-              {/* User Selection Indicator - show when user has voted */}
-              {hasVoted && isUserSelection && (
+              {/* User Selection Indicator */}
+              {shouldShowUserVoteOnly && isUserSelection && (
                 <div className="text-right">
-                  <div className="text-sm font-medium text-green-400 flex items-center space-x-1">
-                    <UserCheck className="h-4 w-4" />
-                    <span>Your Vote</span>
+                  <div className="text-sm font-medium text-green-400">
+                    ✓ Your Choice
                   </div>
                 </div>
               )}
@@ -446,7 +443,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               <Clock className="h-4 w-4" />
               <TimerDisplay 
                 variant="compact"
-                status="active"
+                status={getPollTimingStatus().status}
                 urgency={getPollTimingStatus().urgency}
                 startTime={poll.startTime}
                 endTime={poll.endTime}
@@ -460,8 +457,8 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               <Timer className="h-4 w-4" />
               <TimerDisplay 
                 variant="compact"
-                status="upcoming"
-                urgency="normal"
+                status={getPollTimingStatus().status}
+                urgency={getPollTimingStatus().urgency}
                 startTime={poll.startTime}
                 endTime={poll.endTime}
                 showCountdown={true}
@@ -526,7 +523,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               <div className="w-full h-full">
                 <TimerDisplay 
                   variant="detailed"
-                  status="active"
+                  status={getPollTimingStatus().status}
                   urgency={getPollTimingStatus().urgency}
                   startTime={poll.startTime}
                   endTime={poll.endTime}
@@ -558,8 +555,8 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               <div className="w-full h-full">
                 <TimerDisplay 
                   variant="detailed"
-                  status="upcoming"
-                  urgency="normal"
+                  status={getPollTimingStatus().status}
+                  urgency={getPollTimingStatus().urgency}
                   startTime={poll.startTime}
                   endTime={poll.endTime}
                   showCountdown={true}
@@ -590,8 +587,8 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                   Your selection: {userVoteDetails.map(detail => detail.name).join(', ')}
                 </p>
               </div>
-              {/* Toggle for full results view - only for users when results are actually available */}
-              {!isAdmin && shouldShowResults && (poll.isResultPublished && isResultDisplayTimeReached()) && (
+              {/* Toggle for full results view - only for users, not admins */}
+              {!isAdmin && shouldShowResults && (
                 <button
                   onClick={() => setShowFullResults(!showFullResults)}
                   className="text-green-600 hover:text-green-700 text-sm flex items-center space-x-1"
@@ -644,45 +641,9 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           </div>
         )}
 
-        {/* User's Vote Summary - show prominently when user has voted but results not available */}
-        {hasVoted && !shouldShowResults && userVoteDetails.length > 0 && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center space-x-2 mb-3">
-              <UserCheck className="h-5 w-5 text-green-600" />
-              <h3 className="font-medium text-green-800">Your Vote Submitted</h3>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-green-700">You voted for:</p>
-              <div className="space-y-1">
-                {userVoteDetails.map((detail, index) => (
-                  <div key={detail.id} className="flex items-center space-x-2 text-sm">
-                    <span className="w-6 h-6 bg-green-100 text-green-700 rounded-full flex items-center justify-center font-medium text-xs">
-                      {index + 1}
-                    </span>
-                    <span className="text-green-800 font-medium">{detail.name}</span>
-                  </div>
-                ))}
-              </div>
-              {poll.status === VoteStatus.COMPLETED && !poll.isResultPublished && (
-                <p className="text-xs text-green-600 mt-2">
-                  Poll results will be available once published by an administrator.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Poll Options */}
-        {(canVote || shouldShowResults || hasVoted) && poll.options && poll.options.length > 0 ? (
+        {(canVote || shouldShowResults) && poll.options && poll.options.length > 0 ? (
           <>
-            {/* Show poll question if available */}
-            {poll.description && (
-              <div className="mb-4 p-4 bg-slate-700 rounded-lg">
-                <h3 className="text-lg font-medium text-white mb-2">Poll Question</h3>
-                <p className="text-slate-300">{poll.description}</p>
-              </div>
-            )}
-
             {/* Search functionality for polls with many options (quick fix) */}
             {poll.options.length > 5 && (
               <div className="mb-4">
@@ -733,23 +694,6 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
                     Found {filteredOptions.length} option{filteredOptions.length !== 1 ? 's' : ''} matching "{searchQuery}"
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Show vote summary when user has voted but viewing all options */}
-            {hasVoted && !shouldShowUserVoteOnly && !shouldShowResults && userVoteDetails.length > 0 && (
-              <div className="mb-4 p-3 bg-green-900/20 border border-green-600 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <UserCheck className="h-4 w-4 text-green-400" />
-                    <span className="text-sm text-green-300">
-                      You voted for {userVoteDetails.length} option{userVoteDetails.length > 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className="text-xs text-green-400">
-                    Your selections are highlighted below
-                  </div>
-                </div>
               </div>
             )}
 

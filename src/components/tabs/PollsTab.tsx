@@ -288,6 +288,11 @@ const PollsTab: React.FC<PollsTabProps> = ({
                         <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(poll.status)}`}>
                           {poll.status}
                         </span>
+                        {poll.isResultPublished && (
+                          <span className="inline-flex px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">
+                            Published
+                          </span>
+                        )}
                       </div>
                       {poll.description && (
                         <p className="text-sm text-gray-600 mb-3">{poll.description}</p>
@@ -525,16 +530,7 @@ const PollsTab: React.FC<PollsTabProps> = ({
                       </button>
                     )}
                     
-                    {poll.status === VoteStatus.COMPLETED && poll.isResultPublished && (
-                      <button 
-                        onClick={() => handleNotifyUsers(poll.id)}
-                        disabled={notifyingPollId === poll.id}
-                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center space-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Send className={`h-4 w-4 ${notifyingPollId === poll.id ? 'animate-spin' : ''}`} />
-                        <span>{notifyingPollId === poll.id ? 'Notifying...' : 'Notify Users'}</span>
-                      </button>
-                    )}
+
 
                     <button 
                       onClick={() => handleDeletePoll(poll.id)}
