@@ -60,7 +60,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   const isResultDisplayTimeReached = () => {
     if (!poll.resultDisplayTime) {
       // If no resultDisplayTime is set, show results immediately when published (no time restriction)
-      return true;
+      return false;
     }
     // If resultDisplayTime is set, check if current time has passed it
     const now = new Date().getTime();
@@ -73,10 +73,12 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   // - Users who voted: See only their vote unless they toggle to see full results
   // - Users who haven't voted: No results shown during active poll
   // - Published results: Users can see full results only if resultDisplayTime has passed
-  const shouldShowResults = showResults || poll.status === VoteStatus.COMPLETED || (poll.isResultPublished && isResultDisplayTimeReached());
+  const shouldShowResults = showResults && (poll.status === VoteStatus.COMPLETED && (poll.isResultPublished || isResultDisplayTimeReached()));
   const shouldShowFullResults = isAdmin || showFullResults || (poll.isResultPublished && isResultDisplayTimeReached()) || poll.status === VoteStatus.COMPLETED;
   const shouldShowUserVoteOnly = hasVoted && !shouldShowFullResults;
-
+  if(poll.title === 'ResultDisplayTime') {
+    console.log('shouldShowResults', shouldShowResults);
+  }
   // Fetch user's voting status when component mounts
   useEffect(() => {
     const fetchUserVoteStatus = async () => {
