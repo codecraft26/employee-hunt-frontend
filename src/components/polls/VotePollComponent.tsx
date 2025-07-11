@@ -45,7 +45,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     name: string;
     imageUrl?: string;
   }>>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
+
   const [alreadyVotedError, setAlreadyVotedError] = useState<string | null>(null);
   const [showFullResults, setShowFullResults] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,7 +60,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   const isResultDisplayTimeReached = () => {
     if (!poll.resultDisplayTime) {
       // If no resultDisplayTime is set, show results immediately when published (no time restriction)
-      return false;
+      return true;
     }
     // If resultDisplayTime is set, check if current time has passed it
     const now = new Date().getTime();
@@ -69,16 +69,14 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
   };
 
   // Determine what results to show:
-  // - Admins: Always see full results when available
+  // - Admins: Always see full results when poll is completed (to review before publishing)
   // - Users who voted: See only their vote unless they toggle to see full results
   // - Users who haven't voted: No results shown during active poll
-  // - Published results: Users can see full results only if resultDisplayTime has passed
-  const shouldShowResults = showResults && (poll.status === VoteStatus.COMPLETED && (poll.isResultPublished || isResultDisplayTimeReached()));
-  const shouldShowFullResults = isAdmin || showFullResults || (poll.isResultPublished && isResultDisplayTimeReached()) || poll.status === VoteStatus.COMPLETED;
+  // - Published results: Users can see full results only if resultDisplayTime has passed AND results are published
+  const shouldShowResults = showResults || (poll.status === VoteStatus.COMPLETED && (isAdmin || (poll.isResultPublished && isResultDisplayTimeReached())));
+  const shouldShowFullResults = (poll.status === VoteStatus.COMPLETED && isAdmin) || showFullResults || (poll.isResultPublished && isResultDisplayTimeReached());
   const shouldShowUserVoteOnly = hasVoted && !shouldShowFullResults;
-  if(poll.title === 'ResultDisplayTime') {
-    console.log('shouldShowResults', shouldShowResults);
-  }
+
   // Fetch user's voting status when component mounts
   useEffect(() => {
     const fetchUserVoteStatus = async () => {
@@ -88,8 +86,20 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           if (voteStatus) {
             setHasVoted(voteStatus.hasVoted);
             setSelectedOptions(voteStatus.selectedOptions);
-            if (voteStatus.selectedOptionsDetails) {
+            
+            // Set user vote details - use backend data if available, otherwise reconstruct from poll options
+            if (voteStatus.selectedOptionsDetails && voteStatus.selectedOptionsDetails.length > 0) {
               setUserVoteDetails(voteStatus.selectedOptionsDetails);
+            } else if (voteStatus.selectedOptions && voteStatus.selectedOptions.length > 0 && poll.options) {
+              // Reconstruct user vote details from selected option IDs and poll options
+              const reconstructedDetails = poll.options
+                .filter(option => voteStatus.selectedOptions.includes(option.id))
+                .map(option => ({
+                  id: option.id,
+                  name: option.name,
+                  imageUrl: option.imageUrl
+                }));
+              setUserVoteDetails(reconstructedDetails);
             }
           }
         } catch (err) {
@@ -99,7 +109,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
     };
 
     fetchUserVoteStatus();
-  }, [poll.id, getUserVoteStatus]);
+  }, [poll.id, poll.options, getUserVoteStatus]);
 
   useEffect(() => {
     // Clear any previous errors when poll changes
@@ -274,8 +284,8 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
             ? isSelected
               ? 'ring-2 ring-indigo-500 shadow-lg'
               : 'hover:ring-1 hover:ring-indigo-400'
-            : shouldShowUserVoteOnly && isUserSelection
-              ? 'ring-2 ring-green-500'
+            : hasVoted && isUserSelection
+              ? 'ring-2 ring-green-500 bg-green-900/20 border-green-600'
               : ''
         }`}
         onClick={() => canVote && handleOptionSelect(option.id)}
@@ -363,7 +373,7 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
               )}
               
               {/* User Selection Indicator */}
-              {shouldShowUserVoteOnly && isUserSelection && (
+              {hasVoted && isUserSelection && (
                 <div className="text-right">
                   <div className="text-sm font-medium text-green-400">
                     ✓ Your Choice
@@ -470,37 +480,25 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           )}
         </div>
 
-        {/* Poll Timeline - Collapsible */}
-        <div className="mt-4">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center space-x-2 text-sm text-slate-500 hover:text-slate-200 transition-colors"
-          >
-            <span>Poll Timeline</span>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
-          
-          {isExpanded && (
-            <div className="mt-3 space-y-2 text-sm">
+        {/* Poll Timeline - Always Visible */}
+        <div className="mt-4 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-slate-500">Starts:</span>
+            <span className="font-medium text-slate-200">{new Date(poll.startTime).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-500">Ends:</span>
+            <span className="font-medium text-slate-200">{new Date(poll.endTime).toLocaleString()}</span>
+          </div>
+          {poll.resultDisplayTime && (
+            <div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Starts:</span>
-                <span className="font-medium">{new Date(poll.startTime).toLocaleString()}</span>
+                <span className="text-slate-500">Results Display:</span>
+                <span className="font-medium text-slate-200">{new Date(poll.resultDisplayTime).toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Ends:</span>
-                <span className="font-medium">{new Date(poll.endTime).toLocaleString()}</span>
-              </div>
-              {poll.resultDisplayTime && (
-                <div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Results Display:</span>
-                    <span className="font-medium">{new Date(poll.resultDisplayTime).toLocaleString()}</span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Results will only be visible to users after this time
-                  </p>
-                </div>
-              )}
+              <p className="text-xs text-slate-400 mt-1">
+                Results will only be visible to users after this time
+              </p>
             </div>
           )}
         </div>
@@ -613,6 +611,16 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           </div>
         )}
 
+        {/* Poll Completed but Results Not Published Message */}
+        {!isAdmin && poll.status === VoteStatus.COMPLETED && !poll.isResultPublished && (
+          <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <p className="text-orange-700 text-sm font-medium">⏳ Poll Completed</p>
+            <p className="text-orange-600 text-xs mt-1">
+              This poll has ended. Results will be available once published by an administrator.
+            </p>
+          </div>
+        )}
+
         {/* Results Published but Display Time Not Reached Message */}
         {!isAdmin && poll.isResultPublished && !isResultDisplayTimeReached() && poll.resultDisplayTime && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -633,8 +641,28 @@ const VotePollComponent: React.FC<VotePollComponentProps> = ({
           </div>
         )}
 
+        {/* Already Voted Message */}
+        {hasVoted && !canVote && !shouldShowResults && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <UserCheck className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-green-800 font-medium">✓ You have already voted in this poll</p>
+                <p className="text-green-600 text-sm mt-1">
+                  {poll.status === VoteStatus.COMPLETED && !poll.isResultPublished 
+                    ? "Results will be available once published by an administrator."
+                    : poll.isResultPublished && poll.resultDisplayTime 
+                      ? `Results will be shown on ${new Date(poll.resultDisplayTime).toLocaleString()}`
+                      : "Thank you for participating!"
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Poll Options */}
-        {(canVote || shouldShowResults) && poll.options && poll.options.length > 0 ? (
+        {(canVote || shouldShowResults || hasVoted) && poll.options && poll.options.length > 0 ? (
           <>
             {/* Search functionality for polls with many options (quick fix) */}
             {poll.options.length > 5 && (
