@@ -19,6 +19,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { useQuizzes, Quiz, CreateQuizRequest, UpdateQuizRequest, UpdateQuestionRequest, TeamRankingItem } from '../../hooks/useQuizzes';
+import { apiService } from '../../services/apiService';
 
 interface QuizzesTabProps {
   onCreateQuiz?: () => void;
@@ -40,6 +41,7 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     getQuizById,
     declareWinner,
     getTeamRankings,
+    getQuizResults,
     updateQuiz,
     updateQuestion,
     deleteQuiz,
@@ -427,31 +429,48 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
     setShowWinnerModal(true); // Show modal immediately with loading state
     
     try {
-      console.log('Attempting to fetch team rankings for quiz:', quiz.id); // Debug log
+      console.log('Attempting to fetch quiz-specific results for declare winner:', quiz.id); // Debug log
       
-      // Fetch team rankings for this quiz
-      const rankings = await getTeamRankings(quiz.id);
-      console.log('Received rankings:', rankings); // Debug log
+      // Use quiz-specific results endpoint for admin (shows performance only in this quiz)
+      const data = await apiService.get(`/quizzes/${quiz.id}/quiz-specific-results`);
+      console.log('Received quiz-specific results:', data); // Debug log
       
-      if (rankings && rankings.length > 0) {
-        setTeamRankings(rankings);
+      if (data.success && data.data?.rankings && data.data.rankings.length > 0) {
+        // Transform quiz-specific results to match TeamRankingItem interface
+        const transformedRankings = data.data.rankings.map((ranking: any) => ({
+          rank: ranking.rank || 1,
+          team: {
+            id: ranking.team?.id || '',
+            name: ranking.team?.name || 'Unknown Team',
+            description: ranking.team?.description || '',
+            score: ranking.score || 0, // Quiz-specific score
+            createdAt: ranking.team?.createdAt || '',
+            updatedAt: ranking.team?.updatedAt || ''
+          },
+          score: ranking.score || 0, // Quiz-specific score
+          totalQuestions: ranking.answers || 0,
+          correctAnswers: ranking.correctAnswers || 0,
+          averageTime: 0 // Not available in new format
+        }));
+        
+        setTeamRankings(transformedRankings);
       } else {
-        console.warn('No rankings received or empty rankings array');
+        console.warn('No quiz-specific rankings received or empty rankings array');
         // Keep modal open but show no rankings message
         setTeamRankings([]);
       }
     } catch (err: any) {
-      console.error('Failed to load team rankings:', err);
+      console.error('Failed to load quiz-specific results:', err);
       
-      let errorMessage = 'Failed to load team rankings. ';
+      let errorMessage = 'Failed to load quiz performance data. ';
       if (err.response?.status === 404) {
-        errorMessage += 'Rankings endpoint not found. Please check if the quiz rankings are available.';
+        errorMessage += 'Quiz-specific results not found. Please ensure the quiz has been completed and has participants.';
       } else if (err.response?.status === 403) {
-        errorMessage += 'Access denied. Admin permissions required.';
+        errorMessage += 'Access denied. Admin permissions required for declaring winners.';
       } else if (err.response?.status === 500) {
         errorMessage += 'Server error. Please contact support.';
       } else {
-        errorMessage += err.message || 'Please try again.';
+        errorMessage += err.response?.data?.message || err.message || 'Please try again.';
       }
       
       // Show error but keep modal open
@@ -1591,15 +1610,6 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                           </div>
                           <div className="text-right">
                             <div className="text-2xl font-bold text-gray-900">{ranking.score} pts</div>
-                            <div className="text-sm text-gray-500">
-                              {ranking.correctAnswers}/{ranking.totalQuestions} correct
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              Accuracy: {ranking.totalQuestions > 0 ? Math.round((ranking.correctAnswers / ranking.totalQuestions) * 100) : 0}%
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              Avg Time: {ranking.averageTime.toFixed(1)}s
-                            </div>
                           </div>
                         </div>
                         {index === 0 && (
@@ -1680,7 +1690,12 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
 
             <div className="mb-6">
               <h4 className="text-lg font-medium text-gray-900 mb-2">{quizForWinner.title}</h4>
-              <p className="text-gray-600 mb-4">Select the winning team from the leaderboard below:</p>
+              <p className="text-gray-600 mb-2">Select the winning team from the leaderboard below:</p>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4">
+                <p className="text-orange-800 text-sm">
+                  <strong>Note:</strong> Scores shown are quiz-specific performance (only from this quiz), not overall team points.
+                </p>
+              </div>
               
               {/* Loading State */}
               {isLoadingRankings && (
@@ -1719,18 +1734,13 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-gray-900">{ranking.score} pts</div>
-                          <div className="text-sm text-gray-500">
-                            {ranking.correctAnswers}/{ranking.totalQuestions} correct
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            Avg: {ranking.averageTime.toFixed(1)}s
-                          </div>
+                          <div className="text-xs text-orange-600 font-medium">Quiz Score</div>
                         </div>
                       </div>
                       {index === 0 && (
                         <div className="mt-2 text-xs font-medium text-yellow-700 flex items-center">
                           <Trophy className="h-3 w-3 mr-1" />
-                          Recommended Winner (Highest Score)
+                          Recommended Winner (Best Quiz Performance)
                         </div>
                       )}
                     </div>
@@ -1742,15 +1752,15 @@ const QuizzesTab: React.FC<QuizzesTabProps> = ({
               {!isLoadingRankings && teamRankings.length === 0 && (
                 <div className="text-center py-12">
                   <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Team Rankings Available</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Quiz Performance Data Available</h3>
                   <p className="text-gray-500 mb-4">
                     This could mean:
                   </p>
                   <ul className="text-sm text-gray-500 space-y-1 text-left max-w-md mx-auto">
                     <li>• No teams have participated in this quiz yet</li>
-                    <li>• Quiz results haven't been calculated</li>
-                    <li>• Teams haven't completed enough questions</li>
-                    <li>• There's a temporary server issue</li>
+                    <li>• Quiz-specific results haven't been calculated</li>
+                    <li>• Teams haven't submitted any answers</li>
+                    <li>• The quiz-specific results endpoint is not available</li>
                   </ul>
                   <button
                     onClick={() => handleDeclareWinner(quizForWinner)}
