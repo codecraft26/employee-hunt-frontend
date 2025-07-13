@@ -1086,11 +1086,20 @@ const UserQuizTab: React.FC = () => {
                     <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-gradient transition-colors duration-300">
                       {quiz.title}
                     </h3>
-                    <div
-                      className={`flex items-center text-xs font-bold px-3 py-1 rounded-full ${statusColor}`}
-                    >
-                      {getStatusIcon(status)}
-                      <span className="ml-1.5">{status}</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <div
+                        className={`flex items-center text-xs font-bold px-3 py-1 rounded-full ${statusColor}`}
+                      >
+                        {getStatusIcon(status)}
+                        <span className="ml-1.5">{status}</span>
+                      </div>
+                      {/* Winner label */}
+                      {quiz.isResultPublished && quiz.winningTeam && (
+                        <div className="flex items-center mt-1 px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold shadow-sm">
+                          <Crown className="h-3 w-3 mr-1 text-yellow-500" />
+                          Winner: {quiz.winningTeam.name}
+                        </div>
+                      )}
                     </div>
                   </div>
 
