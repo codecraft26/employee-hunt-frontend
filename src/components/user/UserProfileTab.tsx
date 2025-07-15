@@ -123,20 +123,11 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
               </button>
             </div>
             <div className="flex-1 min-w-0 pb-2">
-              <div className="flex items-center space-x-3 mb-2">
-                <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
-                {isTeamLeader && (
-                  <div className="flex items-center space-x-1 bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1 rounded-full">
-                    <Crown className="h-4 w-4 text-white" />
-                    <span className="text-white text-sm font-medium">Team Leader</span>
-                  </div>
-                )}
-              </div>
-              <p className="text-white-600">{user.email}</p>
-              <div className="flex items-center space-x-2 mt-1 flex-wrap gap-y-1">
-                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
-                  {user.role}
-                </span>
+              {/* One-line profile info */}
+              <div className="flex flex-wrap items-center gap-2 overflow-x-auto whitespace-nowrap py-2">
+                <h2 className="text-2xl font-bold text-gray-900 mr-2">{user.name}</h2>
+                <span className="text-gray-600 text-base">{user.email}</span>
+                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">{user.role}</span>
                 {user.employeeCode && (
                   <span className="flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-800 border border-blue-200">
                     <Key className="h-4 w-4 mr-1 text-blue-500" />
@@ -156,9 +147,13 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
                   </span>
                 )}
                 {isTeamLeader && (
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-                    <Shield className="inline h-3 w-3 mr-1" />
-                    Leadership Role
+                  <span className="flex items-center bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1 rounded-full text-white text-sm font-medium">
+                    <Crown className="h-4 w-4 mr-1" />Team Leader
+                  </span>
+                )}
+                {isTeamLeader && (
+                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 border border-blue-200 flex items-center">
+                    <Shield className="inline h-3 w-3 mr-1" />Leadership Role
                   </span>
                 )}
               </div>

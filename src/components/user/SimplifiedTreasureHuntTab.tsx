@@ -84,7 +84,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [mySubmissions, setMySubmissions] = useState<TeamMemberSubmission[]>([]);
   const [memberSubmissions, setMemberSubmissions] = useState<TeamMemberSubmission[]>([]);
-  const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
+  const [selectedSubmissions, setSelectedSubmissions] = new Set<string>());
   const [leaderNotes, setLeaderNotes] = useState('');
 
   // Check if all team submissions are complete (sent to admin)
@@ -483,7 +483,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
               <span className="font-medium">
                 {hunt.status === 'UPCOMING' 
                   ? 'This hunt has not started yet.'
-                  : 'This hunt has ended.'}
+                  : <span className="text-red-600">This hunt has ended.</span>}
               </span>
             </div>
           </div>
