@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { TeamMemberSubmission } from '../types/teams';
+import { uploadTreasureHuntMemberSubmission, validateImageFile } from '../services/s3Service';
 
 // Enhanced types for new multi-stage treasure hunt system
 export interface TreasureHuntStage {
@@ -956,17 +957,28 @@ export const useTreasureHunts = () => {
     setError(null);
     
     try {
-      const formData = new FormData();
-      formData.append('image', submitData.image);
-      formData.append('teamId', submitData.teamId);
-      formData.append('description', submitData.description);
+      // Validate image file before upload
+      const validation = validateImageFile(submitData.image);
+      if (!validation.isValid) {
+        throw new Error(validation.error || 'Invalid image file');
+      }
+
+      // Upload image to S3 first
+      const imageUrl = await uploadTreasureHuntMemberSubmission(submitData.image);
+
+      // Send the S3 URL to the backend
+      const requestData = {
+        imageUrl,
+        teamId: submitData.teamId,
+        description: submitData.description
+      };
 
       const response = await api.post<MemberSubmissionResponse>(
         `/team-member-submissions/clues/${clueId}/submit`,
-        formData,
+        requestData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            'Content-Type': 'application/json',
           },
         }
       );
