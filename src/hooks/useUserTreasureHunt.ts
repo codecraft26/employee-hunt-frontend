@@ -4,6 +4,7 @@
 import { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { uploadTreasureHuntStageImage, validateImageFile } from '../services/s3Service';
 
 // Types matching your backend API response
 export interface TreasureHunt {
@@ -310,22 +311,35 @@ export const useTreasureHunt = () => {
       return false;
     }
 
+    // Validate image file before upload
+    const validation = validateImageFile(file);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid image file');
+      return false;
+    }
+
     setSubmitting(true);
     setError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('image', file);
+      // Upload image to S3 first
+      const imageUrl = await uploadTreasureHuntStageImage(file);
+
+      // Send the S3 URL to the backend
+      const requestData: any = {
+        imageUrl
+      };
+      
       if (teamId) {
-        formData.append('teamId', teamId);
+        requestData.teamId = teamId;
       }
 
       const response = await api.post<ApiResponse<any>>(
         `/treasure-hunts/${huntId}/stages/${stageId}/submit`,
-        formData,
+        requestData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            'Content-Type': 'application/json',
           },
         }
       );

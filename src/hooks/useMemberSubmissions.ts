@@ -10,6 +10,7 @@ import {
   MemberSubmissionsResponse,
   TeamSubmissionsResponse 
 } from '../types/teams';
+import { uploadTreasureHuntMemberSubmission, validateImageFile } from '../services/s3Service';
 
 // Get API base URL
 const getApiBaseUrl = () => {
@@ -121,17 +122,28 @@ export const useMemberSubmissions = () => {
     try {
       console.log('📸 Submitting member clue:', { clueId, teamId, description, imageSize: image.size });
       
-      const formData = new FormData();
-      formData.append('image', image);
-      formData.append('teamId', teamId);
-      formData.append('description', description);
+      // Validate image file before upload
+      const validation = validateImageFile(image);
+      if (!validation.isValid) {
+        throw new Error(validation.error || 'Invalid image file');
+      }
+
+      // Upload image to S3 first
+      const imageUrl = await uploadTreasureHuntMemberSubmission(image);
+
+      // Send the S3 URL to the backend
+      const requestData = {
+        imageUrl,
+        teamId,
+        description
+      };
 
       const response = await api.post(
         `/team-member-submissions/clues/${clueId}/submit`,
-        formData,
+        requestData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            'Content-Type': 'application/json',
           },
         }
       );

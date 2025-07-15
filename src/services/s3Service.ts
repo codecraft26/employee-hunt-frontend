@@ -74,6 +74,17 @@ export const uploadIdProof = async (file: File): Promise<string> => {
   return result.url;
 };
 
+// Treasure Hunt specific upload functions
+export const uploadTreasureHuntStageImage = async (file: File): Promise<string> => {
+  const result = await uploadImageToS3(file, 'treasure-hunt/stages');
+  return result.url;
+};
+
+export const uploadTreasureHuntMemberSubmission = async (file: File): Promise<string> => {
+  const result = await uploadImageToS3(file, 'treasure-hunt/member-submissions');
+  return result.url;
+};
+
 // Utility function to validate image files before upload
 export const validateImageFile = (file: File): { isValid: boolean; error?: string } => {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
