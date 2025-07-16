@@ -84,7 +84,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
   const [refreshing, setRefreshing] = useState(false);
   const [mySubmissions, setMySubmissions] = useState<TeamMemberSubmission[]>([]);
   const [memberSubmissions, setMemberSubmissions] = useState<TeamMemberSubmission[]>([]);
-  const [selectedSubmissions, setSelectedSubmissions] = new Set<string>());
+  const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
   const [leaderNotes, setLeaderNotes] = useState('');
 
   // Check if all team submissions are complete (sent to admin)
@@ -466,7 +466,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
                 <div>Team Leader: {isLeaderFromTeamLeader ? 'Yes' : 'No'}</div>
                 <div>Final: {isActuallyLeader ? 'Yes' : 'No'}</div>
                 <button 
-                  onClick={refreshLeadership}
+                  onClick={() => window.location.reload()}
                   className="mt-1 px-2 py-1 bg-blue-600 text-white rounded text-xs"
                 >
                   Refresh
@@ -477,8 +477,8 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
         </div>
 
         {!canAccessHunt && (
-          <div className="bg-red-50 bg-opacity-20 border border-red-200 border-opacity-30 rounded-lg p-4">
-            <div className="flex items-center space-x-2 text-red-100">
+          <div className="bg-blue-50 bg-opacity-20 border border-blue-200 border-opacity-30 rounded-lg p-4">
+            <div className="flex items-center space-x-2 text-blue-700">
               <AlertCircle className="h-5 w-5" />
               <span className="font-medium">
                 {hunt.status === 'UPCOMING' 
