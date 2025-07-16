@@ -127,12 +127,9 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user }) => {
           )}
           <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mt-1 justify-center w-full">
             <span className="text-gray-600 text-base break-all text-center">{user.email}</span>
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">{user.role}</span>
+            <span className="text-sm font-medium text-gray-700">{user.role}</span>
             {user.employeeCode && (
-              <span className="flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-                <Key className="h-4 w-4 mr-1 text-blue-500" />
-                {user.employeeCode}
-              </span>
+              <span className="text-base font-semibold text-blue-900">{user.employeeCode}</span>
             )}
             {user.department && (
               <span className="flex items-center px-2 py-1 text-xs font-medium rounded-full bg-purple-50 text-purple-800 border border-purple-200">
