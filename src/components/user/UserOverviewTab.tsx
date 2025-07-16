@@ -95,13 +95,6 @@ const QUICK_ACTIONS: QuickAction[] = [
     type: 'team',
     description: 'Lead your squad',
     bgImage: '/dashboard_tiles/my_team.jpg'
-  },
-  { 
-    title: 'My Profile', 
-    icon: Crown, 
-    color: 'from-amber-500 via-yellow-600 to-orange-500', 
-    type: 'profile',
-    description: 'Level up your stats',
   }
 ];
 
