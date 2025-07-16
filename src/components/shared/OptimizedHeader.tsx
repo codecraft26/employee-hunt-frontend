@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { LogOut, Settings, Bell, User, Menu } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface OptimizedHeaderProps {
   title: string;
@@ -18,6 +19,7 @@ const OptimizedHeader: React.FC<OptimizedHeaderProps> = memo(({
   userName,
   onLogout
 }) => {
+  const router = useRouter();
   return (
     <div className="glass backdrop-blur-xl border-b border-white/10 sticky top-0 z-40">
       <div className="px-3 sm:px-4 lg:px-6">
@@ -53,7 +55,11 @@ const OptimizedHeader: React.FC<OptimizedHeaderProps> = memo(({
               <Settings className="h-5 w-5 sm:h-6 sm:w-6 group-hover:rotate-90 transition-transform duration-300" />
             </button> */}
             
-            <button className="hidden sm:block p-2 text-slate-300 hover:text-white transition-colors duration-300 group">
+            <button
+              onClick={() => router.push('/dashboard/profile')}
+              className="p-2 text-slate-300 hover:text-white transition-colors duration-300 group"
+              aria-label="Go to Profile"
+            >
               <User className="h-5 w-5 sm:h-6 sm:w-6 group-hover:scale-110 transition-transform duration-300" />
             </button>
             
