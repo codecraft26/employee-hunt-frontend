@@ -17,16 +17,6 @@ export default function UserTreasureHuntPage() {
 
   return (
     <div>
-      <div className="flex justify-end p-4">
-        <GamingButton
-          onClick={handleFullPageRefresh}
-          variant="secondary"
-          icon={RefreshCw}
-          iconPosition="left"
-        >
-          Refresh Page
-        </GamingButton>
-      </div>
       <HeroSection 
         imageUrl="/dashboard_tiles/treaure_hunt.jpg"
         title="Treasure Hunt"

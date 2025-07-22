@@ -189,7 +189,7 @@ export default function UserTreasureHuntTab() {
           </p>
         </div>
         <button
-          onClick={handleRefresh}
+          onClick={() => window.location.reload()}
           disabled={refreshing}
           className="btn-gaming-secondary"
         >
