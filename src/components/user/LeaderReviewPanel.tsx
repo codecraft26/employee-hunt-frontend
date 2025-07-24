@@ -256,7 +256,7 @@ const LeaderReviewPanel: React.FC<LeaderReviewPanelProps> = ({
               >
                 <div className="flex space-x-4">
                   {/* Image */}
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 relative">
                     <div className="h-24 w-24 bg-gray-100 rounded-lg overflow-hidden">
                       <img
                         src={submission.imageUrl}
@@ -264,6 +264,11 @@ const LeaderReviewPanel: React.FC<LeaderReviewPanelProps> = ({
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={() => window.open(submission.imageUrl, '_blank')}
                       />
+                      {submission.submittedBy?.name && (
+                        <span className="absolute bottom-1 left-1 bg-white bg-opacity-80 text-black text-xs font-semibold px-2 py-0.5 rounded">
+                          {submission.submittedBy.name}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -274,7 +279,7 @@ const LeaderReviewPanel: React.FC<LeaderReviewPanelProps> = ({
                         <p className="text-sm font-medium text-gray-900 mb-1">
                           {submission.description}
                         </p>
-                        <div className="flex items-center space-x-3 text-sm text-gray-600">
+                        <div className="flex items-center space-x-3 text-sm text-black">
                           <span>By: {submission.submittedBy.name}</span>
                           <span>•</span>
                           <span>{new Date(submission.createdAt).toLocaleDateString()}</span>
