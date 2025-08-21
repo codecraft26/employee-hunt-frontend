@@ -584,7 +584,7 @@ const UserManagementModal: React.FC<UserManagementModalProps> = ({
               onSubmit={async (e) => {
                 e.preventDefault();
                 setEditLoading(true);
-                let data: any = { ...editFormData };
+                const data: any = { ...editFormData };
                 // Handle profile image upload to S3 if a new file is selected
                 if (editProfileImageFile) {
                   const validation = validateImageFile(editProfileImageFile);

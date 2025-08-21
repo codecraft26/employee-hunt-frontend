@@ -86,3 +86,50 @@ export type QuickActionType =
   | 'create-team' 
   | 'create-category'
   | 'approve-user';
+
+// Email Configuration Types
+export interface EmailConfig {
+  id: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  password: string;
+  isActive: boolean;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEmailConfigRequest {
+  host: string;
+  port: number;
+  secure?: boolean;
+  user: string;
+  password: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateEmailConfigRequest {
+  host?: string;
+  port?: number;
+  secure?: boolean;
+  user?: string;
+  password?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface TestEmailConfigRequest {
+  host: string;
+  port: number;
+  secure?: boolean;
+  user: string;
+  password: string;
+}
+
+export interface TestEmailConfigResponse {
+  isValid: boolean;
+  message?: string;
+}

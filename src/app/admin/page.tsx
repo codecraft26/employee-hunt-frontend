@@ -23,6 +23,7 @@ const AdminApprovalsTab = lazy(() => import('../../components/tabs/AdminApproval
 const PhotoWallTab = lazy(() => import('../../components/tabs/PhotoWallTab'));
 const CreateQuizModal = lazy(() => import('../../components/modals/CreateQuizModal'));
 const RoomAllotmentTab = lazy(() => import('../../components/tabs/RoomAllotmentTab'));
+const EmailConfigTab = lazy(() => import('../../components/tabs/EmailConfigTab'));
 import UserManagementTab from '../../components/tabs/UserManagementTab';
 
 import { 
@@ -36,7 +37,7 @@ import {
 } from '../../types/admin';
 
 // Extended TabView type to include clue, submission management, categories, and photo wall
-type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall' | 'user-management' | 'activities' | 'room-allotment';
+type ExtendedTabView = TabView | 'clues-management' | 'submissions-management' | 'categories' | 'approve-users' | 'photo-wall' | 'user-management' | 'activities' | 'room-allotment' | 'email-config';
 
 // Mock data - In real app, this would come from API calls
 const mockStats: Stats = {
@@ -167,7 +168,7 @@ export default function AdminDashboard() {
   // Handle URL parameters for tab navigation
   useEffect(() => {
     const tabParam = searchParams.get('tab');
-    if (tabParam && ['overview', 'quizzes', 'treasure-hunts', 'polls', 'teams', 'categories', 'photo-wall', 'user-management', 'activities', 'approve-users', 'room-allotment'].includes(tabParam)) {
+    if (tabParam && ['overview', 'quizzes', 'treasure-hunts', 'polls', 'teams', 'categories', 'photo-wall', 'user-management', 'activities', 'approve-users', 'room-allotment', 'email-config'].includes(tabParam)) {
       setActiveView(tabParam as ExtendedTabView);
     }
   }, [searchParams]);
@@ -214,6 +215,9 @@ export default function AdminDashboard() {
         break;
       case 'user-management':
         setActiveView('user-management');
+        break;
+      case 'email-config':
+        setActiveView('email-config');
         break;
       
       default:
@@ -519,6 +523,12 @@ export default function AdminDashboard() {
         return (
           <LazyWrapper>
             <RoomAllotmentTab />
+          </LazyWrapper>
+        );
+      case 'email-config':
+        return (
+          <LazyWrapper>
+            <EmailConfigTab />
           </LazyWrapper>
         );
      
