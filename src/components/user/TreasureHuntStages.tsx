@@ -493,6 +493,27 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
         </div>
       )}
 
+      {/* Hunt Not Started Message */}
+      {!canAccessHunt && hunt.status === 'UPCOMING' && (
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <Clock className="h-12 w-12 text-blue-500" />
+            </div>
+            <h3 className="text-xl font-bold text-blue-800 mb-2">⏰ Treasure Hunt Not Started</h3>
+            <p className="text-blue-700 mb-4">
+              This treasure hunt has not started yet. Stage details and clues will be revealed when the hunt begins.
+            </p>
+            <div className="bg-slate-900 rounded-lg p-4 border border-blue-800">
+              <div className="flex items-center justify-center space-x-2 text-sm text-blue-600">
+                <Target className="h-4 w-4" />
+                <span>Waiting for hunt to begin...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Completion Message */}
       {allStagesCompleted && (
         <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
@@ -628,7 +649,9 @@ const TreasureHuntStages: React.FC<TreasureHuntStagesProps> = ({ hunt, teamId })
                     </div>
                   </div>
 
-                  <h3 className="font-semibold text-white mb-2">{stage.description}</h3>
+                  <h3 className="font-semibold text-white mb-2">
+                    {canAccessHunt ? stage.description : `Stage ${stage.stageNumber}`}
+                  </h3>
 
                   {/* Stage Status */}
                   {stage.submission && (

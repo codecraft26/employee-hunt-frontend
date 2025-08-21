@@ -612,21 +612,41 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
         </div>
       )}
 
-      {/* Clue Description */}
-      <div className="bg-white rounded-lg border p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="bg-green-100 p-2 rounded-lg">
-            <Target className="h-6 w-6 text-green-600" />
+      {/* Clue Description - Only show when hunt is active */}
+      {canAccessHunt && (
+        <div className="bg-white rounded-lg border p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-green-100 p-2 rounded-lg">
+              <Target className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Your Mission</h3>
+              <p className="text-sm text-gray-500">What you need to find and photograph</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Your Mission</h3>
-            <p className="text-sm text-gray-500">What you need to find and photograph</p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-900 font-medium">{clue.description}</p>
           </div>
         </div>
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-blue-900 font-medium">{clue.description}</p>
+      )}
+
+      {/* Hunt Not Started Message */}
+      {!canAccessHunt && hunt.status === 'UPCOMING' && (
+        <div className="bg-white rounded-lg border p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gray-100 p-2 rounded-lg">
+              <Clock className="h-6 w-6 text-gray-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Treasure Hunt Not Started</h3>
+              <p className="text-sm text-gray-500">The hunt will begin soon</p>
+            </div>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <p className="text-gray-600 font-medium">The treasure hunt has not started yet. Clues will be revealed when the hunt begins.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {canAccessHunt && (
         <div className="space-y-6">
