@@ -12,7 +12,8 @@ import {
   Image as ImageIcon,
   UserCog,
   Activity,
-  Key
+  Key,
+  Mail
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -31,6 +32,7 @@ const SIDEBAR_ITEMS = [
   { id: 'activities', label: 'Activities', icon: Activity, href: '/admin?tab=activities' },
   { id: 'photo-wall', label: 'Photo Wall', icon: ImageIcon, href: '/admin?tab=photo-wall' },
   { id: 'user-management', label: 'User Management', icon: UserCog, href: '/admin?tab=user-management' },
+  { id: 'email-config', label: 'Email Settings', icon: Mail, href: '/admin?tab=email-config' },
   { id: 'approvals', label: 'Approvals', icon: CheckCircle, href: '/admin/approveUser' },
 ];
 
