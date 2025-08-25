@@ -383,24 +383,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
         </div>
       )}
 
-      {/* Debug Information (Development Only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 text-xs">
-          <h4 className="font-semibold mb-2">🔍 Leadership Debug Info:</h4>
-          <div className="grid grid-cols-2 gap-2">
-            <div>User ID: {user?.id}</div>
-            <div>Team ID: {myTeam?.id}</div>
-            <div>Team Leader ID: {myTeam?.leaderId}</div>
-            <div>Team Leader User ID: {myTeam?.leader?.id}</div>
-            <div>API Leader: {isTeamLeader ? 'Yes' : 'No'}</div>
-            <div>Team Data Leader: {isLeaderFromTeam ? 'Yes' : 'No'}</div>
-            <div>Leader Object Match: {isLeaderFromTeamLeader ? 'Yes' : 'No'}</div>
-            <div>Final Leader Status: {isActuallyLeader ? 'Yes' : 'No'}</div>
-            <div>Leadership Loading: {leadershipLoading ? 'Yes' : 'No'}</div>
-            <div>Leadership Error: {leadershipError || 'None'}</div>
-          </div>
-        </div>
-      )}
+
 
       {/* Leadership Error Display */}
       {leadershipError && (
@@ -457,22 +440,7 @@ const SimplifiedTreasureHuntTab: React.FC<SimplifiedTreasureHuntTabProps> = ({
               showCountdown={true}
             />
             
-            {/* Leadership Debug Info - Remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-2 text-xs text-white bg-black bg-opacity-20 p-2 rounded">
-                <div>Leadership Debug:</div>
-                <div>Hook: {isTeamLeader ? 'Yes' : 'No'}</div>
-                <div>Team ID: {isLeaderFromTeam ? 'Yes' : 'No'}</div>
-                <div>Team Leader: {isLeaderFromTeamLeader ? 'Yes' : 'No'}</div>
-                <div>Final: {isActuallyLeader ? 'Yes' : 'No'}</div>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="mt-1 px-2 py-1 bg-blue-600 text-white rounded text-xs"
-                >
-                  Refresh
-                </button>
-              </div>
-            )}
+
           </div>
         </div>
 
