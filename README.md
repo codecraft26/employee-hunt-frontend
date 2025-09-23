@@ -12,6 +12,9 @@ A modern Progressive Web App (PWA) for team activities, quizzes, treasure hunts,
 
 
 
+
+
+
 ## 🛠️ Development
 ```bash
 # Install dependencies
